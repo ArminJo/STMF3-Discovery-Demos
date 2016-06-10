@@ -1,0 +1,14 @@
+/.settings/
+/Release/
+/screenshots/
+/screenshots_bmp/
+/ADC1in_DMA_Start.PNG
+/ADC1in_setRawToVoltFactor.PNG
+/ADC2_OK.PNG
+/I2C_Loop.PNG
+/PWR_init.PNG
+/RCC.PNG
+/RTC.PNG
+/sbrk von InfoPage.PNG
+/TIM3_running.PNG
+/TIM6_init.PNG
