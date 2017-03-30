@@ -11,7 +11,7 @@
 
 #include "usbd_misc.h"
 #include "tinyPrint.h"
-#include "myStrings.h"
+#include "main.h" // for StringBuffer
 
 #include "timing.h"
 #include "usbd_hid.h"
@@ -149,8 +149,8 @@ uint8_t * CDC_Loopback(void) {
 }
 
 void CDC_TestSend(void) {
-    int tCount = snprintf(StringBuffer, sizeof StringBuffer, "Test %p", &StringBuffer[0]);
-    USBD_CDC_SetTxBuffer(&USBDDeviceHandle, (uint8_t*) &StringBuffer[0], tCount);
+    int tCount = snprintf(sStringBuffer, sizeof sStringBuffer, "Test %p", &sStringBuffer[0]);
+    USBD_CDC_SetTxBuffer(&USBDDeviceHandle, (uint8_t*) &sStringBuffer[0], tCount);
     while (USBD_CDC_TransmitPacket(&USBDDeviceHandle) == USBD_BUSY) {
         delayMillis(100);
     }

@@ -28,6 +28,7 @@
 #ifndef SIMPLETOUCHSCREENDSO_H_
 #define SIMPLETOUCHSCREENDSO_H_
 
+#include "TouchDSOCommon.h"
 #include "BlueDisplay.h"
 #include "BDButton.h"
 #ifdef LOCAL_DISPLAY_EXISTS
@@ -61,10 +62,8 @@
 #define COLOR_GRID_LINES RGB(0x00,0x98,0x00)
 #define COLOR_INFO_BACKGROUND RGB(0xC8,0xC8,0x00)
 
-// Data history colors
-#define COLOR_DATA_ERASE_LOW RGB(0xC0,0xFF,0xC0)
-#define COLOR_DATA_ERASE_MID RGB(0x80,0xE0,0x80)
-#define COLOR_DATA_ERASE_HIGH RGB(0x40,0xC0,0x40)
+// to see old chart values
+#define COLOR_DATA_HISTORY RGB(0x20,0xFF,0x20)
 
 //Line colors
 #define COLOR_VOLTAGE_PICKER COLOR_YELLOW
@@ -79,13 +78,12 @@
 /*
  * DISPLAY LAYOUT
  */
-#define DSO_DISPLAY_HEIGHT 240
-#define DSO_DISPLAY_WIDTH 320
+
 #define HORIZONTAL_GRID_COUNT 6
-#define HORIZONTAL_GRID_HEIGHT (DSO_DISPLAY_HEIGHT / HORIZONTAL_GRID_COUNT) // 40
-#define TIMING_GRID_WIDTH (DSO_DISPLAY_WIDTH / 10) // 32
+#define HORIZONTAL_GRID_HEIGHT (REMOTE_DISPLAY_HEIGHT / HORIZONTAL_GRID_COUNT) // 40
+#define TIMING_GRID_WIDTH (REMOTE_DISPLAY_WIDTH / 10) // 32
 #define DISPLAY_AC_ZERO_OFFSET_GRID_COUNT (-3)
-#define DISPLAY_VALUE_FOR_ZERO (DSO_DISPLAY_HEIGHT - 2) // Zero line is not exactly at bottom of display to improve readability
+#define DISPLAY_VALUE_FOR_ZERO (REMOTE_DISPLAY_HEIGHT - 2) // Zero line is not exactly at bottom of display to improve readability
 #define PIXEL_AFTER_LABEL 2 // Space between end of label and display border
 
 /*
@@ -135,14 +133,14 @@
 #define DATABUFFER_SIZE_FACTOR 7
 #endif
 #define DATABUFFER_DISPLAY_RESOLUTION_FACTOR 10
-#define DATABUFFER_DISPLAY_RESOLUTION (DSO_DISPLAY_WIDTH / DATABUFFER_DISPLAY_RESOLUTION_FACTOR)     // Base value for other (32)
+#define DATABUFFER_DISPLAY_RESOLUTION (REMOTE_DISPLAY_WIDTH / DATABUFFER_DISPLAY_RESOLUTION_FACTOR)     // Base value for other (32)
 #define DATABUFFER_DISPLAY_INCREMENT DATABUFFER_DISPLAY_RESOLUTION // increment value for display scroll
-#define DATABUFFER_SIZE (DSO_DISPLAY_WIDTH * DATABUFFER_SIZE_FACTOR) // * 4 = bytes RAM needed
+#define DATABUFFER_SIZE (REMOTE_DISPLAY_WIDTH * DATABUFFER_SIZE_FACTOR) // * 4 = bytes RAM needed
 #define DATABUFFER_MIN_OFFSET DATABUFFER_SIZE // DataBufferMinValues[0] - DataBuffer[0]
 #define DATABUFFER_PRE_TRIGGER_SIZE (5 * DATABUFFER_DISPLAY_RESOLUTION)
 extern unsigned int sDatabufferPreDisplaySize;
 #define DATABUFFER_DISPLAY_START (DATABUFFER_PRE_TRIGGER_SIZE - DisplayControl.DatabufferPreTriggerDisplaySize)
-#define DATABUFFER_DISPLAY_END (DATABUFFER_DISPLAY_START + DSO_DISPLAY_WIDTH - 1)
+#define DATABUFFER_DISPLAY_END (DATABUFFER_DISPLAY_START + REMOTE_DISPLAY_WIDTH - 1)
 #define DATABUFFER_POST_TRIGGER_START (&DataBuffer[DATABUFFER_PRE_TRIGGER_SIZE])
 #define DATABUFFER_POST_TRIGGER_SIZE (DATABUFFER_SIZE - DATABUFFER_PRE_TRIGGER_SIZE)
 #define DATABUFFER_INVISIBLE_RAW_VALUE 0x1000 // Value for invalid data in/from pretrigger area
@@ -153,47 +151,20 @@ extern unsigned int sDatabufferPreDisplaySize;
 #define DRAW_MODE_CLEAR_OLD 1 // DisplayBuffer is taken and cleared
 #define DRAW_MODE_CLEAR_OLD_MIN 2 // DisplayBufferMin is taken and cleared
 
-/*
- * TIMEBASE
- */
-#define CHANGE_REQUESTED_TIMEBASE 0x01
-#define TIMEBASE_FAST_MODES 7 // first modes are fast DMA modes
-#define TIMEBASE_INDEX_DRAW_WHILE_ACQUIRE 17 // min index where chart is drawn while buffer is filled
-#define TIMEBASE_INDEX_CAN_USE_OVERSAMPLING 11 // min index where Min/Max oversampling is enabled
-#define TIMEBASE_NUMBER_OF_ENTRIES 21 // the number of different timebase provided - 1. entry is not uses until interleaved acquisition is implemented
-#define TIMEBASE_NUMBER_OF_EXCACT_ENTRIES 8 // the number of exact float value for timebase because of granularity of clock division
-#ifdef STM32F303xC
-#define TIMEBASE_NUMBER_START 1  // first reasonable Timebase to display - 0 if interleaving is realized
-#define TIMEBASE_NUMBER_OF_XSCALE_CORRECTION 5  // number of timebase which are simulated by display XSale factor
-#else
-#define TIMEBASE_NUMBER_START 3  // first reasonable Timebase to display - we have only 0.8 MSamples
-#define TIMEBASE_NUMBER_OF_XSCALE_CORRECTION 7  // number of timebase which are simulated by display XSale factor
-#endif
-#define TIMEBASE_INDEX_MILLIS 11 // min index to switch to ms instead of ns display
-#define TIMEBASE_INDEX_MICROS 2 // min index to switch to us instead of ns display
-#define TIMEBASE_INDEX_START_VALUE 12
+
 extern const uint8_t xScaleForTimebase[TIMEBASE_NUMBER_OF_XSCALE_CORRECTION];
 extern const uint16_t TimebaseDivValues[TIMEBASE_NUMBER_OF_ENTRIES];
-extern const float TimebaseExactDivValuesMicros[TIMEBASE_NUMBER_OF_EXCACT_ENTRIES];
 extern const uint16_t TimebaseTimerDividerValues[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t TimebaseTimerPrescalerDividerValues[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t TimebaseOversampleCountForMinMaxMode[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t TimebaseOversampleIndexForMinMaxMode[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t ADCClockPrescalerValues[TIMEBASE_NUMBER_OF_ENTRIES];
 
-/*
- * TRIGGER
- */
-// Enum of TriggerMode
-#define TRIGGER_MODE_AUTOMATIC 0
-#define TRIGGER_MODE_MANUAL 1
-#define TRIGGER_MODE_OFF 2
-
 #define TRIGGER_HYSTERESIS_MANUAL 2 // value for effective trigger hysteresis in manual trigger mode
 
 // States of tTriggerStatus
-#define TRIGGER_START 0 // No trigger condition met
-#define TRIGGER_BEFORE_THRESHOLD 1 // slope condition met, wait to go beyond threshold hysteresis
+#define TRIGGER_STATUS_START 0 // No trigger condition met
+#define TRIGGER_STATUS_BEFORE_THRESHOLD 1 // slope condition met, wait to go beyond threshold hysteresis
 #define TRIGGER_OK 2 // Trigger condition met
 #define PHASE_PRE_TRIGGER 0 // load pre trigger values
 #define PHASE_SEARCH_TRIGGER 1 // wait for trigger condition
@@ -298,7 +269,8 @@ struct MeasurementControlStruct {
     volatile bool TriggerPhaseJustEnded; // ADC-ISR -> Thread - signal for draw while acquire
     volatile bool TriggerSlopeRising; // GUI -> ADC-ISR
     volatile uint16_t RawTriggerLevel; // GUI -> ADC-ISR
-    uint16_t RawTriggerLevelHysteresis; // ADC-ISR internal
+    uint16_t RawTriggerLevelHysteresis; // ADC-ISR The RawTriggerLevel +/- hysteresis depending on slope (- for TriggerSlopeRising) - Used for computeMicrosPerPeriod()
+    uint16_t RawHysteresis;
 
     uint8_t TriggerMode; // GUI -> ADC-ISR - TRIGGER_MODE_AUTOMATIC, MANUAL, OFF
     uint8_t TriggerStatus; // Set by ISR: see TRIGGER_START etc.
@@ -314,6 +286,8 @@ struct MeasurementControlStruct {
 
     // computed values from display buffer
     float PeriodMicros;
+    uint32_t PeriodFirst; // Length of first pulse or pause
+    uint32_t PeriodSecond; // Length of second pulse or pause
     uint32_t FrequencyHertz;
     float FrequencyHertzAtMaxFFTBin;
     float MaxFFTValue;
@@ -321,7 +295,7 @@ struct MeasurementControlStruct {
     // Statistics (for auto range/offset/trigger)
     uint16_t RawValueMin;
     uint16_t RawValueMax;
-    uint16_t RawValueAverage;
+    uint16_t RawValueAverage; // the raw value of total periods if at least one period is detected (Hz and us are valid)
 
     // Timebase
     bool TimebaseFastDMAMode;
@@ -348,6 +322,7 @@ struct MeasurementControlStruct {
     bool ChannelHasACDCSwitch; // has AC / DC switch - only for channels with active or passive attenuators
     bool ChannelIsACMode; // actual AC Mode for actual channel
     bool isACMode; // user AC mode setting false: unipolar mode => 0V probe input -> 0V ADC input  - true: AC range => 0V probe input -> 1.5V ADC input
+    volatile uint8_t ACModeFromISR; // 0 -> DC, 1 -> AC, 2 -> request was processed
     uint16_t RawDSOReadingACZero;
 
     // Offset
@@ -395,29 +370,26 @@ extern void * TempBufferForPreTriggerAdjustAndFFT;
  * while stopped switch between chart / t+info line and gui
  */
 
-enum DisplayPageEnum {
-    START, CHART, SETTINGS, MORE_SETTINGS
-#ifndef STM32F303xC
-    , FREQ_SYNTH, SYST_INFO
-#endif
-};
-
 #define SCALE_CHANGE_DELAY_MILLIS 2000
 #define DRAW_HISTORY_LEVELS 4 // 0 = No history, 3 = history high
+
+// values for DisplayPage
+// using enums increases code size by 120 bytes for Arduino
+#define DISPLAY_PAGE_START 0    // Start GUI
+#define DISPLAY_PAGE_CHART 1    // Chart in analyze and running mode
+#define DISPLAY_PAGE_SETTINGS 2
+#define DISPLAY_PAGE_FREQUENCY 3
+#ifndef AVR
+#define DISPLAY_PAGE_MORE_SETTINGS 4
+#define DISPLAY_PAGE_SYST_INFO 5
+#endif
+
 // modes for showInfoMode
 #define INFO_MODE_NO_INFO 0
 #define INFO_MODE_SHORT_INFO 1
 #define INFO_MODE_LONG_INFO 2
 struct DisplayControlStruct {
     uint8_t TriggerLevelDisplayValue; // For clearing old line of manual trigger level setting
-#ifdef LOCAL_DISPLAY_EXISTS
-    bool drawPixelMode;
-#endif
-    bool showTriggerInfoLine;
-    uint8_t showInfoMode;
-    DisplayPageEnum DisplayPage; // START, CHART, SETTINGS, MORE_SETTINGS
-    bool ShowFFT;
-
     /**
      * XScale > 1 : expansion by factor XScale
      * XScale == 1 : expansion by 1.5
@@ -428,6 +400,15 @@ struct DisplayControlStruct {
     int8_t XScale; // Factor for X Data expansion(>0) or compression(<0). 2->display 1 value 2 times -2->display average of 2 values etc.
     uint16_t DisplayIncrementPixel; // corresponds to XScale
 
+    uint8_t DisplayPage; // START, CHART, SETTINGS, MORE_SETTINGS
+
+#ifdef LOCAL_DISPLAY_EXISTS
+    bool drawPixelMode;
+#endif
+    bool showTriggerInfoLine;
+    bool ShowFFT;
+
+
     unsigned int DatabufferPreTriggerDisplaySize;
 
     int LastDisplayRangeIndex;
@@ -435,9 +416,10 @@ struct DisplayControlStruct {
     // for recognizing that MeasurementControl values changed => clear old grid labels
     int16_t LastOffsetGridCount;
 
-    Color_t EraseColors[DRAW_HISTORY_LEVELS];
+    uint8_t showInfoMode;
+
+    bool showHistory;
     Color_t EraseColor;
-    uint8_t EraseColorIndex;
 };
 extern DisplayControlStruct DisplayControl;
 
@@ -447,8 +429,8 @@ struct FFTInfoStruct {
     uint32_t TimeElapsedMillis; // milliseconds of computing last fft
 };
 extern FFTInfoStruct FFTInfo;
-extern uint8_t DisplayBuffer[DSO_DISPLAY_WIDTH];
-extern uint8_t DisplayBufferMin[DSO_DISPLAY_WIDTH];
+extern uint8_t DisplayBuffer[REMOTE_DISPLAY_WIDTH];
+extern uint8_t DisplayBufferMin[REMOTE_DISPLAY_WIDTH];
 
 /*
  * BSS memory usage total: 12064 byte
@@ -488,22 +470,19 @@ int changeDisplayRange(int aValue);
 bool setDisplayRange(int aNewDisplayRangeIndex, bool aClipToIndexInputRange);
 void adjustPreTriggerBuffer(void);
 uint16_t computeNumberOfSamplesToTimeout(int8_t aTimebaseIndex);
-void computeMinMaxAverageAndPeriodFrequency(void);
 bool setDisplayRange(int aNewRangeIndex);
 void setOffsetGridCountAccordingToACMode(void);
 void setACMode(bool aACRangeEnable);
 void setChannel(int aChannel);
 
-void drawGridLinesWithHorizLabelsAndTriggerLine(Color_t aColor);
 void drawMinMaxLines(void);
 
-void drawTriggerLine(void);
-void clearTriggerLine(uint8_t aTriggerLevelDisplayValue);
 void printTriggerInfo(void);
 
 void printInfo(void);
 void clearInfo(void);
-void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor, int aDrawMode, bool aDrawAlsoMin);
+void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor, int aDrawMode,
+bool aDrawAlsoMin);
 void drawRemainingDataBufferValues(Color_t aDrawColor);
 
 void initScaleValuesForDisplay(void);

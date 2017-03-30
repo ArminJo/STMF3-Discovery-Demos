@@ -145,7 +145,7 @@
  * A    |4  |   |
  * A    |5  |   |
  * A    |6  |   |
- * A    |7  |   |
+ * A    |7  |       |HC-05 Bluetooth paired in
  * A    |8  |TIM1   |CH1
  * A    |9  |USART1 |TX
  * A    |10 |USART1 |RX

@@ -81,6 +81,7 @@ public:
 
     void drawSlider(void);
     void drawBorder(void);
+    void setActualValue(int16_t aActualValue);
     void setActualValueAndDrawBar(int16_t aActualValue);
     void setBarColor(Color_t aBarColor);
     void setBarThresholdColor(Color_t aBarThresholdColor);
@@ -89,11 +90,16 @@ public:
     void setCaptionProperties(uint8_t aCaptionSize, uint8_t aCaptionPosition, uint8_t aCaptionMargin, Color_t aCaptionColor,
             Color_t aCaptionBackgroundColor);
     void setCaption(const char * aCaption);
+    void setValueUnitString(const char * aValueUnitString);
+    void setValueFormatString(const char * aValueFormatString);
     void setPrintValueProperties(uint8_t aPrintValueSize, uint8_t aPrintValuePosition, uint8_t aPrintValueMargin,
             Color_t aPrintValueColor, Color_t aPrintValueBackgroundColor);
     void printValue(const char * aValueString);
-    void setScaleFactor(float aScaleFactorX, float aScaleFactorY);
-    void setValueScaleFactor(float aScaleFactorValue);
+    /*
+     * Scale factor of 2 means, that the slider is virtually 2 times larger than displayed
+     */
+    void setScaleFactor(float aScaleFactor);
+    void setValueScaleFactor(float aScaleFactorValue); // calls setScaleFactor( 1/aScaleFactorValue);
 
     void activate(void);
     void deactivate(void);

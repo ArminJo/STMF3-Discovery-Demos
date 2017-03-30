@@ -10,6 +10,7 @@
  */
 
 #include "Pages.h"
+#include "myStrings.h" // for StringDoubleHorizontalArrow
 #include "Chart.h"
 #include <string.h>
 
@@ -111,7 +112,6 @@ void setChargeVoltageCaption(int16_t aProbeIndex);
 BDButton TouchButtonExport;
 
 BDButton TouchButtonMain;
-static BDButton TouchButtonBack;
 
 BDButton TouchButtonLoadStore;
 
@@ -993,7 +993,7 @@ static void doStoreLoadChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) 
         FIL tFile;
         FRESULT tOpenResult;
         UINT tCount;
-        snprintf(StringBuffer, sizeof StringBuffer, "channel%d_%s.bin", aProbeIndex, getModeString(aProbeIndex));
+        snprintf(sStringBuffer, sizeof sStringBuffer, "channel%d_%s.bin", aProbeIndex, getModeString(aProbeIndex));
 
         if (DataloggerMeasurementControl[aProbeIndex].SampleCount == 0) {
             // first stop running measurement
@@ -1003,7 +1003,7 @@ static void doStoreLoadChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) 
             /*
              * Load data from file
              */
-            tOpenResult = f_open(&tFile, StringBuffer, FA_OPEN_EXISTING | FA_READ);
+            tOpenResult = f_open(&tFile, sStringBuffer, FA_OPEN_EXISTING | FA_READ);
             if (tOpenResult == FR_OK) {
                 // read AccuCapDisplayControl structure to reproduce the layout
                 f_read(&tFile, &AccuCapDisplayControl[aProbeIndex], sizeof(AccuCapDisplayControl[aProbeIndex]),
@@ -1024,7 +1024,7 @@ static void doStoreLoadChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) 
             /*
              * Store data to file
              */
-            tOpenResult = f_open(&tFile, StringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
+            tOpenResult = f_open(&tFile, sStringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
             if (tOpenResult == FR_OK) {
                 // write display control to reproduce the layout
                 f_write(&tFile, &AccuCapDisplayControl[aProbeIndex], sizeof(AccuCapDisplayControl[aProbeIndex]),
@@ -1055,26 +1055,26 @@ static void doExportChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) {
         FIL tFile;
         FRESULT tOpenResult;
         UINT tCount;
-        unsigned int tIndex = RTC_getDateStringForFile(StringBuffer);
-        snprintf(&StringBuffer[tIndex], sizeof StringBuffer - tIndex, " probe%d_%s.csv",
+        unsigned int tIndex = RTC_getDateStringForFile(sStringBuffer);
+        snprintf(&sStringBuffer[tIndex], sizeof sStringBuffer - tIndex, " probe%d_%s.csv",
                 DataloggerMeasurementControl[aProbeIndex].ProbeNumber, getModeString(aProbeIndex));
         if (DataloggerMeasurementControl[aProbeIndex].SampleCount != 0) {
-            tOpenResult = f_open(&tFile, StringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
+            tOpenResult = f_open(&tFile, sStringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
             if (tOpenResult != FR_OK) {
                 failParamMessage(tOpenResult, "f_open");
             } else {
                 unsigned int tSeconds = DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds;
                 unsigned int tMinutes = tSeconds / 60;
                 tSeconds %= 60;
-                tIndex = snprintf(StringBuffer, sizeof StringBuffer,
+                tIndex = snprintf(sStringBuffer, sizeof sStringBuffer,
                         "Probe Nr:%d\nSample interval:%u:%02u min\nDate:",
                         DataloggerMeasurementControl[aProbeIndex].ProbeNumber, tMinutes, tSeconds);
-                tIndex += RTC_getTimeString(&StringBuffer[tIndex]);
-                snprintf(&StringBuffer[tIndex], (sizeof StringBuffer) - tIndex,
+                tIndex += RTC_getTimeString(&sStringBuffer[tIndex]);
+                snprintf(&sStringBuffer[tIndex], (sizeof sStringBuffer) - tIndex,
                         "\nCapacity:%4fmAH\nInternal resistance:%5.2f Ohm\nVolt Max;Volt Min;mOhm\n",
                         DataloggerMeasurementControl[aProbeIndex].Capacity / 1000,
                         DataloggerMeasurementControl[aProbeIndex].OhmAccuResistance);
-                f_write(&tFile, StringBuffer, strlen(StringBuffer), &tCount);
+                f_write(&tFile, sStringBuffer, strlen(sStringBuffer), &tCount);
 
                 /**
                  * data
@@ -1084,18 +1084,18 @@ static void doExportChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) {
                 uint16_t * tMinVoltDataPtr = &DataloggerMeasurementControl[aProbeIndex].MinVoltageDatabuffer[0];
                 uint16_t * tOhmDataPtr = &DataloggerMeasurementControl[aProbeIndex].InternalResistanceDataMilliOhm[0];
                 for (int i = 0; i < DataloggerMeasurementControl[aProbeIndex].SampleCount; ++i) {
-                    tIndex += snprintf(&StringBuffer[tIndex], (sizeof StringBuffer) - tIndex, "%6.3f;%6.3f;%4d\n",
+                    tIndex += snprintf(&sStringBuffer[tIndex], (sizeof sStringBuffer) - tIndex, "%6.3f;%6.3f;%4d\n",
                             sADCToVoltFactor * (*tMaxVoltDataPtr++), sADCToVoltFactor * (*tMinVoltDataPtr++),
                             (*tOhmDataPtr++));
                     // accumulate strings in buffer and write if buffer almost full
-                    if (tIndex > (sizeof StringBuffer - 15)) {
+                    if (tIndex > (sizeof sStringBuffer - 15)) {
                         tIndex = 0;
-                        f_write(&tFile, StringBuffer, strlen(StringBuffer), &tCount);
+                        f_write(&tFile, sStringBuffer, strlen(sStringBuffer), &tCount);
                     }
                 }
                 // write last chunk
                 if (tIndex > 0) {
-                    f_write(&tFile, StringBuffer, strlen(StringBuffer), &tCount);
+                    f_write(&tFile, sStringBuffer, strlen(sStringBuffer), &tCount);
                 }
                 f_close(&tFile);
                 tFeedbackType = FEEDBACK_TONE_NO_ERROR;
@@ -1246,8 +1246,8 @@ void printSamplePeriod(void) {
     unsigned int tSeconds = DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds;
     int tMinutes = tSeconds / 60;
     tSeconds %= 60;
-    snprintf(StringBuffer, sizeof StringBuffer, "Sample period %u:%02u", tMinutes, tSeconds);
-    BlueDisplay1.drawText(BUTTON_WIDTH_2_POS_2, BUTTON_HEIGHT_4_LINE_3, StringBuffer, TEXT_SIZE_11, COLOR_BLACK,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "Sample period %u:%02u", tMinutes, tSeconds);
+    BlueDisplay1.drawText(BUTTON_WIDTH_2_POS_2, BUTTON_HEIGHT_4_LINE_3, sStringBuffer, TEXT_SIZE_11, COLOR_BLACK,
     COLOR_BACKGROUND_DEFAULT);
 }
 
@@ -1336,53 +1336,53 @@ void printMeasurementValues(void) {
         tPosX = 0;
         for (uint8_t i = 0; i < NUMBER_OF_PROBES; ++i) {
             tPosY = BUTTON_HEIGHT_4 + TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND;
-            snprintf(StringBuffer, sizeof StringBuffer, "%4u", DataloggerMeasurementControl[i].ActualReading);
-            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[i],
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%4u", DataloggerMeasurementControl[i].ActualReading);
+            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i],
             COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
-            snprintf(StringBuffer, sizeof StringBuffer, "%4.3fV", DataloggerMeasurementControl[i].Volt);
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%4.3fV", DataloggerMeasurementControl[i].Volt);
 
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
-            snprintf(StringBuffer, sizeof StringBuffer, "%4.0fmA", DataloggerMeasurementControl[i].Milliampere);
-            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[i],
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%4.0fmA", DataloggerMeasurementControl[i].Milliampere);
+            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i],
             COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
             // capacity is micro Ampere hour
-            snprintf(StringBuffer, sizeof StringBuffer, "%5.0fmAh", DataloggerMeasurementControl[i].Capacity / 1000);
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%5.0fmAh", DataloggerMeasurementControl[i].Capacity / 1000);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
             if (DataloggerMeasurementControl[ActualProbe].Mode != MODE_EXTERN) {
-                snprintf(StringBuffer, sizeof StringBuffer, "%4.3f\x81",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "%4.3f\x81",
                         DataloggerMeasurementControl[i].OhmAccuResistance);
             } else {
-                snprintf(StringBuffer, sizeof StringBuffer, "%4.3fV",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "%4.3fV",
                         DataloggerMeasurementControl[ActualProbe].Min * sADCToVoltFactor);
             }
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
             tSeconds = DataloggerMeasurementControl[i].SamplePeriodSeconds;
             tMinutes = tSeconds / 60;
             tSeconds %= 60;
-            snprintf(StringBuffer, sizeof StringBuffer, "Nr.%d - %u:%02u",
+            snprintf(sStringBuffer, sizeof sStringBuffer, "Nr.%d - %u:%02u",
                     DataloggerMeasurementControl[i].ProbeNumber, tMinutes, tSeconds);
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_11, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
 
             if (DataloggerMeasurementControl[i].Mode != MODE_EXTERN) {
                 tPosY += 2 + TEXT_SIZE_11_HEIGHT;
                 if (DataloggerMeasurementControl[i].Mode == MODE_DISCHARGING) {
-                    snprintf(StringBuffer, sizeof StringBuffer, "stop %4.2fV  ",
+                    snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4.2fV  ",
                             DataloggerMeasurementControl[i].StopThreshold * sADCToVoltFactor);
                 } else if (DataloggerMeasurementControl[i].Mode == MODE_CHARGING) {
-                    snprintf(StringBuffer, sizeof StringBuffer, "stop %4dmAh",
+                    snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4dmAh",
                             DataloggerMeasurementControl[i].StopMilliampereHour);
                 }
-                BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_11, ProbeColors[i],
+                BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[i],
                 COLOR_BACKGROUND_DEFAULT);
             }
             tPosX = BUTTON_WIDTH_2_5_POS_2;
@@ -1393,24 +1393,24 @@ void printMeasurementValues(void) {
              * basic info on 2 lines on top of screen
              */
             if (DataloggerMeasurementControl[ActualProbe].Mode != MODE_EXTERN) {
-                snprintf(StringBuffer, sizeof StringBuffer, "Probe %d %.0fmAh Rint. %4.2f\x81",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "Probe %d %.0fmAh Rint. %4.2f\x81",
                         DataloggerMeasurementControl[ActualProbe].ProbeNumber,
                         DataloggerMeasurementControl[ActualProbe].Capacity / 1000,
                         DataloggerMeasurementControl[ActualProbe].OhmAccuResistance);
             } else {
-                snprintf(StringBuffer, sizeof StringBuffer, "Probe %d %.0fmAh extern",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "Probe %d %.0fmAh extern",
                         DataloggerMeasurementControl[ActualProbe].ProbeNumber,
                         DataloggerMeasurementControl[ActualProbe].Capacity / 1000);
             }
-            BlueDisplay1.drawText(BASIC_INFO_X, BASIC_INFO_Y + TEXT_SIZE_11_ASCEND, StringBuffer, TEXT_SIZE_11,
+            BlueDisplay1.drawText(BASIC_INFO_X, BASIC_INFO_Y + TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11,
                     ProbeColors[ActualProbe], COLOR_BACKGROUND_DEFAULT);
             tSeconds = DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds;
             tMinutes = tSeconds / 60;
             tSeconds %= 60;
-            int tCount = (snprintf(StringBuffer, sizeof StringBuffer, "%u:%02u %2.1f\x81", tMinutes, tSeconds,
+            int tCount = (snprintf(sStringBuffer, sizeof sStringBuffer, "%u:%02u %2.1f\x81", tMinutes, tSeconds,
                     DataloggerMeasurementControl[ActualProbe].OhmLoadResistor) + 1) * TEXT_SIZE_11_WIDTH;
             BlueDisplay1.drawText(BASIC_INFO_X, BASIC_INFO_Y + TEXT_SIZE_11_HEIGHT + 2 + TEXT_SIZE_11_ASCEND,
-                    StringBuffer,
+                    sStringBuffer,
                     TEXT_SIZE_11, ProbeColors[ActualProbe], COLOR_BACKGROUND_DEFAULT);
             showRTCTime(BASIC_INFO_X + tCount, BASIC_INFO_Y + TEXT_SIZE_11_HEIGHT + 2 + TEXT_SIZE_11_ASCEND,
                     ProbeColors[ActualProbe], COLOR_BACKGROUND_DEFAULT, false);
@@ -1421,54 +1421,54 @@ void printMeasurementValues(void) {
             tPosY = (2 * BUTTON_HEIGHT_5) + BUTTON_DEFAULT_SPACING / 2 + 2 + TEXT_SIZE_22_ASCEND;
             tPosX = BUTTON_WIDTH_5_POS_3 + BUTTON_WIDTH_5;
 
-            snprintf(StringBuffer, sizeof StringBuffer, "%5.3fV", DataloggerMeasurementControl[ActualProbe].Volt);
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%5.3fV", DataloggerMeasurementControl[ActualProbe].Volt);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
             COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
-            snprintf(StringBuffer, sizeof StringBuffer, "%4.0fmA",
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%4.0fmA",
                     DataloggerMeasurementControl[ActualProbe].Milliampere);
-            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, StringBuffer, TEXT_SIZE_22,
+            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22,
                     ProbeColors[ActualProbe],
                     COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
-            snprintf(StringBuffer, sizeof StringBuffer, "%5.0fmAh",
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%5.0fmAh",
                     DataloggerMeasurementControl[ActualProbe].Capacity / 1000);
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
             COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
             if (DataloggerMeasurementControl[ActualProbe].Mode != MODE_EXTERN) {
-                snprintf(StringBuffer, sizeof StringBuffer, "%5.3f\x81",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "%5.3f\x81",
                         DataloggerMeasurementControl[ActualProbe].OhmAccuResistance);
             } else {
-                snprintf(StringBuffer, sizeof StringBuffer, "%5.3fV",
+                snprintf(sStringBuffer, sizeof sStringBuffer, "%5.3fV",
                         DataloggerMeasurementControl[ActualProbe].Min * sADCToVoltFactor);
             }
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[ActualProbe],
             COLOR_BACKGROUND_DEFAULT);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
             tSeconds = DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds;
             tMinutes = tSeconds / 60;
             tSeconds %= 60;
-            snprintf(StringBuffer, sizeof StringBuffer, "%d %2.1f\x81 %u:%02umin",
+            snprintf(sStringBuffer, sizeof sStringBuffer, "%d %2.1f\x81 %u:%02umin",
                     DataloggerMeasurementControl[ActualProbe].ProbeNumber,
                     DataloggerMeasurementControl[ActualProbe].OhmLoadResistor, tMinutes, tSeconds);
-            BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_11, ProbeColors[ActualProbe],
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[ActualProbe],
             COLOR_BACKGROUND_DEFAULT);
 
             if (DataloggerMeasurementControl[ActualProbe].Mode != MODE_EXTERN) {
                 tPosY += 1 + TEXT_SIZE_11_HEIGHT;
                 if (DataloggerMeasurementControl[ActualProbe].Mode == MODE_DISCHARGING) {
-                    snprintf(StringBuffer, sizeof StringBuffer, "stop %4.2fV  ",
+                    snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4.2fV  ",
                             DataloggerMeasurementControl[ActualProbe].StopThreshold * sADCToVoltFactor);
                 } else if (DataloggerMeasurementControl[ActualProbe].Mode == MODE_CHARGING) {
-                    snprintf(StringBuffer, sizeof StringBuffer, "stop %4dmAh",
+                    snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4dmAh",
                             DataloggerMeasurementControl[ActualProbe].StopMilliampereHour);
                 }
-                BlueDisplay1.drawText(tPosX, tPosY, StringBuffer, TEXT_SIZE_11, ProbeColors[ActualProbe],
+                BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[ActualProbe],
                 COLOR_BACKGROUND_DEFAULT);
             }
         }

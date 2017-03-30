@@ -47,6 +47,10 @@ typedef uint16_t Color_t; // is needed in EventHandler.h
 #include "BDSlider.h" // for BDSliderHandle_t
 #endif
 
+/***************************
+ * Origin 0.0 is upper left
+ **************************/
+
 #define DISPLAY_DEFAULT_HEIGHT 240 // value to use if not connected
 #define DISPLAY_DEFAULT_WIDTH 320
 #define STRING_BUFFER_STACK_SIZE 22 // Buffer size allocated on stack for ...PGM() functions.
@@ -63,6 +67,7 @@ typedef uint16_t Color_t; // is needed in EventHandler.h
 #define COLOR_BLUE      ((Color_t)0x001F)
 #define COLOR_DARK_BLUE ((Color_t)0x0014)
 #define COLOR_YELLOW    ((Color_t)0XFFE0)
+#define COLOR_ORANGE    ((Color_t)0XFE00)
 #define COLOR_MAGENTA   ((Color_t)0xF81F)
 #define COLOR_CYAN      ((Color_t)0x07FF)
 
@@ -74,6 +79,11 @@ typedef uint16_t Color_t; // is needed in EventHandler.h
 #define GET_GREEN(rgb) ((rgb & 0x07E0) >> 3)
 #define GET_BLUE(rgb) ((rgb & 0x001F) << 3)
 #define RGB(r,g,b)   ((Color_t)(((r&0xF8)<<8)|((g&0xFC)<<3)|((b&0xF8)>>3))) //5 red | 6 green | 5 blue
+
+#define SLIDER_DEFAULT_BORDER_COLOR     COLOR_BLUE
+#define SLIDER_DEFAULT_BAR_COLOR        COLOR_GREEN
+#define SLIDER_DEFAULT_BACKGROUND_COLOR COLOR_WHITE
+#define SLIDER_DEFAULT_THRESHOLD_COLOR  COLOR_RED
 
 /*
  * Android Text sizes which are closest to the 8*12 font used locally
@@ -172,6 +182,8 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 #define BUTTON_WIDTH_3_DYN (sActualDisplayWidth/3 - BUTTON_HORIZONTAL_SPACING_DYN)
 #define BUTTON_WIDTH_3_DYN_POS_2 (sActualDisplayWidth/3)
 #define BUTTON_WIDTH_3_DYN_POS_3 (sActualDisplayWidth - BUTTON_WIDTH_3_DYN)
+
+#define BUTTON_WIDTH_3_5 82
 //
 // for 4 buttons horizontal - 8 characters
 #define BUTTON_WIDTH_4 68
@@ -207,8 +219,28 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 //
 // for 8 buttons horizontal
 #define BUTTON_WIDTH_8 33
+#define BUTTON_WIDTH_8_POS_2 (BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF)
+#define BUTTON_WIDTH_8_POS_3 (2*(BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_WIDTH_8_POS_4 (3*(BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_WIDTH_8_POS_5 (4*(BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_WIDTH_8_POS_6 (5*(BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_WIDTH_8_POS_7 (6*(BUTTON_WIDTH_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_WIDTH_8_POS_8 (LAYOUT_320_WIDTH - BUTTON_WIDTH_0)
+//
 // for 10 buttons horizontal
 #define BUTTON_WIDTH_10 28
+#define BUTTON_WIDTH_10_POS_2 (BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER)
+#define BUTTON_WIDTH_10_POS_3 (2*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_4 (3*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_5 (4*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_6 (5*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_7 (6*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_8 (7*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_9 (8*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
+#define BUTTON_WIDTH_10_POS_10 (LAYOUT_320_WIDTH - BUTTON_WIDTH_0)
+
+#define BUTTON_WIDTH_16 16
+#define BUTTON_WIDTH_16_POS_2 (BUTTON_WIDTH_16 + BUTTON_DEFAULT_SPACING_QUARTER)
 
 /**********************
  * HEIGHTS
@@ -254,8 +286,23 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 #define BUTTON_HEIGHT_5_DYN_LINE_4 ((sActualDisplayHeight/5)*3)
 #define BUTTON_HEIGHT_5_DYN_LINE_5 (sActualDisplayHeight - BUTTON_HEIGHT_5_DYN)
 //
-// for 6 buttons vertical 26,66..
-#define BUTTON_HEIGHT_6 26
+// for 6 buttons vertical
+#define BUTTON_HEIGHT_6 30
+#define BUTTON_HEIGHT_6_LINE_2 (BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING_THREE_QUARTER)
+#define BUTTON_HEIGHT_6_LINE_3 (2*(BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING_THREE_QUARTER))
+#define BUTTON_HEIGHT_6_LINE_4 (3*(BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING_THREE_QUARTER))
+#define BUTTON_HEIGHT_6_LINE_5 (4*(BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING_THREE_QUARTER))
+#define BUTTON_HEIGHT_6_LINE_6 (LAYOUT_HEIGHT - BUTTON_HEIGHT_6)
+
+// for 8 buttons vertical
+#define BUTTON_HEIGHT_8 29
+#define BUTTON_HEIGHT_8_LINE_2 (BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF)
+#define BUTTON_HEIGHT_8_LINE_3 (2*(BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_HEIGHT_8_LINE_4 (3*(BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_HEIGHT_8_LINE_5 (4*(BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_HEIGHT_8_LINE_6 (5*(BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_HEIGHT_8_LINE_7 (6*(BUTTON_HEIGHT_8 + BUTTON_DEFAULT_SPACING_HALF))
+#define BUTTON_HEIGHT_8_LINE_8 (LAYOUT_HEIGHT - BUTTON_HEIGHT_8)
 
 /**********************
  * Constants used in protocol
@@ -292,7 +339,11 @@ static const int FLAG_BUTTON_GLOBAL_SET_BEEP_TONE = 0x02;
 static const int BUTTON_FLAG_NO_BEEP_ON_TOUCH = 0x00;
 static const int BUTTON_FLAG_DO_BEEP_ON_TOUCH = 0x01;
 static const int BUTTON_FLAG_TYPE_AUTO_RED_GREEN = 0x02;
+// better name for the function
+static const int BUTTON_FLAG_TYPE_TOGGLE_RED_GREEN = 0x02;
 static const int BUTTON_FLAG_TYPE_AUTOREPEAT = 0x04;
+static const int BUTTON_FLAG_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH = 0x0A; // must be manually drawn after event to show new caption/color
+
 //new
 static const int FLAG_BUTTON_NO_BEEP_ON_TOUCH = 0x00;
 static const int FLAG_BUTTON_DO_BEEP_ON_TOUCH = 0x01;
@@ -317,16 +368,19 @@ static const int FLAG_BUTTON_CAPTION_IS_IN_PGMSPACE = 0x40;
  * Slider
  *********************/
 // Flags for slider options
+static const int FLAG_SLIDER_VERTICAL = 0x00;
 static const int FLAG_SLIDER_VERTICAL_SHOW_NOTHING = 0x00;
 static const int FLAG_SLIDER_SHOW_BORDER = 0x01;
+// if set, ASCII value is printed along with change of bar value
 static const int FLAG_SLIDER_SHOW_VALUE = 0x02;
-// if set value will be set by callback handler
 static const int FLAG_SLIDER_IS_HORIZONTAL = 0x04;
 static const int FLAG_SLIDER_IS_INVERSE = 0x08;
+// if set,  bar (+ ASCII) value will be set by callback handler, not by touch
 static const int FLAG_SLIDER_VALUE_BY_CALLBACK = 0x10;
 static const int FLAG_SLIDER_IS_ONLY_OUTPUT = 0x20;
 
 // Flags for slider caption position
+static const int FLAG_SLIDER_CAPTION_ALIGN_LEFT_BELOW = 0x00;
 static const int FLAG_SLIDER_CAPTION_ALIGN_LEFT = 0x00;
 static const int FLAG_SLIDER_CAPTION_ALIGN_RIGHT = 0x01;
 static const int FLAG_SLIDER_CAPTION_ALIGN_MIDDLE = 0x02;
@@ -394,7 +448,7 @@ public:
     void sendSync(void);
     void setFlagsAndSize(uint16_t aFlags, uint16_t aWidth, uint16_t aHeight);
     void setCodePage(uint16_t aCodePageNumber);
-    void setCharacterMapping(uint8_t aChar, uint16_t aUnicodeChar);
+    void setCharacterMapping(uint8_t aChar, uint16_t aUnicodeChar); // aChar must be bigger than 0x80
 
     void playTone(void);
     void playTone(uint8_t aToneIndex);
@@ -418,11 +472,14 @@ public:
     uint16_t drawText(uint16_t aXStart, uint16_t aYStart, const char *aStringPtr, uint16_t aFontSize, Color_t aFGColor,
             Color_t aBGColor);
 
-    uint16_t drawByte(uint16_t aPosX, uint16_t aPosY, int8_t aByte, uint16_t aTextSize, Color_t aFGColor, Color_t aBGColor);
-    uint16_t drawUnsignedByte(uint16_t aPosX, uint16_t aPosY, uint8_t aUnsignedByte, uint16_t aTextSize, Color_t aFGColor,
-            Color_t aBGColor);
-    uint16_t drawShort(uint16_t aPosX, uint16_t aPosY, int16_t aShort, uint16_t aTextSize, Color_t aFGColor, Color_t aBGColor);
-    uint16_t drawLong(uint16_t aPosX, uint16_t aPosY, int32_t aLong, uint16_t aTextSize, Color_t aFGColor, Color_t aBGColor);
+    uint16_t drawByte(uint16_t aPosX, uint16_t aPosY, int8_t aByte, uint16_t aTextSize = TEXT_SIZE_11, Color_t aFGColor =
+    COLOR_BLACK, Color_t aBGColor = COLOR_WHITE);
+    uint16_t drawUnsignedByte(uint16_t aPosX, uint16_t aPosY, uint8_t aUnsignedByte, uint16_t aTextSize = TEXT_SIZE_11,
+            Color_t aFGColor = COLOR_BLACK, Color_t aBGColor = COLOR_WHITE);
+    uint16_t drawShort(uint16_t aPosX, uint16_t aPosY, int16_t aShort, uint16_t aTextSize = TEXT_SIZE_11, Color_t aFGColor =
+    COLOR_BLACK, Color_t aBGColor = COLOR_WHITE);
+    uint16_t drawLong(uint16_t aPosX, uint16_t aPosY, int32_t aLong, uint16_t aTextSize = TEXT_SIZE_11, Color_t aFGColor =
+    COLOR_BLACK, Color_t aBGColor = COLOR_WHITE);
 
     void setPrintfSizeAndColorAndFlag(uint16_t aPrintSize, Color_t aPrintColor, Color_t aPrintBackgroundColor,
     bool aClearOnNewScreen);
@@ -432,13 +489,27 @@ public:
 
     void debugMessage(const char *aStringPtr);
     void debug(uint8_t aByte);
+    void debug(const char* aMessage, uint8_t aByte);
+    void debug(const char* aMessage, int8_t aByte);
+    void debug(int8_t aByte);
     void debug(uint16_t aShort);
+    void debug(const char* aMessage, uint16_t aShort);
+    void debug(int aShort);
+    void debug(const char* aMessage, int aShort);
     void debug(uint32_t aShort);
+    void debug(float aDouble);
+    void debug(double aDouble);
 
     void drawLine(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint16_t aYEnd, Color_t aColor);
     void drawLineRel(uint16_t aXStart, uint16_t aYStart, uint16_t aXDelta, uint16_t aYDelta, Color_t aColor);
     void drawLineFastOneX(uint16_t x0, uint16_t y0, uint16_t y1, Color_t aColor);
+    void drawVectorDegree(uint16_t aXStart, uint16_t aYStart, uint16_t aLength, int aDegree, Color_t aColor,
+            int16_t aThickness = 1);
+    void drawVectorRadian(uint16_t aXStart, uint16_t aYStart, uint16_t aLength, float aRadian, Color_t aColor, int16_t aThickness =
+            1);
     void drawLineWithThickness(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint16_t aYEnd, int16_t aThickness,
+            Color_t aColor);
+    void drawLineRelWithThickness(uint16_t aXStart, uint16_t aYStart, uint16_t aXDelta, uint16_t aYDelta, int16_t aThickness,
             Color_t aColor);
 
     void drawChartByteBuffer(uint16_t aXOffset, uint16_t aYOffset, Color_t aColor, Color_t aClearBeforeColor, uint8_t *aByteBuffer,
@@ -467,7 +538,9 @@ public:
     // Not yet implemented
     //    void getText(void (*aTextHandler)(const char *));
     //    void getTextWithShortPrompt(void (*aTextHandler)(const char *), const char *aShortPromptString);
-    void getInfo(uint16_t aInfoSubcommand, void (*aInfoHandler)(uint8_t *));
+    // results in a info callback
+    void getInfo(uint8_t aInfoSubcommand, void (*aInfoHandler)(uint8_t, uint8_t, uint16_t,
+            ByteShortLongFloatUnion));
     // results in a reorientation callback
     void requestMaxCanvasSize(void);
 
@@ -483,6 +556,8 @@ public:
     void getNumberWithShortPromptPGM(void (*aNumberHandler)(float), const char *aPGMShortPromptString);
     void getNumberWithShortPromptPGM(void (*aNumberHandler)(float), const char *aPGMShortPromptString, float aInitialValue);
     // Not yet implemented    void getTextWithShortPromptPGM(void (*aTextHandler)(const char *), const char *aPGMShortPromptString);
+
+    void printVCCAndTemperaturePeriodically(uint16_t aXPos, uint16_t aYPos, uint8_t aTextSize, uint16_t aPeriodMillis);
 #endif
     /*
      * Button stuff
@@ -541,7 +616,6 @@ public:
     struct XYSize mActualDisplaySize;
     struct XYSize mMaxDisplaySize;
     uint32_t mHostUnixTimestamp;
-    uint32_t mLocalMillisForHostTimestamp;
 
     volatile bool mConnectionEstablished;
     volatile bool mOrientationIsLandscape;
@@ -559,6 +633,8 @@ private:
 
 // The instance provided by the class itself
 extern BlueDisplay BlueDisplay1;
+
+void clearDisplayAndDisableButtonsAndSliders(Color_t aColor);
 
 #ifdef LOCAL_DISPLAY_EXISTS
 #include <MI0283QT2.h>
@@ -590,6 +666,15 @@ uint16_t drawTextC(uint16_t aXStart, uint16_t aYStart, const char *aStringPtr, u
 void writeStringC(const char *aStringPtr, uint8_t aStringLength);
 #ifdef __cplusplus
 }
+#endif
+
+/*
+ * Utilities used also internal
+ */
+#ifdef AVR
+uint16_t getADCValue(uint8_t aChannel, uint8_t aReference);
+float getVCCValue(void);
+float getTemperature(void);
 #endif
 
 // for convenience also included here

@@ -54,7 +54,7 @@ static uint16_t sLastAmplitudeSliderValue = VERTICAL_SLIDER_MAX_VALUE - 20;
 #define MAX_SLIDER_VALUE 240
 
 #define FREQUENCY_SLIDER_START_X 37
-static BDSlider TouchSliderFrequency;
+BDSlider TouchSliderDACFrequency;
 static BDSlider TouchSliderAmplitude;
 static BDSlider TouchSliderOffset;
 
@@ -111,16 +111,16 @@ static void ComputeFrequencyAndSetTimer(uint16_t aReloadValue, bool aSetTimer) {
     /*
      * Print values
      */
-    snprintf(StringBuffer, sizeof StringBuffer, "%7luHz", sFrequency);
-    TouchSliderFrequency.printValue(StringBuffer);
+    snprintf(sStringBuffer, sizeof sStringBuffer, "%7luHz", sFrequency);
+    TouchSliderDACFrequency.printValue(sStringBuffer);
 
     if (sPeriodMicros > 100000) {
-        snprintf(StringBuffer, sizeof StringBuffer, "%5lums", sPeriodMicros / 1000);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%5lums", sPeriodMicros / 1000);
     } else {
-        snprintf(StringBuffer, sizeof StringBuffer, "%5lu\xB5s", sPeriodMicros);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%5lu\xB5s", sPeriodMicros);
     }
     BlueDisplay1.drawText(FREQUENCY_SLIDER_START_X + MAX_SLIDER_VALUE - 8 * TEXT_SIZE_11_WIDTH,
-    BUTTON_HEIGHT_4_LINE_2 + (3 * DAC_SLIDER_SIZE) + 4 + getTextAscend(TEXT_SIZE_11), StringBuffer,
+    BUTTON_HEIGHT_4_LINE_2 + (3 * DAC_SLIDER_SIZE) + 4 + getTextAscend(TEXT_SIZE_11), sStringBuffer,
     TEXT_SIZE_11, COLOR_BLUE, COLOR_BACKGROUND_FREQ);
 }
 
@@ -144,7 +144,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
             } while (ComputeReloadValue(tNewSliderValue) <= sTimerReloadValue);
             tNewSliderValue++;
             sLastFrequencySliderValue = tNewSliderValue;
-            TouchSliderFrequency.setActualValueAndDrawBar(tNewSliderValue);
+            TouchSliderDACFrequency.setActualValueAndDrawBar(tNewSliderValue);
         }
     } else {
         tNewSliderValue++;
@@ -154,7 +154,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
             } while (ComputeReloadValue(tNewSliderValue) >= sTimerReloadValue);
             tNewSliderValue--;
             sLastFrequencySliderValue = tNewSliderValue;
-            TouchSliderFrequency.setActualValueAndDrawBar(tNewSliderValue);
+            TouchSliderDACFrequency.setActualValueAndDrawBar(tNewSliderValue);
         }
     }
 }
@@ -167,10 +167,10 @@ void doDACVolumeSlider(BDSlider * aTheTouchedSlider, uint16_t aAmplitude) {
     unsigned int tValue = (0x01 << ((aAmplitude / 16) + 1)) - 1;
     sAmplitude = tValue + 1;
 // update frequency
-    ComputeFrequencyAndSetTimer(ComputeReloadValue(TouchSliderFrequency.getActualValue()), false);
-    TouchSliderFrequency.printValue(); // print new value for frequency slider
-    snprintf(StringBuffer, sizeof StringBuffer, "%4u", tValue);
-    aTheTouchedSlider->printValue(StringBuffer);
+    ComputeFrequencyAndSetTimer(ComputeReloadValue(TouchSliderDACFrequency.getActualValue()), false);
+    TouchSliderDACFrequency.printValue(); // print new value for frequency slider
+    snprintf(sStringBuffer, sizeof sStringBuffer, "%4u", tValue);
+    aTheTouchedSlider->printValue(sStringBuffer);
 }
 
 void doDACOffsetSlider(BDSlider * aTheTouchedSlider, uint16_t aOffset) {
@@ -179,8 +179,8 @@ void doDACOffsetSlider(BDSlider * aTheTouchedSlider, uint16_t aOffset) {
     sOffset = aOffset * (4096 / VERTICAL_SLIDER_MAX_VALUE);
     DAC_SetOutputValue(sOffset);
     float tOffsetVoltage = sVDDA * aOffset / VERTICAL_SLIDER_MAX_VALUE;
-    snprintf(StringBuffer, sizeof StringBuffer, "%0.2fV", tOffsetVoltage);
-    aTheTouchedSlider->printValue(StringBuffer);
+    snprintf(sStringBuffer, sizeof sStringBuffer, "%0.2fV", tOffsetVoltage);
+    aTheTouchedSlider->printValue(sStringBuffer);
 
 //	}
 }
@@ -212,7 +212,7 @@ void drawDACPage(void) {
 
     TouchSliderAmplitude.drawSlider();
     TouchSliderOffset.drawSlider();
-    TouchSliderFrequency.drawSlider();
+    TouchSliderDACFrequency.drawSlider();
 }
 
 void initDACPage(void) {
@@ -233,13 +233,13 @@ void startDACPage(void) {
     //2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     // Frequency slider
-    TouchSliderFrequency.init(FREQUENCY_SLIDER_START_X, tPosY, DAC_SLIDER_SIZE, MAX_SLIDER_VALUE, MAX_SLIDER_VALUE,
+    TouchSliderDACFrequency.init(FREQUENCY_SLIDER_START_X, tPosY, DAC_SLIDER_SIZE, MAX_SLIDER_VALUE, MAX_SLIDER_VALUE,
             sLastFrequencySliderValue, COLOR_BLUE, COLOR_GREEN, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_IS_HORIZONTAL,
             &doDACFrequencySlider);
-    TouchSliderFrequency.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR_RED,
+    TouchSliderDACFrequency.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR_RED,
     COLOR_BACKGROUND_DEFAULT);
-    TouchSliderFrequency.setCaption("Frequency");
-    TouchSliderFrequency.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_LEFT, 4,
+    TouchSliderDACFrequency.setCaption("Frequency");
+    TouchSliderDACFrequency.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_LEFT, 4,
     COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
 
     // 3. row
@@ -296,7 +296,7 @@ void stopDACPage(void) {
     TouchButtonSetWaveform.deinit();
     TouchButtonAutorepeatFrequencyPlus.deinit();
     TouchButtonAutorepeatFrequencyMinus.deinit();
-    TouchSliderFrequency.deinit();
+    TouchSliderDACFrequency.deinit();
     TouchSliderAmplitude.deinit();
     TouchSliderOffset.deinit();
 }

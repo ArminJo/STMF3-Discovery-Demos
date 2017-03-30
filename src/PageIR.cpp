@@ -115,17 +115,17 @@ void doIRButtons(BDButton * aTheTouchedButton, int16_t aValue) {
         irsnd_stop();
     }
 
-    snprintf(StringBuffer, sizeof StringBuffer, "Cmd=%4d|%3X", sCode, sCode);
-    BlueDisplay1.drawText(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_5_LINE_2 + TEXT_SIZE_22_HEIGHT, StringBuffer,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "Cmd=%4d|%3X", sCode, sCode);
+    BlueDisplay1.drawText(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_5_LINE_2 + TEXT_SIZE_22_HEIGHT, sStringBuffer,
     TEXT_SIZE_22,
     COLOR_PAGE_INFO, COLOR_WHITE);
 }
 
 void doSetYawTrim(BDButton * aTheTouchedButton, int16_t aValue) {
     sYawTrimValue += aValue;
-    snprintf(StringBuffer, sizeof StringBuffer, "% 3d", sYawTrimValue);
+    snprintf(sStringBuffer, sizeof sStringBuffer, "% 3d", sYawTrimValue);
     BlueDisplay1.drawText(BUTTON_WIDTH_3_POS_2 + BUTTON_WIDTH_8 + TEXT_SIZE_11_WIDTH,
-    BUTTON_HEIGHT_4_LINE_3 + TEXT_SIZE_22_HEIGHT, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+    BUTTON_HEIGHT_4_LINE_3 + TEXT_SIZE_22_HEIGHT, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
     TouchSliderYaw.setActualValueAndDrawBar(sYawValue + sYawTrimValue);
 }
 
@@ -159,8 +159,8 @@ void doVelocitySlider(BDSlider * aTheTouchedSlider, uint16_t aValue) {
     }
     sVelocitySliderDisplayValue = aValue;
 
-    snprintf(StringBuffer, sizeof StringBuffer, "%03d", sVelocitySendValue);
-    aTheTouchedSlider->printValue(StringBuffer);
+    snprintf(sStringBuffer, sizeof sStringBuffer, "%03d", sVelocitySendValue);
+    aTheTouchedSlider->printValue(sStringBuffer);
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -210,8 +210,8 @@ void startIRPage(void) {
     COLOR_RED, StringReceive, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doToggleSendReceive);
 
     TouchButtonToggleLights.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_GREEN, StringLights, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTO_RED_GREEN,
-            sLightValue, &doToggleRedGreenButton);
+    COLOR_GREEN, StringLights, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_TOGGLE_RED_GREEN,
+            sLightValue, NULL);
 
     // Velocity
     TouchSliderVelocity.init(TEXT_SIZE_11_WIDTH, BUTTON_HEIGHT_5_LINE_2 + 12, SLIDER_DEFAULT_BAR_WIDTH * 2,
@@ -343,15 +343,15 @@ void loopIRPage(void) {
         tPitchValue = (tCommand >> 4) & 0x3F; //
         tLightValue = (tCommand >> 10) & 0x01;
         int tMyChecksum = computeiHelicopterChecksum(tAddress, (tCommand >> 4));
-        snprintf(StringBuffer, sizeof StringBuffer, "%2X %1X %2X %1X %1X %2X %1X %1X %s F=%d", sVelocitySendValue,
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%2X %1X %2X %1X %1X %2X %1X %1X %s F=%d", sVelocitySendValue,
                 sIRReceiveData.address >> 7 & 0x01, sYawValue, (sIRReceiveData.command >> 11) & 0x01, tLightValue,
                 sPitchValue, tChecksum, tMyChecksum, irmp_protocol_names[sIRReceiveData.protocol],
                 sIRReceiveData.flags);
-        BlueDisplay1.drawText(2, BUTTON_HEIGHT_5 + 2, StringBuffer, TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE);
-        snprintf(StringBuffer, sizeof StringBuffer, "Addr=%6d|%4X Cmd=%6d|%4X %s F=%d", sIRReceiveData.address,
+        BlueDisplay1.drawText(2, BUTTON_HEIGHT_5 + 2, sStringBuffer, TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Addr=%6d|%4X Cmd=%6d|%4X %s F=%d", sIRReceiveData.address,
                 sIRReceiveData.address, sIRReceiveData.command, sIRReceiveData.command,
                 irmp_protocol_names[sIRReceiveData.protocol], sIRReceiveData.flags);
-        BlueDisplay1.drawText(2, BUTTON_HEIGHT_5 + 2 + TEXT_SIZE_11_HEIGHT, StringBuffer, TEXT_SIZE_11,
+        BlueDisplay1.drawText(2, BUTTON_HEIGHT_5 + 2 + TEXT_SIZE_11_HEIGHT, sStringBuffer, TEXT_SIZE_11,
         COLOR_PAGE_INFO,
         COLOR_WHITE);
 

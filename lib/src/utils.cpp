@@ -6,7 +6,7 @@
  */
 
 #include "utils.h"
-#include "myStrings.h"
+#include "main.h" // for StringBuffer
 #include "timing.h"
 #include "stm32fx0xPeripherals.h"
 
@@ -27,8 +27,8 @@ void showRTCTimeEverySecond(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aB
     if (LastSecond != tSecond) {
         LastSecond = tSecond;
         //RTC
-        RTC_getTimeString(StringBuffer);
-        BlueDisplay1.drawText(x, y, StringBuffer, TEXT_SIZE_11, aFGColor, aBGColor);
+        RTC_getTimeString(sStringBuffer);
+        BlueDisplay1.drawText(x, y, sStringBuffer, TEXT_SIZE_11, aFGColor, aBGColor);
 
     }
 }
@@ -37,9 +37,9 @@ void showRTCTimeEverySecond(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aB
  * shows RTC time if year != 0 or if aForceDisplay == true
  */
 void showRTCTime(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aBGColor, bool aForceDisplay) {
-    RTC_getTimeString(StringBuffer);
+    RTC_getTimeString(sStringBuffer);
     if (RTC_DateIsValid || aForceDisplay) {
-        BlueDisplay1.drawText(x, y, StringBuffer, TEXT_SIZE_11, aFGColor, aBGColor);
+        BlueDisplay1.drawText(x, y, sStringBuffer, TEXT_SIZE_11, aFGColor, aBGColor);
     }
 }
 

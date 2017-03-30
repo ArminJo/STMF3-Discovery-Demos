@@ -9,10 +9,6 @@
  */
 
 #include "myStrings.h"
-/*
- * buffers for any purpose...
- */
-char StringBuffer[SIZEOF_STRINGBUFFER];
 
 /**
  * Special strings for any purpose...

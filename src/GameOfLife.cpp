@@ -4,7 +4,7 @@
 
 #include "BlueDisplay.h"
 #include "GameOfLife.h"
-#include "myStrings.h"
+#include "main.h" // for StringBuffer
 #include "timing.h"
 
 #include "stdlib.h"
@@ -191,8 +191,8 @@ void ClearScreenAndDrawGameOfLifeGrid(void) {
 
 void drawGenerationText(void) {
     //draw current generation
-    snprintf(StringBuffer, sizeof StringBuffer, "Gen.%3d", generation);
-    BlueDisplay1.drawText(0, TEXT_SIZE_11_ASCEND, StringBuffer, TEXT_SIZE_11, RGB(50,50,50), drawcolor[DEAD_COLOR]);
+    snprintf(sStringBuffer, sizeof sStringBuffer, "Gen.%3d", generation);
+    BlueDisplay1.drawText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, RGB(50,50,50), drawcolor[DEAD_COLOR]);
 }
 
 void test(void) {

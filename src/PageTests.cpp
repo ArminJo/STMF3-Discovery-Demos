@@ -10,7 +10,6 @@
 
 #include "MI0283QT2.h"
 #include "Pages.h"
-#include "TouchDSO.h"
 #include "Chart.h"
 
 #include "tinyPrint.h"
@@ -28,9 +27,6 @@ extern "C" {
 }
 
 /* Private variables ---------------------------------------------------------*/
-static BDButton TouchButtonBack;
-static bool sBackButtonPressed;
-
 BDButton TouchButtonTestGraphics;
 
 BDButton TouchButtonTestMisc;
@@ -94,8 +90,8 @@ static int testValueIntern = 0;
 int testValueForExtern = 0x0000;
 #define MAX_TEST_VALUE 7
 void drawTestvalue(void) {
-    snprintf(StringBuffer, sizeof StringBuffer, "MMC SPI_BRPrescaler=%3d", 0x01 << (testValueIntern + 1));
-    BlueDisplay1.drawText(0, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, StringBuffer, TEXT_SIZE_11, COLOR_BLUE,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "MMC SPI_BRPrescaler=%3d", 0x01 << (testValueIntern + 1));
+    BlueDisplay1.drawText(0, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, sStringBuffer, TEXT_SIZE_11, COLOR_BLUE,
     COLOR_WHITE);
 }
 
@@ -116,8 +112,8 @@ void doSetTestvalue(BDButton * aTheTouchedButton, int16_t aValue) {
 }
 
 void drawBaudrate(uint32_t aBaudRate) {
-    snprintf(StringBuffer, sizeof StringBuffer, "BR=%6lu", aBaudRate);
-    BlueDisplay1.drawText(220, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, StringBuffer, TEXT_SIZE_11, COLOR_BLUE,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "BR=%6lu", aBaudRate);
+    BlueDisplay1.drawText(220, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, sStringBuffer, TEXT_SIZE_11, COLOR_BLUE,
     COLOR_WHITE);
 }
 

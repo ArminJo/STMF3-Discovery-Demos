@@ -49,14 +49,15 @@ BDSlider::BDSlider(BDSliderHandle_t aSliderHandle, TouchSlider * aLocalSliderPoi
  * @brief initialization with all parameters (except BarBackgroundColor)
  * @param aPositionX - Determines upper left corner
  * @param aPositionY - Determines upper left corner
- * @param aBarWidth - Width of bar (and border) in pixel
- * @param aBarLength - Size of slider bar in pixel = maximum slider value
- * @param aThresholdValue - If selected value is bigger, then color of bar changes from BarColor to BarBackgroundColor
- * @param aInitalValue
+ * Only next 2 values are physical values in pixel
+ * @param aBarWidth - Width of bar (and border) in pixel - no scaling!
+ * @param aBarLength - Size of slider bar in pixel = maximum slider value - no scaling!
+ * @param aThresholdValue - Scaling! If selected or sent value is bigger, then color of bar changes from BarColor to BarBackgroundColor
+ * @param aInitalValue - Scaling!
  * @param aSliderColor - Color of slider border. If no border specified, then bar background color.
  * @param aBarColor
  * @param aOptions - See #FLAG_SLIDER_SHOW_BORDER etc.
- * @param aOnChangeHandler - If NULL no update of bar is done on touch
+ * @param aOnChangeHandler - If NULL no update of bar is done on touch - equivalent to FLAG_SLIDER_IS_ONLY_OUTPUT
  */
 void BDSlider::init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aBarWidth, int16_t aBarLength, int16_t aThresholdValue,
         int16_t aInitalValue, Color_t aSliderColor, Color_t aBarColor, uint8_t aFlags,
@@ -111,6 +112,16 @@ void BDSlider::drawBorder(void) {
     }
 }
 
+void BDSlider::setActualValue(int16_t aActualValue) {
+#ifdef LOCAL_DISPLAY_EXISTS
+    mLocalSliderPointer->setActualValueAndDrawBar(aActualValue);
+#endif
+    if (USART_isBluetoothPaired()) {
+        sendUSARTArgs(FUNCTION_SLIDER_SETTINGS, 3, mSliderHandle, SUBFUNCTION_SLIDER_SET_VALUE, aActualValue);
+    }
+}
+
+
 void BDSlider::setActualValueAndDrawBar(int16_t aActualValue) {
 #ifdef LOCAL_DISPLAY_EXISTS
     mLocalSliderPointer->setActualValueAndDrawBar(aActualValue);
@@ -158,27 +169,51 @@ void BDSlider::setCaption(const char * aCaption) {
     }
 }
 
+void BDSlider::setValueUnitString(const char * aValueUnitString) {
+    if (USART_isBluetoothPaired()) {
+        sendUSARTArgsAndByteBuffer(FUNCTION_SLIDER_SET_VALUE_UNIT_STRING, 1, mSliderHandle, strlen(aValueUnitString),
+                aValueUnitString);
+    }
+}
+
+/*
+ * Default is "%3d"
+ */
+void BDSlider::setValueFormatString(const char * aValueFormatString) {
+    if (USART_isBluetoothPaired()) {
+        sendUSARTArgsAndByteBuffer(FUNCTION_SLIDER_SET_VALUE_FORMAT_STRING, 1, mSliderHandle, strlen(aValueFormatString),
+                aValueFormatString);
+    }
+}
+
 void BDSlider::setPrintValueProperties(uint8_t aPrintValueTextSize, uint8_t aPrintValuePosition, uint8_t aPrintValueMargin,
         Color_t aPrintValueColor, Color_t aPrintValueBackgroundColor) {
 #ifdef LOCAL_DISPLAY_EXISTS
     mLocalSliderPointer->setValueStringColors(aPrintValueColor, aPrintValueBackgroundColor);
 #endif
     if (USART_isBluetoothPaired()) {
-        sendUSARTArgs(FUNCTION_SLIDER_SETTINGS, 7, mSliderHandle, SUBFUNCTION_SLIDER_SET_VALUE_STRING_PROPERTIES, aPrintValueTextSize,
-                aPrintValuePosition, aPrintValueMargin, aPrintValueColor, aPrintValueBackgroundColor);
+        sendUSARTArgs(FUNCTION_SLIDER_SETTINGS, 7, mSliderHandle, SUBFUNCTION_SLIDER_SET_VALUE_STRING_PROPERTIES,
+                aPrintValueTextSize, aPrintValuePosition, aPrintValueMargin, aPrintValueColor, aPrintValueBackgroundColor);
     }
 }
 
 /*
- * initial + threshold + actual values are scaled by aScaleFactorValue
+ * Scale factor of 2 means, that the slider is virtually 2 times larger than displayed
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+void BDSlider::setScaleFactor(float aScaleFactor) {
+    if (USART_isBluetoothPaired()) {
+        long tScaleFactor = *reinterpret_cast<uint32_t*>(&aScaleFactor);
+        sendUSARTArgs(FUNCTION_SLIDER_SETTINGS, 4, mSliderHandle, SUBFUNCTION_SLIDER_SET_SCALE_FACTOR,
+                (uint16_t) tScaleFactor & 0XFFFF, (uint16_t) (tScaleFactor >> 16));
+    }
+}
+
+// better use setScaleFactor(1/aScaleFactorValue);
 void BDSlider::setValueScaleFactor(float aScaleFactorValue) {
     if (USART_isBluetoothPaired()) {
-        long tScaleFactorValue = *reinterpret_cast<uint32_t*>(&aScaleFactorValue);
-        sendUSARTArgs(FUNCTION_SLIDER_SETTINGS, 4, mSliderHandle, SUBFUNCTION_SLIDER_SET_VALUE_SCALE_FACTOR,
-                (uint16_t) tScaleFactorValue & 0XFFFF, (uint16_t) (tScaleFactorValue >> 16));
+        setScaleFactor(1 / aScaleFactorValue);
     }
 }
 #pragma GCC diagnostic pop

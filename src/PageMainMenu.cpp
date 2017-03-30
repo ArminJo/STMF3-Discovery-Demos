@@ -22,9 +22,9 @@
  */
 
 #include "Pages.h"
+#include "myStrings.h" // for StringHomeChar
 
 #include "TouchButton.h"
-#include "TouchDSO.h"
 #include "AccuCapacity.h"
 #include "GuiDemo.h"
 #include "stm32f3DiscoveryLedsButtons.h"
@@ -60,10 +60,7 @@ BDButton * const TouchButtonsMainMenu[] = { &TouchButtonDSO, &TouchButtonBob, &T
         &TouchButtonInfo, &TouchButtonMainSettings, &TouchButtonIR, &TouchButtonMainHome }; // TouchButtonMainHome must be last element of array
 
 uint32_t MillisLastLoop;
-uint32_t MillisSinceLastAction;
-
-// flag if application loop is still active
-volatile bool sInApplication;
+uint32_t sMillisSinceLastInfoOutput;
 
 void drawMainMenuPage(void);
 
@@ -72,113 +69,96 @@ void doMainMenuButtons(BDButton * aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     if (aTheTouchedButton->mButtonHandle == TouchButtonDSO.mButtonHandle) {
         startDSOPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopDSOPage();
         }
         stopDSOPage();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonMainSettings.mButtonHandle) {
         // Settings button pressed
         startSettingsPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopSettingsPage();
         }
         stopSettingsPage();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonDac.mButtonHandle) {
         startDACPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopDACPage();
         }
         stopDACPage();
-        return;
+
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonFrequencyGenerator.mButtonHandle) {
         startFrequencyGeneratorPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopFrequencyGeneratorPage();
         }
         stopFrequencyGeneratorPage();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonInfo.mButtonHandle) {
-        sInApplication = true;
         startInfoPage();
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopInfoPage();
         }
         stopInfoPage();
-        return;
+
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonTest.mButtonHandle) {
-        sInApplication = true;
         startTestsPage();
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopTestsPage();
         }
         stopTestsPage();
-        return;
+
 #ifndef DEBUG_MINIMAL_VERSION
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonDemo.mButtonHandle) {
         startGuiDemo();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopGuiDemo();
         }
         stopGuiDemo();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonAccelerometer.mButtonHandle) {
         startAccelerometerCompassPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopAccelerometerGyroCompassPage();
         }
         stopAccelerometerCompassPage();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonDatalogger.mButtonHandle) {
         startAccuCapacity();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopAccuCapacity();
         }
         stopAccuCapacity();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonDraw.mButtonHandle) {
         startDrawPage();
-        sInApplication = true;
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopDrawPage();
         }
         stopDrawPage();
-        return;
+
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonBob.mButtonHandle) {
         SPI1_setPrescaler(SPI_BAUDRATEPRESCALER_8);
         initBobsDemo();
-        sInApplication = true;
         startBobsDemo();
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopBobsDemo();
         }
         stopBobsDemo();
         return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonIR.mButtonHandle) {
-        sInApplication = true;
         startIRPage();
-        while (sInApplication) {
+        while (!sBackButtonPressed) {
             loopIRPage();
         }
         stopIRPage();
-        return;
-#endif
     }
+#endif
+    // for all cases
+    sBackButtonPressed = false;
     // if no page available just show main menu again which in turn re-activates all buttons
     drawMainMenuPage();
 }
@@ -217,28 +197,10 @@ void doTestButton(BDButton * aTheTouchedButton, int16_t aValue) {
 }
 
 /**
- * switch back to main menu
- */
-void doMainMenuHomeButton(BDButton * aTheTouchedButton, int16_t aValue) {
-    backToMainMenu();
-}
-
-/**
  * clear display handler
  */
 void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue) {
     BlueDisplay1.clearDisplay(aValue);
-}
-
-/**
- * ends loops in button handler
- */
-void backToMainMenu(void) {
-    sInApplication = false;
-    BDButton::deactivateAllButtons();
-    BDSlider::deactivateAllSliders();
-    initMainHomeButton(false);
-    drawMainMenuPage();
 }
 
 /* Public functions ---------------------------------------------------------*/
@@ -291,7 +253,7 @@ void startMainMenuPage(void) {
 
     // not visible on this page
     TouchButtonMainHome.init(BUTTON_WIDTH_5_POS_5, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4,
-    MAIN_MENU_COLOR, StringHomeChar, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuHomeButton);
+    MAIN_MENU_COLOR, StringHomeChar, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doDefaultBackButton);
 
     // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;

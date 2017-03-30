@@ -727,7 +727,7 @@ float ADC_getTemperature(void) {
 }
 
 /*
- * DSO Attenuator
+ * DSO Attenuator coding at PIN B12 + B13
  */
 #ifndef USE_STM32F3_DISCO
 int DSO_detectAttenuatorType(void) {

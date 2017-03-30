@@ -28,17 +28,20 @@ extern "C" {
 }
 
 #include "TouchDSO.h"
-#ifdef LOCAL_DISPLAY_EXISTS
-#include "ADS7846.h"
-#endif
 #include "AccuCapacity.h"
 #include "GuiDemo.h"
 
-// Landscape format
-const unsigned int REMOTE_DISPLAY_HEIGHT = LOCAL_DISPLAY_HEIGHT;
-const unsigned int REMOTE_DISPLAY_WIDTH = LOCAL_DISPLAY_WIDTH;
+/*
+ * buffers for any purpose...
+ */
+char sStringBuffer[SIZEOF_STRINGBUFFER];
+
+FATFS Fatfs[1];
 
 void SystemClock_Config(void);
+
+// global flag for page control. Is evaluated by calling loop or page and set by buttonBack handler
+bool sBackButtonPressed;
 
 void initDisplay(void) {
     BlueDisplay1.setFlagsAndSize(BD_FLAG_FIRST_RESET_ALL | BD_FLAG_USE_MAX_SIZE | BD_FLAG_LONG_TOUCH_ENABLE, 320,
@@ -54,7 +57,6 @@ void initDisplay(void) {
     BlueDisplay1.setCharacterMapping(0xF8, 0x2103); // Degree Celsius in UTF16
 }
 
-FATFS Fatfs[1];
 
 int main(void) {
 
@@ -191,6 +193,7 @@ int main(void) {
         initDSOPage();
         initAccuCapacity();
         initInfoPage();
+        initSystemInfoPage();
         initDACPage();
         initFrequencyGeneratorPage();
         Synth_Timer_initialize(72000);

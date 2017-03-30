@@ -12,13 +12,6 @@
 #define LIB_INCLUDE_MYSTRINGS_H_
 
 /**
- * Miscellaneous buffers
- */
-// for snprintf
-#define SIZEOF_STRINGBUFFER 240
-extern char StringBuffer[SIZEOF_STRINGBUFFER];
-
-/**
  * Strings
  */
 // from myStrings.cpp

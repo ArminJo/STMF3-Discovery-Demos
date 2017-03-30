@@ -22,9 +22,9 @@
  * Display stuff
  *****************************/
 uint8_t DisplayBufferFFT[FFT_SIZE / 2];
-uint8_t DisplayBuffer[DSO_DISPLAY_WIDTH]; // Buffer for raw display data of current chart (maximum values)
-uint8_t DisplayBufferMin[DSO_DISPLAY_WIDTH]; // Buffer for raw display data of current chart minimum values
-uint8_t DisplayBuffer2[DSO_DISPLAY_WIDTH]; // Buffer for trigger state line
+uint8_t DisplayBuffer[REMOTE_DISPLAY_WIDTH]; // Buffer for raw display data of current chart (maximum values)
+uint8_t DisplayBufferMin[REMOTE_DISPLAY_WIDTH]; // Buffer for raw display data of current chart minimum values
+uint8_t DisplayBuffer2[REMOTE_DISPLAY_WIDTH]; // Buffer for trigger state line
 
 /*
  * Display control
@@ -49,87 +49,6 @@ Chart ChartFFT;
  * Graphical output section
  ************************************************************************/
 
-void clearTriggerLine(uint8_t aTriggerLevelDisplayValue) {
-    // clear old line
-    BlueDisplay1.drawLineRel(0, aTriggerLevelDisplayValue, DSO_DISPLAY_WIDTH, 0, COLOR_BACKGROUND_DSO);
-    // restore grid at old y position
-    for (int tXPos = TIMING_GRID_WIDTH - 1; tXPos < DSO_DISPLAY_WIDTH - 1; tXPos += TIMING_GRID_WIDTH) {
-        BlueDisplay1.drawPixel(tXPos, aTriggerLevelDisplayValue, COLOR_GRID_LINES);
-    }
-    if (!MeasurementControl.isRunning) {
-        // in analysis mode restore graph at old y position
-        uint8_t* ScreenBufferPointer = &DisplayBuffer[0];
-        for (int i = 0; i < DSO_DISPLAY_WIDTH; ++i) {
-            int tValueByte = *ScreenBufferPointer++;
-            if (tValueByte == aTriggerLevelDisplayValue) {
-                // restore old pixel
-                BlueDisplay1.drawPixel(i, tValueByte, COLOR_DATA_HOLD);
-            }
-        }
-    }
-}
-
-/**
- * draws trigger line if it is visible - do not draw clipped value e.g. value was higher than display range
- */
-void drawTriggerLine(void) {
-    if (DisplayControl.TriggerLevelDisplayValue != 0 && MeasurementControl.TriggerMode != TRIGGER_MODE_OFF) {
-        BlueDisplay1.drawLineRel(0, DisplayControl.TriggerLevelDisplayValue, DSO_DISPLAY_WIDTH, 0,
-        COLOR_TRIGGER_LINE);
-    }
-}
-
-/**
- * draws vertical timing + horizontal reference voltage lines
- */
-void drawGridLinesWithHorizLabelsAndTriggerLine(Color_t aColor) {
-    //vertical lines
-    for (int tXPos = TIMING_GRID_WIDTH - 1; tXPos < DSO_DISPLAY_WIDTH; tXPos += TIMING_GRID_WIDTH) {
-        BlueDisplay1.drawLineRel(tXPos, 0, 0, DSO_DISPLAY_HEIGHT, aColor);
-    }
-    // add 0.0001 to avoid display of -0.00
-    float tActualVoltage = (ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndexForPrint]
-            * (MeasurementControl.OffsetGridCount) + 0.0001);
-    bool tLabelChanged = false;
-    if (DisplayControl.LastDisplayRangeIndex != MeasurementControl.DisplayRangeIndexForPrint
-            || DisplayControl.LastOffsetGridCount != MeasurementControl.OffsetGridCount) {
-        DisplayControl.LastDisplayRangeIndex = MeasurementControl.DisplayRangeIndexForPrint;
-        DisplayControl.LastOffsetGridCount = MeasurementControl.OffsetGridCount;
-        tLabelChanged = true;
-    }
-    int tCaptionOffset = 1;
-    Color_t tLabelColor;
-    int tPosX;
-    for (int tYPos = DISPLAY_VALUE_FOR_ZERO; tYPos > 0; tYPos -= HORIZONTAL_GRID_HEIGHT) {
-        if (tLabelChanged) {
-            // clear old label
-            int tXpos = DSO_DISPLAY_WIDTH - PIXEL_AFTER_LABEL - (5 * TEXT_SIZE_11_WIDTH);
-            int tY = tYPos - tCaptionOffset;
-            BlueDisplay1.fillRect(tXpos, tY - TEXT_SIZE_11_ASCEND, DSO_DISPLAY_WIDTH - PIXEL_AFTER_LABEL + 1,
-                    tY + TEXT_SIZE_11_HEIGHT - TEXT_SIZE_11_ASCEND, COLOR_BACKGROUND_DSO);
-            // restore vertical line
-            BlueDisplay1.drawLineRel(9 * TIMING_GRID_WIDTH - 1, tY, 0, TEXT_SIZE_11_HEIGHT, aColor);
-        }
-        // draw horizontal line
-        BlueDisplay1.drawLineRel(0, tYPos, DSO_DISPLAY_WIDTH, 0, aColor);
-
-        int tCount = snprintf(StringBuffer, sizeof StringBuffer, "%0.*f",
-                RangePrecision[MeasurementControl.DisplayRangeIndexForPrint], tActualVoltage);
-        // right align but leave 2 pixel free after label for the last horizontal line
-        tPosX = DSO_DISPLAY_WIDTH - (tCount * TEXT_SIZE_11_WIDTH) - PIXEL_AFTER_LABEL;
-        // draw label over the line - use different color for negative values
-        if (tActualVoltage >= 0) {
-            tLabelColor = COLOR_HOR_GRID_LINE_LABEL;
-        } else {
-            tLabelColor = COLOR_HOR_GRID_LINE_LABEL_NEGATIVE;
-        }
-        BlueDisplay1.drawText(tPosX, tYPos - tCaptionOffset, StringBuffer, TEXT_SIZE_11, tLabelColor,
-        COLOR_BACKGROUND_DSO);
-        tCaptionOffset = -(TEXT_SIZE_11_ASCEND / 2);
-        tActualVoltage += ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndexForPrint];
-    }
-    drawTriggerLine();
-}
 
 /*
  * draws min, max lines
@@ -138,12 +57,12 @@ void drawMinMaxLines(void) {
 // draw max line
     int tValueDisplay = getDisplayFrowRawInputValue(MeasurementControl.RawValueMax);
     if (tValueDisplay != 0) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, DSO_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
+        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
     }
 // min line
     tValueDisplay = getDisplayFrowRawInputValue(MeasurementControl.RawValueMin);
     if (tValueDisplay != DISPLAY_VALUE_FOR_ZERO) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, DSO_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
+        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
     }
 }
 
@@ -161,14 +80,14 @@ void drawMinMaxLines(void) {
  * @note if isEffectiveMinMaxMode == true then DisplayBufferMin is processed subsequently
  * @note NOT used for drawing while acquiring
  */
-void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor,
-        int aDrawMode, bool aDrawAlsoMin) {
+void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor, int aDrawMode,
+        bool aDrawAlsoMin) {
     int i;
     int tValue;
 #ifdef LOCAL_DISPLAY_EXISTS
     int tCounterForTimingGridRestore = 0;
     int tLastValue = 0; // to avoid compiler warnings
-    int tLastValueClear = 0; // to avoid compiler warnings
+    int tLastValueClear = 0;// to avoid compiler warnings
 #endif
 
     uint16_t *tDataBufferPointer = aDataBufferPointer;
@@ -290,7 +209,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
                 /*
                  * Line mode here
                  */
-                if (aClearBeforeColor > 0 && i != DSO_DISPLAY_WIDTH - 1) {
+                if (aClearBeforeColor > 0 && i != REMOTE_DISPLAY_WIDTH - 1) {
                     // erase one x value in advance in order not to overwrite the x+1 part of line just drawn before
                     int tValueClear = *ScreenBufferReadPointer;
                     if (tLastValueClear != DISPLAYBUFFER_INVISIBLE_VALUE
@@ -327,8 +246,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
              * Print max values. Use chart index 0. Do not draw direct for BlueDisplay if isEffectiveMinMaxMode
              * Loop again for rendering minimums if isEffectiveMinMaxMode
              */
-            BlueDisplay1.drawChartByteBuffer(0, 0, aColor, aClearBeforeColor, 0, !aDrawAlsoMin,
-                    &DisplayBuffer[0], aLength);
+            BlueDisplay1.drawChartByteBuffer(0, 0, aColor, aClearBeforeColor, 0, !aDrawAlsoMin, &DisplayBuffer[0], aLength);
             if (aDrawAlsoMin) {
                 // Initialize for second loop (min values)
                 ScreenBufferReadPointer = &DisplayBufferMin[0];
@@ -356,7 +274,7 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
             && DataBufferControl.DataBufferNextDrawPointer <= &DataBufferControl.DataBuffer[DATABUFFER_DISPLAY_END]
             && !MeasurementControl.TriggerPhaseJustEnded && !DataBufferControl.DataBufferPreTriggerAreaWrapAround) {
 
-        int tDisplayX = DataBufferControl.NextDrawXValue;
+        unsigned int tDisplayX = DataBufferControl.NextDrawXValue;
         if (DataBufferControl.DataBufferNextDrawPointer
                 == &DataBufferControl.DataBuffer[DATABUFFER_PRE_TRIGGER_SIZE + FFT_SIZE - 1]) {
             // now data buffer is filled with more than 256 samples -> show fft
@@ -364,7 +282,7 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
         }
 
         // wrap around in display buffer
-        if (tDisplayX >= DSO_DISPLAY_WIDTH) {
+        if (tDisplayX >= REMOTE_DISPLAY_WIDTH) {
             tDisplayX = 0;
         }
         DataBufferControl.NextDrawXValue = tDisplayX + 1;
@@ -394,29 +312,28 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
             }
         } else {
 #endif
-            if (tDisplayX < DSO_DISPLAY_WIDTH - 1) {
-                // fetch next value and clear line in advance
-                tNextValue = DisplayBuffer[tDisplayX + 1];
-                if (tNextValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
-                    if (tValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
-                        // normal mode
-                        BlueDisplay1.drawLineFastOneX(tDisplayX, tValue, tNextValue, DisplayControl.EraseColor);
-                        if (MeasurementControl.isEffectiveMinMaxMode) {
-                            BlueDisplay1.drawLineFastOneX(tDisplayX, tValueMin, DisplayBufferMin[tDisplayX + 1],
-                                    DisplayControl.EraseColor);
-                        }
-                    } else {
-                        // first visible value, clear only start pixel
-                        BlueDisplay1.drawPixel(tDisplayX + 1, tNextValue, DisplayControl.EraseColor);
-                        if (MeasurementControl.isEffectiveMinMaxMode) {
-                            BlueDisplay1.drawPixel(tDisplayX + 1, DisplayBufferMin[tDisplayX + 1],
-                                    DisplayControl.EraseColor);
-                        }
+        if (tDisplayX < REMOTE_DISPLAY_WIDTH - 1) {
+            // fetch next value and clear line in advance
+            tNextValue = DisplayBuffer[tDisplayX + 1];
+            if (tNextValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
+                if (tValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
+                    // normal mode
+                    BlueDisplay1.drawLineFastOneX(tDisplayX, tValue, tNextValue, DisplayControl.EraseColor);
+                    if (MeasurementControl.isEffectiveMinMaxMode) {
+                        BlueDisplay1.drawLineFastOneX(tDisplayX, tValueMin, DisplayBufferMin[tDisplayX + 1],
+                                DisplayControl.EraseColor);
+                    }
+                } else {
+                    // first visible value, clear only start pixel
+                    BlueDisplay1.drawPixel(tDisplayX + 1, tNextValue, DisplayControl.EraseColor);
+                    if (MeasurementControl.isEffectiveMinMaxMode) {
+                        BlueDisplay1.drawPixel(tDisplayX + 1, DisplayBufferMin[tDisplayX + 1], DisplayControl.EraseColor);
                     }
                 }
             }
-#ifdef LOCAL_DISPLAY_EXISTS
         }
+#ifdef LOCAL_DISPLAY_EXISTS
+    }
 #endif
 
         /*
@@ -425,8 +342,7 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
         tValue = getDisplayFrowRawInputValue(*DataBufferControl.DataBufferNextDrawPointer);
         DisplayBuffer[tDisplayX] = tValue;
         if (MeasurementControl.isEffectiveMinMaxMode) {
-            tValueMin = getDisplayFrowRawInputValue(
-                    *(DataBufferControl.DataBufferNextDrawPointer + DATABUFFER_MIN_OFFSET));
+            tValueMin = getDisplayFrowRawInputValue(*(DataBufferControl.DataBufferNextDrawPointer + DATABUFFER_MIN_OFFSET));
             DisplayBufferMin[tDisplayX] = tValueMin;
         }
 
@@ -441,28 +357,27 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
             }
         } else {
 #endif
-            if (tDisplayX != 0 && tDisplayX <= DSO_DISPLAY_WIDTH - 1) {
-                // get lastValue and draw line
-                if (tValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
-                    tLastValue = DisplayBuffer[tDisplayX - 1];
-                    if (tLastValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
-                        // normal mode
-                        BlueDisplay1.drawLineFastOneX(tDisplayX - 1, tLastValue, tValue, aDrawColor);
-                        if (MeasurementControl.isEffectiveMinMaxMode) {
-                            BlueDisplay1.drawLineFastOneX(tDisplayX - 1, DisplayBufferMin[tDisplayX - 1], tValueMin,
-                                    aDrawColor);
-                        }
-                    } else {
-                        // first visible value, draw only start pixel
-                        BlueDisplay1.drawPixel(tDisplayX, tValue, aDrawColor);
-                        if (MeasurementControl.isEffectiveMinMaxMode) {
-                            BlueDisplay1.drawPixel(tDisplayX, tValueMin, aDrawColor);
-                        }
+        if (tDisplayX != 0 && tDisplayX <= REMOTE_DISPLAY_WIDTH - 1) {
+            // get lastValue and draw line
+            if (tValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
+                tLastValue = DisplayBuffer[tDisplayX - 1];
+                if (tLastValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
+                    // normal mode
+                    BlueDisplay1.drawLineFastOneX(tDisplayX - 1, tLastValue, tValue, aDrawColor);
+                    if (MeasurementControl.isEffectiveMinMaxMode) {
+                        BlueDisplay1.drawLineFastOneX(tDisplayX - 1, DisplayBufferMin[tDisplayX - 1], tValueMin, aDrawColor);
+                    }
+                } else {
+                    // first visible value, draw only start pixel
+                    BlueDisplay1.drawPixel(tDisplayX, tValue, aDrawColor);
+                    if (MeasurementControl.isEffectiveMinMaxMode) {
+                        BlueDisplay1.drawPixel(tDisplayX, tValueMin, aDrawColor);
                     }
                 }
             }
-#ifdef LOCAL_DISPLAY_EXISTS
         }
+#ifdef LOCAL_DISPLAY_EXISTS
+    }
 #endif
         DataBufferControl.DataBufferNextDrawPointer++;
     }
@@ -477,7 +392,7 @@ void drawFFT(void) {
     float *tFFTDataPointer = computeFFT(DataBufferControl.DataBufferDisplayStart);
     // init and draw chart 12 milliseconds with -O0
     // display with Xscale = 2
-    ChartFFT.initChart(4 * TEXT_SIZE_11_WIDTH, DSO_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT, FFT_SIZE, 32 * 5, 2,
+    ChartFFT.initChart(4 * TEXT_SIZE_11_WIDTH, REMOTE_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT, FFT_SIZE, 32 * 5, 2,
     true, 64, 32);
     ChartFFT.initChartColors(COLOR_FFT_DATA, COLOR_RED, RGB(0xC0, 0xC0, 0xC0), COLOR_RED, COLOR_BACKGROUND_DSO);
     // compute Label for x Frequency axis
@@ -513,12 +428,12 @@ void drawFFT(void) {
         tFreqUnitString[0] = ' '; // Hz
         tFreqDeltaHalf = 62500;
     }
-    snprintf(StringBuffer, sizeof(StringBuffer), "%0.2f%s", tFreqAtMaxBin, tFreqUnitString);
-    BlueDisplay1.drawText(140, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, StringBuffer, TEXT_SIZE_22, COLOR_RED,
+    snprintf(sStringBuffer, sizeof(sStringBuffer), "%0.2f%s", tFreqAtMaxBin, tFreqUnitString);
+    BlueDisplay1.drawText(140, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_22, COLOR_RED,
     COLOR_BACKGROUND_DSO);
     tFreqDeltaHalf /= tTimebaseExactValue; // = tFreqAtBin32 / 64;
-    snprintf(StringBuffer, sizeof(StringBuffer), "[\xB1%0.2f%s]", tFreqDeltaHalf, tFreqUnitString);
-    BlueDisplay1.drawText(140, 6 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, StringBuffer, TEXT_SIZE_11, COLOR_RED,
+    snprintf(sStringBuffer, sizeof(sStringBuffer), "[\xB1%0.2f%s]", tFreqDeltaHalf, tFreqUnitString);
+    BlueDisplay1.drawText(140, 6 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR_RED,
     COLOR_BACKGROUND_DSO);
 }
 
@@ -541,14 +456,14 @@ void draw128FFTValuesFast(Color_t aColor) {
 
         //compute scale factor
         float tYDisplayScaleFactor = HORIZONTAL_GRID_HEIGHT / FFTInfo.MaxValue;
-        for (int tDisplayX = 0; tDisplayX < DSO_DISPLAY_WIDTH; tDisplayX += 3) {
+        for (unsigned int tDisplayX = 0; tDisplayX < REMOTE_DISPLAY_WIDTH; tDisplayX += 3) {
             /*
              *  get data and perform scaling
              */
             tInputValue = *tFFTDataPointer++;
             tDisplayY = tYDisplayScaleFactor * tInputValue;
             // tDisplayY now from 0 to 32
-            tDisplayY = DSO_DISPLAY_HEIGHT - tDisplayY;
+            tDisplayY = REMOTE_DISPLAY_HEIGHT - tDisplayY;
             DisplayYOld = *tDisplayBufferPtr;
             if (tDisplayY < DisplayYOld) {
                 // increase old bar
@@ -564,7 +479,7 @@ void draw128FFTValuesFast(Color_t aColor) {
 
 void clearFFTValuesOnDisplay(void) {
     // Clear old fft area
-    BlueDisplay1.fillRectRel(0, DSO_DISPLAY_HEIGHT - HORIZONTAL_GRID_HEIGHT, DSO_DISPLAY_WIDTH,
+    BlueDisplay1.fillRectRel(0, REMOTE_DISPLAY_HEIGHT - HORIZONTAL_GRID_HEIGHT, REMOTE_DISPLAY_WIDTH,
     HORIZONTAL_GRID_HEIGHT,
     COLOR_BACKGROUND_DSO);
 }
@@ -573,14 +488,14 @@ void clearFFTValuesOnDisplay(void) {
  * Text output section
  ************************************************************************/
 void clearInfo(void) {
-    BlueDisplay1.fillRectRel(0, 0, DSO_DISPLAY_WIDTH, 3 * FONT_SIZE_INFO_LONG + 1, COLOR_BACKGROUND_DSO);
+    BlueDisplay1.fillRectRel(0, 0, REMOTE_DISPLAY_WIDTH, 3 * FONT_SIZE_INFO_LONG + 1, COLOR_BACKGROUND_DSO);
 }
 
 /*
  * Output info line
  */
 void printInfo(void) {
-    if (DisplayControl.DisplayPage != CHART || DisplayControl.showInfoMode == INFO_MODE_NO_INFO) {
+    if (DisplayControl.DisplayPage != DISPLAY_PAGE_CHART || DisplayControl.showInfoMode == INFO_MODE_NO_INFO) {
         return;
     }
 
@@ -651,8 +566,7 @@ void printInfo(void) {
      * 9 character for period e.g "5.300,0us" or " 33.000us"
      */
     snprintf(tBufferForPeriodAndFrequency, sizeof tBufferForPeriodAndFrequency, "%*luHz %*.*f%cs", tFreqStringLength,
-            MeasurementControl.FrequencyHertz, tPeriodStringLength, tPeriodStringPrecision, tMicrosPeriod,
-            tPeriodUnitChar);
+            MeasurementControl.FrequencyHertz, tPeriodStringLength, tPeriodStringPrecision, tMicrosPeriod, tPeriodUnitChar);
     if (MeasurementControl.FrequencyHertz >= 1000) {
         // set separator for thousands
         formatThousandSeparator(&tBufferForPeriodAndFrequency[0], &tBufferForPeriodAndFrequency[tThousandIndexHz]);
@@ -668,20 +582,19 @@ void printInfo(void) {
          */
         if (MeasurementControl.isSingleShotMode) {
             // current value
-            snprintf(StringBuffer, sizeof StringBuffer, "Current=%4.3fV waiting for %s",
+            snprintf(sStringBuffer, sizeof sStringBuffer, "Current=%4.3fV waiting for %s",
                     getFloatFromRawValue(MeasurementControl.RawValueBeforeTrigger),
                     TriggerStatusStrings[MeasurementControl.TriggerStatus]);
         } else {
 
             // First line
             // Min + Average + Max + Peak-to-peak
-            snprintf(StringBuffer, sizeof StringBuffer, "Av%6.*fV Min%6.*f Max%6.*f P2P%6.*fV", tPrecision,
+            snprintf(sStringBuffer, sizeof sStringBuffer, "Av%6.*fV Min%6.*f Max%6.*f P2P%6.*fV", tPrecision,
                     getFloatFromRawValue(MeasurementControl.RawValueAverage), tPrecision,
                     getFloatFromRawValue(MeasurementControl.RawValueMin), tPrecision,
-                    getFloatFromRawValue(MeasurementControl.RawValueMax), tPrecision,
-                    getFloatFromRawValue(tValueDiff));
+                    getFloatFromRawValue(MeasurementControl.RawValueMax), tPrecision, getFloatFromRawValue(tValueDiff));
         }
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC, StringBuffer, FONT_SIZE_INFO_LONG, COLOR_BLACK,
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC, sStringBuffer, FONT_SIZE_INFO_LONG - 1, COLOR_BLACK,
         COLOR_INFO_BACKGROUND);
 
         // Second line
@@ -692,10 +605,10 @@ void printInfo(void) {
             tChannelString = ADS7846ChannelStrings[MeasurementControl.ADCInputMUXChannelIndex];
         }
 #endif
-        getScaleFactorAsString(&StringBuffer[40], DisplayControl.XScale);
-        snprintf(StringBuffer, sizeof StringBuffer, "%s %4u%cs %s %s", &StringBuffer[40], tUnitsPerGrid,
-                tTimebaseUnitChar, tBufferForPeriodAndFrequency, tChannelString);
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + FONT_SIZE_INFO_LONG, StringBuffer, FONT_SIZE_INFO_LONG,
+        getScaleFactorAsString(&sStringBuffer[40], DisplayControl.XScale);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%s %4u%cs %s %s", &sStringBuffer[40], tUnitsPerGrid, tTimebaseUnitChar,
+                tBufferForPeriodAndFrequency, tChannelString);
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + FONT_SIZE_INFO_LONG, sStringBuffer, FONT_SIZE_INFO_LONG,
         COLOR_BLACK, COLOR_INFO_BACKGROUND);
 
         // Third line
@@ -731,10 +644,9 @@ void printInfo(void) {
             break;
         }
 
-        snprintf(StringBuffer, sizeof StringBuffer, "Trigg: %c %c %5.*fV %s", tSlopeChar, tTriggerAutoChar,
-                tPrecision - 1, getFloatFromRawValue(MeasurementControl.RawTriggerLevel),
-                tBufferForPeriodAndFrequency);
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + (2 * FONT_SIZE_INFO_LONG), StringBuffer,
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Trigg: %c %c %5.*fV %s", tSlopeChar, tTriggerAutoChar, tPrecision - 1,
+                getFloatFromRawValue(MeasurementControl.RawTriggerLevel), tBufferForPeriodAndFrequency);
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + (2 * FONT_SIZE_INFO_LONG), sStringBuffer,
         FONT_SIZE_INFO_LONG, COLOR_BLACK, COLOR_INFO_BACKGROUND);
 
         // Debug infos
@@ -759,21 +671,20 @@ void printInfo(void) {
          * Short version
          */
 #ifdef LOCAL_DISPLAY_EXISTS
-        snprintf(StringBuffer, sizeof StringBuffer, "%6.*fV %6.*fV%s%4u%cs", tPrecision,
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%6.*fV %6.*fV%s%4u%cs", tPrecision,
                 getFloatFromRawValue(MeasurementControl.RawValueAverage), tPrecision,
                 getFloatFromRawValue(tValueDiff), tBufferForPeriodAndFrequency, tUnitsPerGrid, tTimebaseUnitChar);
 #else
-        snprintf(StringBuffer, sizeof StringBuffer, "%6.*fV %6.*fV  %6luHz %4u%cs", tPrecision,
-                getFloatFromRawValue(MeasurementControl.RawValueAverage), tPrecision,
-                getFloatFromRawValue(tValueDiff), MeasurementControl.FrequencyHertz, tUnitsPerGrid,
-                tTimebaseUnitChar);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%6.*fV %6.*fV  %6luHz %4u%cs", tPrecision,
+                getFloatFromRawValue(MeasurementControl.RawValueAverage), tPrecision, getFloatFromRawValue(tValueDiff),
+                MeasurementControl.FrequencyHertz, tUnitsPerGrid, tTimebaseUnitChar);
         if (MeasurementControl.FrequencyHertz >= 1000) {
             // set separator for thousands
-            formatThousandSeparator(&StringBuffer[16], &StringBuffer[19]);
+            formatThousandSeparator(&sStringBuffer[16], &sStringBuffer[19]);
         }
 #endif
 
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_SHORT_ASC, StringBuffer, FONT_SIZE_INFO_SHORT, COLOR_BLACK,
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_SHORT_ASC, sStringBuffer, FONT_SIZE_INFO_SHORT, COLOR_BLACK,
         COLOR_INFO_BACKGROUND);
     }
 }
@@ -790,8 +701,7 @@ void printTriggerInfo(void) {
     if (MeasurementControl.ChannelIsACMode && MeasurementControl.DisplayRangeIndex >= 11) {
         tPrecision = 0;
     }
-    snprintf(StringBuffer, sizeof StringBuffer, "%5.*fV", tPrecision,
-            getFloatFromRawValue(MeasurementControl.RawTriggerLevel));
+    snprintf(sStringBuffer, sizeof sStringBuffer, "%5.*fV", tPrecision, getFloatFromRawValue(MeasurementControl.RawTriggerLevel));
 
     int tYPos = TRIGGER_LEVEL_INFO_SHORT_Y;
     int tXPos = TRIGGER_LEVEL_INFO_SHORT_X;
@@ -802,7 +712,7 @@ void printTriggerInfo(void) {
         tFontsize = FONT_SIZE_INFO_LONG;
     }
 
-    BlueDisplay1.drawText(tXPos, tYPos, StringBuffer, tFontsize, COLOR_BLACK, COLOR_INFO_BACKGROUND);
+    BlueDisplay1.drawText(tXPos, tYPos, sStringBuffer, tFontsize, COLOR_BLACK, COLOR_INFO_BACKGROUND);
 }
 
 /*******************************

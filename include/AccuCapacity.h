@@ -1,7 +1,7 @@
 /*
  * AccuCapacity.h
  *
-* @date 27.03.2012
+ * @date 27.03.2012
  * @author Armin Joachimsmeyer
  *      Email:   armin.joachimsmeyer@gmail.com
  * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
@@ -18,8 +18,6 @@ void startAccuCapacity(void);
 void loopAccuCapacity(void);
 void stopAccuCapacity(void);
 
-
 #endif
-
 
 #endif /* ACCUCAPACITY_H_ */

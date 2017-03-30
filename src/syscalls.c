@@ -117,6 +117,9 @@ int _write(int file, char *ptr, int len) {
 
 char *heap_end;
 
+extern char estack asm("_estack");
+char * sLowestStackPointer = &estack;
+
 caddr_t _sbrk(int incr) {
     extern char HeapStart asm("_sccmram");
     extern char HeapEnd asm("_eheap");
@@ -125,7 +128,11 @@ caddr_t _sbrk(int incr) {
     if (heap_end == 0) {
         heap_end = &HeapStart;
     }
+
     prev_heap_end = heap_end;
+    if (stack_ptr < sLowestStackPointer) {
+        sLowestStackPointer = stack_ptr;
+    }
     if (heap_end + incr > &HeapEnd) {
         if (isLocalDisplayAvailable) {
             drawTextC(0, TEXT_SIZE_11_ASCEND, "Heap CCRAM 8kB exhausted", TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);

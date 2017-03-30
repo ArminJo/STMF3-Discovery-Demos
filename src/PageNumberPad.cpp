@@ -9,6 +9,8 @@
  */
 
 #include "Pages.h"
+#include "myStrings.h" // for StringEnterChar + StringPlusMinus
+
 #include <string.h>
 #include <stdlib.h>  //strtod
 #include <locale.h>

@@ -8,11 +8,13 @@
 #include "stm32f3_discovery.h" // for LED10
 #include "stm32fx0xPeripherals.h" // For Watchdog_reload()
 
-#include "main.h" //for Fatfs[1]
-#include "myStrings.h" //for Stringbuffer
+#include "main.h" //for sStringBuffer
 
 #include <stdio.h> // for snprintf
 #include <string.h> // for strcpy
+
+#include "ff.h"
+extern FATFS Fatfs[1];
 /*--------------------------------------------------------------------------
 
  Module Private Functions
@@ -685,10 +687,10 @@ char StringNoCardInserted[] = "No card inserted";
  * @return number of chars written or DRESULT error code 1 - 4 or 0 if no card inserted
  *
  */
-int getCardInfo(char aStringBuffer[], size_t sizeofStringBuffer) {
+int getCardInfo(char asStringBuffer[], size_t sizeofsStringBuffer) {
     BYTE res = 0;
     if (!MICROSD_isCardInserted()) {
-        strcpy(aStringBuffer, StringNoCardInserted);
+        strcpy(asStringBuffer, StringNoCardInserted);
     } else {
         long tSectorCount;
         long tEraseBlockSize;
@@ -699,7 +701,7 @@ int getCardInfo(char aStringBuffer[], size_t sizeofStringBuffer) {
             disk_ioctl(0, GET_SECTOR_SIZE, &tSectorSize);
             disk_ioctl(0, GET_BLOCK_SIZE, &tEraseBlockSize);
             disk_ioctl(0, MMC_GET_TYPE, &tType);
-            return snprintf(StringBuffer, sizeof StringBuffer,
+            return snprintf(sStringBuffer, sizeof sStringBuffer,
                     "Drive size: %lu sectors\nSector size: %u\nErase block size: %lu sectors\nMMC/SDC type: %u", tSectorCount,
                     tSectorSize, tEraseBlockSize, tType);
         }
@@ -711,16 +713,16 @@ int getCardInfo(char aStringBuffer[], size_t sizeofStringBuffer) {
  * returns 10 lines with filesystem information
  * @return number of chars written or FRESULT error code 1 - 19 or 0 if no card inserted
  */
-int getFSInfo(char *aStringBuffer, size_t sizeofStringBuffer) {
+int getFSInfo(char *asStringBuffer, size_t sizeofsStringBuffer) {
     BYTE res = 0;
     if (!MICROSD_isCardInserted()) {
-        strcpy(aStringBuffer, StringNoCardInserted);
+        strcpy(asStringBuffer, StringNoCardInserted);
     } else {
         FATFS *fs; /* Pointer to file system object */
         long tFreeClusterCount;
         res = f_getfree("", (DWORD*) &tFreeClusterCount, &fs);
         if (!res) {
-            return snprintf(aStringBuffer, sizeofStringBuffer, "FAT type = %u (%s)\nBytes/Cluster = %lu\nNumber of FATs = %u\n"
+            return snprintf(asStringBuffer, sizeofsStringBuffer, "FAT type = %u (%s)\nBytes/Cluster = %lu\nNumber of FATs = %u\n"
                     "Root DIR entries = %u\nSectors/FAT = %lu\nNumber of clusters = %lu\nNumber of free clusters = %lu\n"
                     "FAT start (lba) = %lu\nDIR start (lba,cluster) = %lu\nData start (lba) = %lu\n", (WORD) fs->fs_type,
                     (fs->fs_type == FS_FAT12) ? "FAT12" : (fs->fs_type == FS_FAT16) ? "FAT16" : "FAT32", (DWORD) fs->csize * 512,

@@ -8,12 +8,13 @@
  * @version 1.5.0
  */
 
+#include "Pages.h" // for REMOTE_DISPLAY_WIDTH
 #include "AssertErrorAndMisc.h"
 #include "stm32fx0xPeripherals.h" // for Watchdog_reload()
 #include "BlueDisplay.h"
 #include "BlueSerial.h" // for UART_BD_IRQHANDLER()
 #include "timing.h"
-#include "myStrings.h" // for StringBuffer
+#include "main.h" // for StringBuffer
 
 #ifdef USE_STM32F3_DISCO
 #include "stm32f3_discovery.h"
@@ -23,7 +24,9 @@
 #include <string.h> // for strrchr
 #include <stdlib.h> // for malloc
 
+#ifdef LOCAL_DISPLAY_EXISTS
 int sLockCount = 0; // counts skipped drawChars because of display locks
+#endif
 
 int DebugValue1;
 int DebugValue2;
@@ -41,11 +44,11 @@ int DebugValue5;
 extern "C" void assert_failed(uint8_t* aFile, uint32_t aLine) {
     if (isLocalDisplayAvailable) {
         char * tFile = (strrchr(reinterpret_cast<char*>(aFile), '/') + 1);
-        snprintf(StringBuffer, sizeof StringBuffer, "Wrong parameters value on line: %lu\nfile: %s", aLine, tFile);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Wrong parameters value on line: %lu\nfile: %s", aLine, tFile);
 #ifdef LOCAL_DISPLAY_EXISTS
-        BlueDisplay1.drawMLText(0, ASSERT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
 #else
-        BlueDisplay1.drawText(0, ASSERT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
 #endif
         delayMillis(2000);
     } else {
@@ -78,14 +81,14 @@ extern "C" void assertFailedParamMessage(uint8_t* aFile, uint32_t aLine, uint32_
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
     if (isLocalDisplayAvailable) {
         char * tFile = (strrchr(reinterpret_cast<char*>(aFile), '/') + 1);
-        snprintf(StringBuffer, sizeof StringBuffer, "%s on line: %lu\nfile: %s\nLR=%#X val: %#X %d", aMessage, aLine,
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%s on line: %lu\nfile: %s\nLR=%#X val: %#X %d", aMessage, aLine,
                 tFile, (unsigned int) aLinkRegister, aWrongParameter, aWrongParameter);
 #ifdef LOCAL_DISPLAY_EXISTS
         // reset lock (just in case...)
         sDrawLock = 0;
-        BlueDisplay1.drawMLText(0, ASSERT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
 #else
-        BlueDisplay1.drawText(0, ASSERT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
 #endif
         delayMillis(2000);
     } else {
@@ -103,12 +106,12 @@ extern "C" void assertFailedParamMessage(uint8_t* aFile, uint32_t aLine, uint32_
 extern "C" void printError(uint8_t* aFile, uint32_t aLine) {
     if (isLocalDisplayAvailable) {
         char * tFile = (strrchr(reinterpret_cast<char*>(aFile), '/') + 1);
-        snprintf(StringBuffer, sizeof StringBuffer, "Error on line: %lu\nfile: %s", aLine, tFile);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Error on line: %lu\nfile: %s", aLine, tFile);
 #ifdef LOCAL_DISPLAY_EXISTS
         // reset lock (just in case...)
         sDrawLock = 0;
 #endif
-        BlueDisplay1.drawText(0, ASSERT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
         delayMillis(2000);
     } else {
         /* Infinite loop */

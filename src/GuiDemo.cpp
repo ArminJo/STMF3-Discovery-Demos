@@ -47,8 +47,6 @@ void doGuiDemoButtons(BDButton * aTheTochedButton, int16_t aValue);
 
 void doGolSpeed(BDSlider * aTheTochedSlider, uint16_t aSliderValue);
 
-static BDButton TouchButtonBack;
-
 BDButton TouchButtonContinue;
 
 /*
@@ -144,7 +142,7 @@ void startGuiDemo(void) {
 void loopGuiDemo(void) {
     // count milliseconds for loop control
     uint32_t tMillis = getMillisSinceBoot();
-    MillisSinceLastAction += tMillis - MillisLastLoop;
+    sMillisSinceLastInfoOutput += tMillis - MillisLastLoop;
     MillisLastLoop = tMillis;
 
     if (sNothingTouched) {
@@ -168,8 +166,8 @@ void loopGuiDemo(void) {
     switch (mActualApplication) {
     case APPLICATION_SETTINGS:
         // Moving slider bar :-)
-        if (MillisSinceLastAction >= 20) {
-            MillisSinceLastAction = 0;
+        if (sMillisSinceLastInfoOutput >= 20) {
+            sMillisSinceLastInfoOutput = 0;
             if (ActionSliderUp) {
                 ActionSliderValue++;
                 if (ActionSliderValue == ACTION_SLIDER_MAX) {
@@ -187,12 +185,12 @@ void loopGuiDemo(void) {
         break;
 
     case APPLICATION_GAME_OF_LIFE:
-        if (GolRunning && MillisSinceLastAction >= GolDelay) {
+        if (GolRunning && sMillisSinceLastInfoOutput >= GolDelay) {
             //game of live "app"
             play_gol();
             drawGenerationText();
             draw_gol();
-            MillisSinceLastAction = 0;
+            sMillisSinceLastInfoOutput = 0;
         }
         break;
 
@@ -393,7 +391,7 @@ void doNew(BDButton * aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     BDSlider::deactivateAllSliders();
     initNewGameOfLife();
-    MillisSinceLastAction = GolDelay;
+    sMillisSinceLastInfoOutput = GolDelay;
     GolRunning = true;
 }
 
@@ -406,7 +404,7 @@ void doContinue(BDButton * aTheTouchedButton, int16_t aValue) {
     } else {
         ClearScreenAndDrawGameOfLifeGrid();
     }
-    MillisSinceLastAction = GolDelay;
+    sMillisSinceLastInfoOutput = GolDelay;
     GolRunning = true;
 }
 
@@ -504,8 +502,8 @@ void ADS7846DisplayChannels(void) {
             tUse12BitMode = true;
         }
         tTemp = TouchPanel.readChannel(ADS7846ChannelMapping[i], tUse12BitMode, tUseDiffMode, 2);
-        snprintf(StringBuffer, sizeof StringBuffer, "%04u", tTemp);
-        BlueDisplay1.drawText(15, tPosY, StringBuffer, TEXT_SIZE_22, COLOR_RED, COLOR_DEMO_BACKGROUND);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "%04u", tTemp);
+        BlueDisplay1.drawText(15, tPosY, sStringBuffer, TEXT_SIZE_22, COLOR_RED, COLOR_DEMO_BACKGROUND);
         tPosY += TEXT_SIZE_22_HEIGHT;
     }
     aButtonCheckInterval++;

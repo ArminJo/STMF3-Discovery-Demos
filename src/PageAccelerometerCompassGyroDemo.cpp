@@ -163,7 +163,7 @@ void startAccelerometerCompassPage(void) {
     registerRedrawCallback(&drawAccDemoGui);
 
     sAccelerationScale = 90;
-    MillisSinceLastAction = 0;
+    sMillisSinceLastInfoOutput = 0;
 
     SPI1_setPrescaler(SPI_BAUDRATEPRESCALER_8);
 
@@ -197,18 +197,18 @@ void loopAccelerometerGyroCompassPage(void) {
 
     /* Wait 50 ms for data ready */
     uint32_t tMillis = getMillisSinceBoot();
-    MillisSinceLastAction += tMillis - MillisLastLoop;
+    sMillisSinceLastInfoOutput += tMillis - MillisLastLoop;
     MillisLastLoop = tMillis;
-    if (MillisSinceLastAction > 50) {
-        MillisSinceLastAction = 0;
+    if (sMillisSinceLastInfoOutput > 50) {
+        sMillisSinceLastInfoOutput = 0;
         /**
          * Accelerometer data
          */
 
         readAccelerometerZeroCompensated(&AccelerometerCompassRawDataBuffer[0]);
-        snprintf(StringBuffer, sizeof StringBuffer, "Accelerometer X=%5d Y=%5d Z=%5d", AccelerometerCompassRawDataBuffer[0],
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Accelerometer X=%5d Y=%5d Z=%5d", AccelerometerCompassRawDataBuffer[0],
                 AccelerometerCompassRawDataBuffer[1], AccelerometerCompassRawDataBuffer[2]);
-        BlueDisplay1.drawText(TEXT_START_X, TEXT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_BLACK, COLOR_GREEN);
+        BlueDisplay1.drawText(TEXT_START_X, TEXT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_BLACK, COLOR_GREEN);
         BlueDisplay1.refreshVector(&AccelerationLine, (AccelerometerCompassRawDataBuffer[0] / sAccelerationScale),
                 (AccelerometerCompassRawDataBuffer[1] / sAccelerationScale));
         BlueDisplay1.drawPixel(AccelerationLine.StartX, AccelerationLine.StartY, COLOR_BLACK);
@@ -221,9 +221,9 @@ void loopAccelerometerGyroCompassPage(void) {
          * Compass data
          */
         readCompassRaw(&AccelerometerCompassRawDataBuffer[0]);
-        snprintf(StringBuffer, sizeof StringBuffer, "Compass X=%5d Y=%5d Z=%5d", AccelerometerCompassRawDataBuffer[0],
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Compass X=%5d Y=%5d Z=%5d", AccelerometerCompassRawDataBuffer[0],
                 AccelerometerCompassRawDataBuffer[1], AccelerometerCompassRawDataBuffer[2]);
-        BlueDisplay1.drawText(TEXT_START_X, TEXT_SIZE_11_HEIGHT + TEXT_START_Y, StringBuffer, TEXT_SIZE_11,
+        BlueDisplay1.drawText(TEXT_START_X, TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11,
         COLOR_BLACK,
         COLOR_GREEN);
         // values can reach 800
@@ -235,9 +235,9 @@ void loopAccelerometerGyroCompassPage(void) {
          * Gyroscope data
          */
         readGyroscopeZeroCompensated(&GyroscopeRawDataBuffer[0]);
-        snprintf(StringBuffer, sizeof StringBuffer, "Gyroscope R=%7.1f P=%7.1f Y=%7.1f", GyroscopeRawDataBuffer[0],
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Gyroscope R=%7.1f P=%7.1f Y=%7.1f", GyroscopeRawDataBuffer[0],
                 GyroscopeRawDataBuffer[1], GyroscopeRawDataBuffer[2]);
-        BlueDisplay1.drawText(TEXT_START_X, 2 * TEXT_SIZE_11_HEIGHT + TEXT_START_Y, StringBuffer, TEXT_SIZE_11,
+        BlueDisplay1.drawText(TEXT_START_X, 2 * TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11,
         COLOR_BLACK,
         COLOR_GREEN);
 
@@ -268,9 +268,9 @@ void stopAccelerometerCompassPage(void) {
 }
 
 void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallbackInfo) {
-    snprintf(StringBuffer, sizeof StringBuffer, "Accelerometer X=%7.4f Y=%7.4f Z=%7.4f", aSensorCallbackInfo->ValueX,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "Accelerometer X=%7.4f Y=%7.4f Z=%7.4f", aSensorCallbackInfo->ValueX,
             aSensorCallbackInfo->ValueY, aSensorCallbackInfo->ValueZ);
-    BlueDisplay1.drawText(TEXT_START_X, TEXT_START_Y, StringBuffer, TEXT_SIZE_11, COLOR_BLACK, COLOR_GREEN);
+    BlueDisplay1.drawText(TEXT_START_X, TEXT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_BLACK, COLOR_GREEN);
     // do not invert Y since Y drawing direction is inverse (positive is downward)
     BlueDisplay1.refreshVector(&AccelerationLine, (-aSensorCallbackInfo->ValueX * sAccelerationScale) / 4,
             aSensorCallbackInfo->ValueY * (sAccelerationScale / 4));
@@ -284,8 +284,8 @@ void doChangeAccScale(BDButton * aTheTouchedButton, int16_t aValue) {
         sAccelerationScale = 10;
         tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
     }
-    snprintf(StringBuffer, sizeof StringBuffer, "Scale=%3u", sAccelerationScale);
-    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND - 4, StringBuffer, TEXT_SIZE_11,
+    snprintf(sStringBuffer, sizeof sStringBuffer, "Scale=%3u", sAccelerationScale);
+    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND - 4, sStringBuffer, TEXT_SIZE_11,
     COLOR_BLUE,
     COLOR_ACC_GYRO_BACKGROUND);
     FeedbackTone(tFeedbackType);

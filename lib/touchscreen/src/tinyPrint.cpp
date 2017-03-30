@@ -14,7 +14,7 @@
 #include "BlueDisplay.h"
 #include "MI0283QT2.h"
 // need external StringBuffer to save RAM space
-extern char * StringBuffer;
+extern char * sStringBuffer;
 
 #include <stdio.h> // for sprintf
 #include <stdarg.h>
@@ -77,9 +77,9 @@ int printNewline(void) {
 int myPrintf(const char *aFormat, ...) {
     va_list argp;
     va_start(argp, aFormat);
-    int tLength = vsnprintf(StringBuffer, sizeof StringBuffer, aFormat, argp);
+    int tLength = vsnprintf(sStringBuffer, sizeof sStringBuffer, aFormat, argp);
     va_end(argp);
-    myPrint(StringBuffer, tLength);
+    myPrint(sStringBuffer, tLength);
     return tLength;
 }
 

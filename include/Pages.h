@@ -8,23 +8,18 @@
  * @version 1.5.0
  */
 
-
 #ifndef PAGES_H_
 #define PAGES_H_
 
-//#define DEBUG_MINIMAL_VERSION // ???since debugging is not possible if Flash is almost occupied complete???
-#ifndef LOCAL_DISPLAY_EXISTS
+//#define DEBUG_MINIMAL_VERSION // ???since debugging is not possible if Flash is almost fully occupied ???
 // Landscape format
-static const int DISPLAY_HEIGHT = 240;
-static const int DISPLAY_WIDTH = 320;
-#endif
+const unsigned int REMOTE_DISPLAY_HEIGHT = 240;
+const unsigned int REMOTE_DISPLAY_WIDTH = 320;
 
 #include "BlueDisplay.h"
-#include "BlueSerial.h" // for checkAndHandleMessagesReceived()
-#include "utils.h"
-#include "EventHandler.h"
-#include "myStrings.h"
+#include "main.h" // for StringBuffer
 #include "timing.h"
+#include "utils.h" // for showRTCTime
 
 #ifdef LOCAL_DISPLAY_EXISTS
 #include "TouchSlider.h"
@@ -34,11 +29,43 @@ static const int DISPLAY_WIDTH = 320;
 
 #include "stm32fx0xPeripherals.h"
 
-// for NAN in numberpad
-#include <math.h>
-#include <stdio.h> /* for sprintf */
+#include <stdio.h> // for sprintf
 
-#endif
+extern BDButton TouchButtonBack;
+
+// global flag for page control. Is evaluated by calling loop or page and set by buttonBack handler
+extern bool sBackButtonPressed;
+
+/**
+ * From TouchDSOGui page
+ */
+void initDSOPage(void);
+void startDSOPage(void);
+void loopDSOPage(void);
+void stopDSOPage(void);
+
+// have it here and not at MainMenuPage since it is also used for systems without main menu
+void doDefaultBackButton(BDButton * aTheTouchedButton, int16_t aValue);
+extern BDButton TouchButtonFrequencyPage;
+extern BDButton TouchButtonShowSystemInfo;
+
+/**
+ * From FrequencyGenerator page
+ */
+void initFrequencyGenerator(void);
+void initFrequencyGeneratorPage(void);
+void drawFrequencyGeneratorPage(void);
+void startFrequencyGeneratorPage(void);
+void loopFrequencyGeneratorPage(void);
+void stopFrequencyGeneratorPage(void);
+
+/**
+ * From system info page
+ */
+void initSystemInfoPage(void);
+void startSystemInfoPage(void);
+void loopSystemInfoPage(void);
+void stopSystemInfoPage(void);
 
 /**
  * from MainMenuPage
@@ -61,8 +88,11 @@ void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue);
 
 // for loop timings
 extern uint32_t MillisLastLoop;
-extern uint32_t MillisSinceLastAction;
+extern uint32_t sMillisSinceLastInfoOutput;
 
+/**
+ * From MainMenuPage
+ */
 void initMainMenuPage(void);
 void startMainMenuPage(void);
 void loopMainMenuPage(void);
@@ -83,7 +113,7 @@ void initMainHomeButton(bool doDraw);
 void initBacklightElements(void);
 void deinitBacklightElements(void);
 void drawBacklightElements(void);
-void doBacklightSlider(BDSlider *  aTheTouchedSlider,  uint16_t aBrightness);
+void doBacklightSlider(BDSlider * aTheTouchedSlider, uint16_t aBrightness);
 #endif
 
 void initClockSettingElements(void);
@@ -97,6 +127,7 @@ void stopSettingsPage(void);
 /**
  * from  numberpad page
  */
+#include <math.h> // for NAN in numberpad
 #define NUMBERPAD_DEFAULT_X 60
 float getNumberFromNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor);
 
@@ -107,14 +138,6 @@ void initDACPage(void);
 void startDACPage(void);
 void loopDACPage(void);
 void stopDACPage(void);
-
-/**
- * From FrequencyGenerator page
- */
-void initFrequencyGeneratorPage(void);
-void startFrequencyGeneratorPage(void);
-void loopFrequencyGeneratorPage(void);
-void stopFrequencyGeneratorPage(void);
 
 /**
  * From IR page
@@ -140,20 +163,20 @@ void loopBobsDemo(void);
 void stopBobsDemo(void);
 
 /**
- * From Tests page
- */
-void initInfoPage(void);
-void startTestsPage(void);
-void loopTestsPage(void);
-void stopTestsPage(void);
-
-/**
- * From Info page
+ * From info page
  */
 void initInfoPage(void);
 void startInfoPage(void);
 void loopInfoPage(void);
 void stopInfoPage(void);
+
+/**
+ * From Tests page
+ */
+void initTestsPage(void);
+void startTestsPage(void);
+void loopTestsPage(void);
+void stopTestsPage(void);
 
 /**
  * From Draw page
@@ -162,4 +185,5 @@ void startDrawPage(void);
 void loopDrawPage(void);
 void stopDrawPage(void);
 
+#endif /* __cplusplus */
 #endif /* PAGES_H_ */

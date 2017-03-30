@@ -14,7 +14,7 @@
 #include "MI0283QT2.h"
 #include "BlueDisplay.h"
 #include "thickline.h"
-#include "myStrings.h"
+#include "main.h" // for StringBuffer
 #include "STM32TouchScreenDriver.h"
 #include "timing.h"
 #include "stm32fx0xPeripherals.h"
@@ -927,9 +927,9 @@ extern "C" void storeScreenshot(void) {
 //	bmpfileheader[4] = (unsigned char) (filesize >> 16);
 //	bmpfileheader[5] = (unsigned char) (filesize >> 24);
 
-        RTC_getDateStringForFile(StringBuffer);
-        strcat(StringBuffer, ".bmp");
-        tOpenResult = f_open(&tFile, StringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
+        RTC_getDateStringForFile(sStringBuffer);
+        strcat(sStringBuffer, ".bmp");
+        tOpenResult = f_open(&tFile, sStringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
         uint16_t * tBufferPtr;
         if (tOpenResult == FR_OK) {
             uint16_t * tFourDisplayLinesBufferPointer = (uint16_t *) malloc(sizeof(uint16_t) * 4 * DISPLAY_DEFAULT_WIDTH);

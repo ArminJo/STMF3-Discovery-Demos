@@ -479,16 +479,6 @@ void TouchButton::setTouchHandler(void (*aOnTouchHandler)(TouchButton*, int16_t)
  * Plain util c++ functions
  ****************************************/
 
-/**
- *
- * @param aTheTouchedButton
- * @param aValue assume as boolean here
- */
-void doToggleRedGreenButton(TouchButton * aTheTouchedButton, int16_t aValue) {
-    aValue = !aValue;
-    aTheTouchedButton->setValueAndDraw(aValue);
-}
-
 #ifdef USE_BUTTON_POOL
 /**
  *
