@@ -44,19 +44,17 @@ void SystemClock_Config(void);
 bool sBackButtonPressed;
 
 void initDisplay(void) {
-    BlueDisplay1.setFlagsAndSize(BD_FLAG_FIRST_RESET_ALL | BD_FLAG_USE_MAX_SIZE | BD_FLAG_LONG_TOUCH_ENABLE, 320,
-            240);
+    BlueDisplay1.setFlagsAndSize(BD_FLAG_FIRST_RESET_ALL | BD_FLAG_USE_MAX_SIZE | BD_FLAG_LONG_TOUCH_ENABLE, 320, 240);
     BlueDisplay1.setCharacterMapping(0x81, 0x03A9); // Omega in UTF16
     BlueDisplay1.setCharacterMapping(0xD6, 0x21B2); // Enter in UTF16
-    BlueDisplay1.setCharacterMapping(0xD1, 0x21E7); // Ascending in UTF16
-    BlueDisplay1.setCharacterMapping(0xD2, 0x21E9); // Descending in UTF16
+    BlueDisplay1.setCharacterMapping(0xD1, 0x21E7); // Ascending in UTF16 - for printInfo()
+    BlueDisplay1.setCharacterMapping(0xD2, 0x21E9); // Descending in UTF16 - for printInfo()
     BlueDisplay1.setCharacterMapping(0xD3, 0x2302); // Home in UTF16
     BlueDisplay1.setCharacterMapping(0xD4, 0x2227); // UP (logical AND) in UTF16
     BlueDisplay1.setCharacterMapping(0xD5, 0x2228); // Down (logical OR) in UTF16
     BlueDisplay1.setCharacterMapping(0xE0, 0x2195); // UP/Down in UTF16
     BlueDisplay1.setCharacterMapping(0xF8, 0x2103); // Degree Celsius in UTF16
 }
-
 
 int main(void) {
 
@@ -125,8 +123,6 @@ int main(void) {
         /* Initialization Error */
         Error_Handler();
     }
-    extern SPI_HandleTypeDef SpiHandle; // from stm32f3_discovery.c
-    SPI1HandlePtr = &SpiHandle;
 
     // initializes I2C
     if (BSP_ACCELERO_Init() != HAL_OK) {
@@ -196,7 +192,6 @@ int main(void) {
         initSystemInfoPage();
         initDACPage();
         initFrequencyGeneratorPage();
-        Synth_Timer_initialize(72000);
         //setZeroAccelerometerGyroValue();
 
         if (MICROSD_isCardInserted()) {
@@ -252,11 +247,11 @@ int main(void) {
  * @retval None
  */
 void SystemClock_Config(void) {
-//    RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_ClkInitTypeDef RCC_ClkInitStruct;
 //    RCC_OscInitTypeDef RCC_OscInitStruct;
 //    RCC_PeriphCLKInitTypeDef RCC_PeriphClkInit;
 //
-//    /* Enable HSE Oscillator and activate PLL with HSE as source */
+    /* Enable HSE Oscillator and activate PLL with HSE as source */
 //    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 //    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 //    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -267,6 +262,7 @@ void SystemClock_Config(void) {
 //        Error_Handler();
 //    }
 
+    // saves 1712 Bytes
     /*
      * Timeouts are not possible since systick is not running
      */
@@ -305,31 +301,14 @@ void SystemClock_Config(void) {
 
     /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
      clocks dividers */
-//    RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
-//    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-//    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-//    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-//    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-//    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-//        Error_Handler();
-//    }
-//
-    /*
-     * saves 1136 bytes code
-     */
-    /* Program the new number of wait states to the LATENCY bits in the FLASH_ACR register */
-    __HAL_FLASH_SET_LATENCY(FLASH_LATENCY_2);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_HPRE, RCC_SYSCLK_DIV1);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_SYSCLKSOURCE_PLLCLK);
-
-    // really needed !!!
-    while (__HAL_RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_PLLCLK) {
-        ;
+    RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+        Error_Handler();
     }
 
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE1, RCC_HCLK_DIV2);
-    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE2, RCC_HCLK_DIV1 << 3);
-    /* Configure the source of time base considering new system clocks settings*/
-    HAL_InitTick(TICK_INT_PRIORITY);
 }
 

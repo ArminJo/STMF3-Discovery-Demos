@@ -60,7 +60,7 @@ BDButton * const TouchButtonsMainMenu[] = { &TouchButtonDSO, &TouchButtonBob, &T
         &TouchButtonInfo, &TouchButtonMainSettings, &TouchButtonIR, &TouchButtonMainHome }; // TouchButtonMainHome must be last element of array
 
 uint32_t MillisLastLoop;
-uint32_t sMillisSinceLastInfoOutput;
+unsigned int sMillisSinceLastInfoOutput;
 
 void drawMainMenuPage(void);
 
@@ -147,7 +147,6 @@ void doMainMenuButtons(BDButton * aTheTouchedButton, int16_t aValue) {
             loopBobsDemo();
         }
         stopBobsDemo();
-        return;
 
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonIR.mButtonHandle) {
         startIRPage();
@@ -243,50 +242,50 @@ void startMainMenuPage(void) {
     // 1. row
     int tPosY = 0;
     TouchButtonDSO.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "DSO", TEXT_SIZE_22,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonMainSettings.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Settings",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonDemo.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Demo",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     // not visible on this page
     TouchButtonMainHome.init(BUTTON_WIDTH_5_POS_5, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4,
-    MAIN_MENU_COLOR, StringHomeChar, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doDefaultBackButton);
+    MAIN_MENU_COLOR, StringHomeChar, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doDefaultBackButton);
 
     // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonIR.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "IR", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH,
+    TouchButtonIR.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "IR", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH,
             0, &doMainMenuButtons);
 
     TouchButtonAccelerometer.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Accelero.",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonDraw.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Draw",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     //3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonDac.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "DAC", TEXT_SIZE_22,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonDatalogger.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "AccuCapacity",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonBob.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Bob",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     //4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonFrequencyGenerator.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Frequency",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonInfo.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Info",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
     TouchButtonTest.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, MAIN_MENU_COLOR, "Test",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doMainMenuButtons);
 
 #pragma GCC diagnostic pop
 

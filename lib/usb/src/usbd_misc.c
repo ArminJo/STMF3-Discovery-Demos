@@ -91,8 +91,8 @@ int getUSB_StaticInfos(char *aStringBuffer, size_t sizeofStringBuffer) {
     if (USBDDeviceHandle.pClass == &USBD_CDC) {
         // print additional CDC info
         tIndex += snprintf(&aStringBuffer[tIndex], sizeofStringBuffer - tIndex, "Buffer:%3d Byte\n", tPacketSize);
-        tIndex += snprintf(&aStringBuffer[tIndex], sizeofStringBuffer - tIndex, "%6ld Baud  %d Bit  %d Stop", LineCoding.bitrate,
-                LineCoding.datatype, LineCoding.format + 1);
+//        tIndex += snprintf(&aStringBuffer[tIndex], sizeofStringBuffer - tIndex, "%6ld Baud  %d Bit  %d Stop", LineCoding.bitrate,
+//                LineCoding.datatype, LineCoding.format + 1);
 
     }
     return tIndex;

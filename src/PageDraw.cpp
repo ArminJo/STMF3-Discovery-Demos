@@ -78,12 +78,12 @@ void startDrawPage(void) {
     uint16_t tPosY = 0;
     for (uint8_t i = 0; i < 5; ++i) {
         TouchButtonsDrawColor[i].init(0, tPosY, 30, 30, DrawColors[i], NULL, TEXT_SIZE_11,
-                BUTTON_FLAG_DO_BEEP_ON_TOUCH, i, &doDrawColor);
+                FLAG_BUTTON_DO_BEEP_ON_TOUCH, i, &doDrawColor);
         tPosY += 30;
     }
 
     TouchButtonClear.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Clear", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doDrawClear);
+    BUTTON_HEIGHT_4, COLOR_RED, "Clear", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doDrawClear);
 
     // No need to store old values since I know, that I return to main page
     registerTouchDownCallback(&drawPageTouchDownCallbackHandler);

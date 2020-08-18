@@ -22,7 +22,7 @@ static uint8_t LastSecond = 0;
  * @param aColor
  * @param aBackColor
  */
-void showRTCTimeEverySecond(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aBGColor) {
+void showRTCTimeEverySecond(uint16_t x, uint16_t y, color16_t aFGColor, color16_t aBGColor) {
     uint8_t tSecond = RTC_getSecond();
     if (LastSecond != tSecond) {
         LastSecond = tSecond;
@@ -36,7 +36,7 @@ void showRTCTimeEverySecond(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aB
 /*
  * shows RTC time if year != 0 or if aForceDisplay == true
  */
-void showRTCTime(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aBGColor, bool aForceDisplay) {
+void showRTCTime(uint16_t x, uint16_t y, color16_t aFGColor, color16_t aBGColor, bool aForceDisplay) {
     RTC_getTimeString(sStringBuffer);
     if (RTC_DateIsValid || aForceDisplay) {
         BlueDisplay1.drawText(x, y, sStringBuffer, TEXT_SIZE_11, aFGColor, aBGColor);

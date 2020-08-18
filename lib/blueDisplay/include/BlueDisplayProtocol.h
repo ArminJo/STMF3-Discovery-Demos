@@ -1,7 +1,9 @@
 /*
  * BlueDisplayProtocol.h
  *
- *   SUMMARY
+ * Defines all the protocol related constants and structures required for the client stubs.
+ *
+ *  SUMMARY
  *  Blue Display is an Open Source Android remote Display for Arduino etc.
  *  It receives basic draw requests from Arduino etc. over Bluetooth and renders it.
  *  It also implements basic GUI elements as buttons and sliders.
@@ -10,17 +12,18 @@
  *  Copyright (C) 2015  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
- *  This file is part of BlueDisplay.
+ *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
+ *
  *  BlueDisplay is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
-
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
-
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/gpl.html>.
  *
@@ -35,9 +38,9 @@
  *
  * Data (expected for messages with function code >= 0x60):
  * 1. Sync Byte A5
- * 2. Byte Data_Size_Type token (byte, short etc.) - only byte used
+ * 2. Byte Data_Size_Type token (byte, short etc.) - only byte used now
  * 3. Short length of data in byte units
- * 4. Length items of data values
+ * 4. (Length) items of data values
  *
  *
  * RECEIVE PROTOCOL USED:
@@ -154,11 +157,14 @@ struct Swipe {
     uint16_t TouchDeltaAbsMax; // max of TouchDeltaXAbs and TouchDeltaYAbs to easily decide if swipe is large enough to be accepted
 };
 
+// Union to speed up the combination of low and high bytes to a word
+// it is not optimal since the compiler still generates 2 unnecessary moves
+// but using  -- value = (high << 8) | low -- gives 5 unnecessary instructions
 union ByteShortLongFloatUnion {
-    unsigned char ByteValues[4];
-    uint16_t Int16Values[2];
-    uint32_t Int32Value;
-    float FloatValue;
+    unsigned char byteValues[4];
+    uint16_t uint16Values[2];
+    uint32_t uint32Value;
+    float floatValue;
 };
 
 struct GuiCallback {
@@ -260,6 +266,7 @@ const int FUNCTION_NOP = 0x7F;
  *********************/
 const int FUNCTION_CLEAR_DISPLAY = 0x10;
 const int FUNCTION_DRAW_DISPLAY = 0x11;
+const int FUNCTION_CLEAR_DISPLAY_OPTIONAL = 0x12;
 // 3 parameter
 const int FUNCTION_DRAW_PIXEL = 0x14;
 // 6 parameter
@@ -328,6 +335,7 @@ const int FUNCTION_BUTTON_GLOBAL_SETTINGS = 0x4A;
 
 // Function with variable data size
 const int FUNCTION_BUTTON_CREATE = 0x70;
+const int FUNCTION_BUTTON_INIT = 0x70;
 const int FUNCTION_BUTTON_SET_CAPTION_FOR_VALUE_TRUE = 0x71;
 const int FUNCTION_BUTTON_SET_CAPTION = 0x72;
 const int FUNCTION_BUTTON_SET_CAPTION_AND_DRAW_BUTTON = 0x73;
@@ -336,6 +344,7 @@ const int FUNCTION_BUTTON_SET_CAPTION_AND_DRAW_BUTTON = 0x73;
  * Slider functions
  *********************/
 static const int FUNCTION_SLIDER_CREATE = 0x50;
+static const int FUNCTION_SLIDER_INIT = 0x50;
 static const int FUNCTION_SLIDER_DRAW = 0x51;
 static const int FUNCTION_SLIDER_SETTINGS = 0x52;
 static const int FUNCTION_SLIDER_DRAW_BORDER = 0x53;

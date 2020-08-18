@@ -531,7 +531,7 @@ void swipeEndHandlerAccuCapacity(struct Swipe * const aSwipeInfo) {
         }
     } else {
         // swipe on start page
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
     }
 #ifdef LOCAL_DISPLAY_EXISTS
     FeedbackTone(tFeedbackType);
@@ -683,15 +683,15 @@ void doShowChartScreen(BDButton * aTheTouchedButton, int16_t aProbeIndex) {
 int changeXOffset(int aValue) {
     signed int tNewValue = AccuCapDisplayControl[ActualProbe].XStartIndex
             + VoltageCharts[ActualProbe]->adjustIntWithXScaleFactor(aValue);
-    int tRetValue = FEEDBACK_TONE_NO_ERROR;
+    int tRetValue = FEEDBACK_TONE_OK;
     if (tNewValue < 0) {
         tNewValue = 0;
-        tRetValue = FEEDBACK_TONE_SHORT_ERROR;
+        tRetValue = FEEDBACK_TONE_ERROR;
     } else if (tNewValue * VoltageCharts[ActualProbe]->getXGridSpacing()
             > DataloggerMeasurementControl[ActualProbe].SampleCount) {
         tNewValue = DataloggerMeasurementControl[ActualProbe].SampleCount
                 / VoltageCharts[ActualProbe]->getXGridSpacing();
-        tRetValue = FEEDBACK_TONE_SHORT_ERROR;
+        tRetValue = FEEDBACK_TONE_ERROR;
     }
     AccuCapDisplayControl[ActualProbe].XStartIndex = tNewValue;
     drawData(true);
@@ -707,14 +707,14 @@ int changeXScaleFactor(int aValue) {
     VoltageCharts[ActualProbe]->setXScaleFactor(tXScaleFactor, true);
     ResistanceCharts[ActualProbe]->setXScaleFactor(tXScaleFactor, false);
     drawData(true);
-    return FEEDBACK_TONE_NO_ERROR;
+    return FEEDBACK_TONE_OK;
 }
 
 int changeYOffset(int aValue) {
     VoltageCharts[ActualProbe]->stepYLabelStartValueFloat(aValue);
 // refresh screen
     redrawAccuCapacityChartPage();
-    return FEEDBACK_TONE_NO_ERROR;
+    return FEEDBACK_TONE_OK;
 }
 
 /**
@@ -737,7 +737,7 @@ int changeYScaleFactor(int aValue) {
 
 // refresh screen
     redrawAccuCapacityChartPage();
-    return FEEDBACK_TONE_NO_ERROR;
+    return FEEDBACK_TONE_OK;
 }
 
 static void doShowSettings(BDButton * aTheTouchedButton, int16_t aValue) {
@@ -814,12 +814,12 @@ void doSetReadingChargeVoltage(BDButton * aTheTouchedButton, int16_t aValue) {
 }
 
 void doSetSamplePeriod(BDButton * aTheTouchedButton, int16_t aValue) {
-    unsigned int tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+    unsigned int tFeedbackType = FEEDBACK_TONE_OK;
     unsigned int tSeconds = DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds;
     tSeconds += aValue * 10;
     if (tSeconds <= 0) {
         tSeconds = SAMPLE_PERIOD_MINIMUM;
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
     }
     DataloggerMeasurementControl[ActualProbe].SamplePeriodSeconds = tSeconds;
 #ifdef LOCAL_DISPLAY_EXISTS
@@ -1018,7 +1018,7 @@ static void doStoreLoadChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) 
                 AccuCapDisplayControl[aProbeIndex].ActualDataChart = CHART_DATA_BOTH;
                 // redraw display corresponding to new values
                 redrawAccuCapacityChartPage();
-                tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+                tFeedbackType = FEEDBACK_TONE_OK;
             }
         } else {
             /*
@@ -1033,7 +1033,7 @@ static void doStoreLoadChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) 
                 f_write(&tFile, &DataloggerMeasurementControl[aProbeIndex],
                         sizeof(DataloggerMeasurementControl[aProbeIndex]), &tCount);
                 f_close(&tFile);
-                tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+                tFeedbackType = FEEDBACK_TONE_OK;
             }
         }
     }
@@ -1098,7 +1098,7 @@ static void doExportChart(BDButton * aTheTouchedButton, int16_t aProbeIndex) {
                     f_write(&tFile, sStringBuffer, strlen(sStringBuffer), &tCount);
                 }
                 f_close(&tFile);
-                tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+                tFeedbackType = FEEDBACK_TONE_OK;
             }
         }
     }
@@ -1123,9 +1123,9 @@ void initGUIAccuCapacity(void) {
 
 // for main screen
     TouchButtonsMain[0].init(0, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[0], "Probe 1",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
     TouchButtonsMain[1].init(BUTTON_WIDTH_2_5_POS_2, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[1], "Probe 2",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 1, &doShowChartScreen);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doShowChartScreen);
 
     /*
      * chart buttons from left to right
@@ -1135,36 +1135,36 @@ void initGUIAccuCapacity(void) {
      * 1. column
      */
     TouchButtonProbeSettings.init(BUTTON_WIDTH_5_POS_2, 0, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_CONTROL, "Sett.", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doShowSettings);
+    COLOR_GUI_CONTROL, "Sett.", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowSettings);
     TouchButtonClearDataBuffer.init(BUTTON_WIDTH_5_POS_2, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_VALUES, "Clear", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doClearDataBuffer);
+    COLOR_GUI_VALUES, "Clear", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doClearDataBuffer);
     TouchButtonChartSwitchData.init(BUTTON_WIDTH_5_POS_2, 2 * (BUTTON_HEIGHT_5 + (BUTTON_DEFAULT_SPACING / 2)),
-    BUTTON_WIDTH_5, BUTTON_HEIGHT_5, COLOR_GUI_DISPLAY_CONTROL, "Volt", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0,
+    BUTTON_WIDTH_5, BUTTON_HEIGHT_5, COLOR_GUI_DISPLAY_CONTROL, "Volt", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
             &doSwitchChartData);
 
     /*
      * 2. column
      */
     TouchButtonStartStopCapacityMeasurement.init(BUTTON_WIDTH_5_POS_3, 0, BUTTON_WIDTH_5,
-    BUTTON_HEIGHT_5, COLOR_GUI_CONTROL, "", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doStartStopAccuCap);
+    BUTTON_HEIGHT_5, COLOR_GUI_CONTROL, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartStopAccuCap);
     TouchButtonMode.init(BUTTON_WIDTH_5_POS_3, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_VALUES, "", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doChargeMode);
+    COLOR_GUI_VALUES, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doChargeMode);
 
     /*
      * 3. column
      */
     TouchButtonNext.init(BUTTON_WIDTH_5_POS_4, 0, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_CONTROL, "Next", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
+    COLOR_GUI_CONTROL, "Next", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
     TouchButtonLoadStore.init(BUTTON_WIDTH_5_POS_4, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_VALUES, "", TEXT_SIZE_11, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0, &doStoreLoadChart);
+    COLOR_GUI_VALUES, "", TEXT_SIZE_11, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0, &doStoreLoadChart);
 
     /*
      * 4. column
      */
     TouchButtonMain.init(BUTTON_WIDTH_5_POS_5, 0, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_CONTROL, "Back", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doShowMainScreen);
+    COLOR_GUI_CONTROL, "Back", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowMainScreen);
     TouchButtonExport.init(BUTTON_WIDTH_5_POS_5, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
-    COLOR_GUI_VALUES, "Export", TEXT_SIZE_11, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0, &doExportChart);
+    COLOR_GUI_VALUES, "Export", TEXT_SIZE_11, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0, &doExportChart);
 
     /*
      * Settings page buttons
@@ -1172,23 +1172,23 @@ void initGUIAccuCapacity(void) {
 // 1. row
     int tPosY = 0;
     TouchButtonSetProbeNumber.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringProbeNumber,
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doSetProbeNumber);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetProbeNumber);
 
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, 0, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_GUI_CONTROL, "Back", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
+    COLOR_GUI_CONTROL, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
 
 // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonSetLoadResistor.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringLoadResistor,
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doSetLoadResistorValue);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetLoadResistorValue);
 
 // Value settings buttons
     TouchButtonAutorepeatSamplePeriodPlus.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_4,
-    COLOR_GUI_CONTROL, "+", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1,
+    COLOR_GUI_CONTROL, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doSetSamplePeriod);
 
     TouchButtonAutorepeatSamplePeriodMinus.init(BUTTON_WIDTH_6_POS_6, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_4,
-    COLOR_GUI_CONTROL, "-", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1,
+    COLOR_GUI_CONTROL, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1,
             &doSetSamplePeriod);
 
     TouchButtonAutorepeatSamplePeriodPlus.setButtonAutorepeatTiming(600, 100, 10, 40);
@@ -1197,16 +1197,16 @@ void initGUIAccuCapacity(void) {
 // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonSetExternalAttenuatorFactor.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4,
-    COLOR_GUI_VALUES, StringExternalAttenuatorFactor, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0,
+    COLOR_GUI_VALUES, StringExternalAttenuatorFactor, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
             &doSetExternalAttenuatorFactor);
 
 // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonSetStopValue.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStopVoltage,
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doSetStopValue);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetStopValue);
 
     TouchButtonSetChargeVoltage.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2,
-    BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStoreChargeVoltage, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0,
+    BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStoreChargeVoltage, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
             &doSetReadingChargeVoltage);
 
 #pragma GCC diagnostic pop

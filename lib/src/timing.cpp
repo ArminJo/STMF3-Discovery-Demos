@@ -138,8 +138,7 @@ void changeDelayCallback(void (*aDelayCallback)(void), int32_t aTimeMillis) {
 }
 
 /**
- * This function implements SysTick Handler.
- * Dims LCD after period of touch inactivity
+ * This function is called by SysTick Handler.
  */
 void doOneSystic(void) {
     /**

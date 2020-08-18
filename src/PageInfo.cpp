@@ -395,30 +395,30 @@ void startInfoPage(void) {
 //1. row
 #ifdef LOCAL_DISPLAY_EXISTS
     TouchButtonInfoFont1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "Font 1",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonInfoFont2.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Font 2", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "Font 2", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 #endif
 
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Back", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, -1, &doInfoBackButton);
+    BUTTON_HEIGHT_4, COLOR_RED, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -1, &doInfoBackButton);
 
 // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonInfoMMC.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "MMC Infos",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonSystemInfo.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "System info", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "System info", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonInfoColors.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Colors", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "Colors", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
 // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonInfoUSB.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "USB Infos",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
 // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
@@ -426,9 +426,9 @@ void startInfoPage(void) {
 #ifdef LOCAL_DISPLAY_EXISTS
 // button for sub pages
     TouchButtonSettingsGamma1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN,
-    NULL, 0, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doSetGamma);
+    NULL, 0, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetGamma);
     TouchButtonSettingsGamma2.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, NULL, 0, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 1, &doSetGamma);
+    BUTTON_HEIGHT_4, COLOR_GREEN, NULL, 0, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetGamma);
 #endif
 
 #pragma GCC diagnostic pop

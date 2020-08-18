@@ -99,12 +99,12 @@ void drawAccDemoGui(void) {
  */
 void initAccelerometerCompassPage(void) {
     /* Configure MEMS magnetometer main parameters: temp, working mode, full Scale and Data rate */
-    LSM303DLHCMag_InitTypeDef LSM303DLHC_InitStructure;
-    LSM303DLHC_InitStructure.Temperature_Sensor = LSM303DLHC_TEMPSENSOR_ENABLE;
-    LSM303DLHC_InitStructure.MagOutput_DataRate = LSM303DLHC_ODR_30_HZ;
-    LSM303DLHC_InitStructure.MagFull_Scale = LSM303DLHC_FS_8_1_GA;
-    LSM303DLHC_InitStructure.Working_Mode = LSM303DLHC_CONTINUOS_CONVERSION;
-    LSM303DLHC_MagInit(&LSM303DLHC_InitStructure);
+    /* Configure MEMS: temp and Data rate */
+    COMPASSACCELERO_IO_Write(MAG_I2C_ADDRESS, LSM303DLHC_CRA_REG_M, LSM303DLHC_TEMPSENSOR_ENABLE | LSM303DLHC_ODR_30_HZ);
+    /* Configure MEMS: full Scale */
+    COMPASSACCELERO_IO_Write(MAG_I2C_ADDRESS, LSM303DLHC_CRB_REG_M, LSM303DLHC_FS_8_1_GA);
+    /* Configure MEMS: working mode */
+    COMPASSACCELERO_IO_Write(MAG_I2C_ADDRESS, LSM303DLHC_MR_REG_M, LSM303DLHC_CONTINUOS_CONVERSION);
 
     AccelerationLine.StartX = BlueDisplay1.getDisplayWidth() / 2;
     AccelerationLine.StartY = BlueDisplay1.getDisplayHeight() / 2;
@@ -143,20 +143,20 @@ void startAccelerometerCompassPage(void) {
 
     // 4. row
     TouchButtonAutorepeatAccScalePlus.init(BUTTON_WIDTH_6_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_4, COLOR_RED, "+", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1,
+    BUTTON_HEIGHT_4, COLOR_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doChangeAccScale);
     TouchButtonAutorepeatAccScalePlus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
     TouchButtonAutorepeatAccScaleMinus.init(0, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6, BUTTON_HEIGHT_4, COLOR_RED, "-",
-            TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1, &doChangeAccScale);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeAccScale);
     TouchButtonAutorepeatAccScaleMinus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
     TouchButtonSetZero.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Zero", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doSetZero);
+    BUTTON_HEIGHT_4, COLOR_RED, "Zero", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetZero);
 
     // Clear button - lower left corner
     TouchButtonClearScreen.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Clear", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, COLOR_BACKGROUND_DEFAULT,
+    BUTTON_HEIGHT_4, COLOR_RED, "Clear", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, COLOR_BACKGROUND_DEFAULT,
             &doClearAccelerometerCompassScreen);
 
     drawAccDemoGui();
@@ -241,9 +241,9 @@ void loopAccelerometerGyroCompassPage(void) {
         COLOR_BLACK,
         COLOR_GREEN);
 
-        TouchSliderRoll.setActualValueAndDrawBar(
+        TouchSliderRoll.setValueAndDrawBar(
                 ((int16_t) (GyroscopeRawDataBuffer[0] / (sAccelerationScale / 4))) + HORIZONTAL_SLIDER_NULL_VALUE);
-        TouchSliderPitch.setActualValueAndDrawBar(
+        TouchSliderPitch.setValueAndDrawBar(
                 ((int16_t) (GyroscopeRawDataBuffer[1] / (sAccelerationScale / 4))) + VERTICAL_SLIDER_NULL_VALUE);
 
         BlueDisplay1.refreshVector(&GyroYawLine, -(int16_t) (GyroscopeRawDataBuffer[2] / (2 * sAccelerationScale)),
@@ -278,11 +278,11 @@ void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallback
 }
 
 void doChangeAccScale(BDButton * aTheTouchedButton, int16_t aValue) {
-    int tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+    int tFeedbackType = FEEDBACK_TONE_OK;
     sAccelerationScale += aValue * 10;
     if (sAccelerationScale < 10) {
         sAccelerationScale = 10;
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
     }
     snprintf(sStringBuffer, sizeof sStringBuffer, "Scale=%3u", sAccelerationScale);
     BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND - 4, sStringBuffer, TEXT_SIZE_11,

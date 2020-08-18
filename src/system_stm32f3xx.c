@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    system_stm32f3xx.c
   * @author  MCD Application Team
-  * @version V2.0.1
-  * @date    18-June-2014
+  * @version V2.3.1
+  * @date    16-December-2016
   * @brief   CMSIS Cortex-M4 Device Peripheral Access Layer System Source File.
   *
   * 1. This file provides two functions and one global variable to be called from
   *    user application:
-  *      - SystemInit(): This function is called at startup just after reset and 
+  *      - SystemInit(): This function is called at startup just after reset and
   *                      before branch to main program. This call is made inside
   *                      the "startup_stm32f3xx.s" file.
   *
@@ -46,7 +46,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -102,7 +102,7 @@
 /** @addtogroup STM32F3xx_System_Private_Defines
   * @{
   */
-#if !defined  (HSE_VALUE) 
+#if !defined  (HSE_VALUE)
   #define HSE_VALUE    ((uint32_t)8000000) /*!< Default value of the External oscillator in Hz.
                                                 This value can be provided and adapted by the user application. */
 #endif /* HSE_VALUE */
@@ -137,12 +137,13 @@
       2) by calling HAL API function HAL_RCC_GetHCLKFreq()
       3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
          Note: If you use this function to configure the system clock there is no need to
-               call the 2 first functions listed above, since SystemCoreClock variable is 
+               call the 2 first functions listed above, since SystemCoreClock variable is
                updated automatically.
   */
 uint32_t SystemCoreClock = 8000000;
 
-__IO const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
+const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
+const uint8_t APBPrescTable[8]  = {0, 0, 0, 0, 1, 2, 3, 4};
 
 /**
   * @}
@@ -175,28 +176,28 @@ void SystemInit(void)
 
   /* Reset the RCC clock configuration to the default reset state ------------*/
   /* Set HSION bit */
-  RCC->CR |= (uint32_t)0x00000001;
+  RCC->CR |= 0x00000001U;
 
   /* Reset CFGR register */
-  RCC->CFGR &= 0xF87FC00C;
+  RCC->CFGR &= 0xF87FC00CU;
 
   /* Reset HSEON, CSSON and PLLON bits */
-  RCC->CR &= (uint32_t)0xFEF6FFFF;
+  RCC->CR &= 0xFEF6FFFFU;
 
   /* Reset HSEBYP bit */
-  RCC->CR &= (uint32_t)0xFFFBFFFF;
+  RCC->CR &= 0xFFFBFFFFU;
 
   /* Reset PLLSRC, PLLXTPRE, PLLMUL and USBPRE bits */
-  RCC->CFGR &= (uint32_t)0xFF80FFFF;
+  RCC->CFGR &= 0xFF80FFFFU;
 
   /* Reset PREDIV1[3:0] bits */
-  RCC->CFGR2 &= (uint32_t)0xFFFFFFF0;
+  RCC->CFGR2 &= 0xFFFFFFF0U;
 
   /* Reset USARTSW[1:0], I2CSW and TIMs bits */
-  RCC->CFGR3 &= (uint32_t)0xFF00FCCC;
+  RCC->CFGR3 &= 0xFF00FCCCU;
 
   /* Disable all interrupts */
-  RCC->CIR = 0x00000000;
+  RCC->CIR = 0x00000000U;
 
 #ifdef VECT_TAB_SRAM
   SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
@@ -262,6 +263,19 @@ void SystemCoreClockUpdate (void)
       pllsource = RCC->CFGR & RCC_CFGR_PLLSRC;
       pllmull = ( pllmull >> 18) + 2;
 
+#if defined (STM32F302xE) || defined (STM32F303xE) || defined (STM32F398xx)
+        predivfactor = (RCC->CFGR2 & RCC_CFGR2_PREDIV) + 1;
+      if (pllsource == RCC_CFGR_PLLSRC_HSE_PREDIV)
+      {
+        /* HSE oscillator clock selected as PREDIV1 clock entry */
+        SystemCoreClock = (HSE_VALUE / predivfactor) * pllmull;
+      }
+      else
+      {
+        /* HSI oscillator clock selected as PREDIV1 clock entry */
+        SystemCoreClock = (HSI_VALUE / predivfactor) * pllmull;
+      }
+#else
       if (pllsource == RCC_CFGR_PLLSRC_HSI_DIV2)
       {
         /* HSI oscillator clock divided by 2 selected as PLL clock entry */
@@ -273,6 +287,7 @@ void SystemCoreClockUpdate (void)
         /* HSE oscillator clock selected as PREDIV1 clock entry */
         SystemCoreClock = (HSE_VALUE / predivfactor) * pllmull;
       }
+#endif /* STM32F302xE || STM32F303xE || STM32F398xx */
       break;
     default: /* HSI used as system clock */
       SystemCoreClock = HSI_VALUE;

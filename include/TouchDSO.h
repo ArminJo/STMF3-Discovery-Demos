@@ -41,39 +41,21 @@
 #include <arm_math.h> // for float32_t
 #pragma GCC diagnostic pop
 
+// Internal version
+#define VERSION_DSO "3.2"
+
 /*
  * COLORS
  */
-#define COLOR_BACKGROUND_DSO COLOR_WHITE
+#define COLOR_FFT_DATA COLOR_BLUE
 
-// Button colors
-#define COLOR_GUI_CONTROL COLOR_RED
-#define COLOR_GUI_TRIGGER COLOR_BLUE
 #define COLOR_GUI_DISPLAY_CONTROL COLOR_YELLOW
-#define COLOR_GUI_SOURCE_TIMEBASE RGB(0x00,0x90,0x00)
 
-// Data colors
-#define COLOR_DATA_RUN COLOR_BLUE
 #define COLOR_DATA_RUN_CLIPPING COLOR_RED
 #define COLOR_DATA_TRIGGER COLOR_BLACK      // color for trigger status line
 #define COLOR_DATA_PRETRIGGER COLOR_GREEN   // color for pre trigger data in draw while acquire mode
-#define COLOR_FFT_DATA COLOR_BLUE
-#define COLOR_DATA_HOLD COLOR_RED
-#define COLOR_GRID_LINES RGB(0x00,0x98,0x00)
-#define COLOR_INFO_BACKGROUND RGB(0xC8,0xC8,0x00)
-
-// to see old chart values
-#define COLOR_DATA_HISTORY RGB(0x20,0xFF,0x20)
 
 //Line colors
-#define COLOR_VOLTAGE_PICKER COLOR_YELLOW
-#define COLOR_VOLTAGE_PICKER_SLIDER RGB(0xFF,0XFF,0xE0) // Light Yellow
-#define COLOR_TRIGGER_LINE COLOR_MAGENTA
-#define COLOR_TRIGGER_SLIDER RGB(0xFF,0XF0,0xFF) // light Magenta
-
-#define COLOR_MAX_MIN_LINE COLOR_GREEN
-#define COLOR_HOR_GRID_LINE_LABEL COLOR_BLUE
-#define COLOR_HOR_GRID_LINE_LABEL_NEGATIVE COLOR_RED
 
 /*
  * DISPLAY LAYOUT
@@ -83,55 +65,11 @@
 #define HORIZONTAL_GRID_HEIGHT (REMOTE_DISPLAY_HEIGHT / HORIZONTAL_GRID_COUNT) // 40
 #define TIMING_GRID_WIDTH (REMOTE_DISPLAY_WIDTH / 10) // 32
 #define DISPLAY_AC_ZERO_OFFSET_GRID_COUNT (-3)
-#define DISPLAY_VALUE_FOR_ZERO (REMOTE_DISPLAY_HEIGHT - 2) // Zero line is not exactly at bottom of display to improve readability
 #define PIXEL_AFTER_LABEL 2 // Space between end of label and display border
 
 /*
- * POSITIONS + SIZES
- */
-#ifdef LOCAL_DISPLAY_EXISTS
-#define FONT_SIZE_INFO_SHORT        TEXT_SIZE_11    // for 1 line info
-#define FONT_SIZE_INFO_LONG         TEXT_SIZE_11    // for 3 lines info
-#define FONT_SIZE_INFO_SHORT_ASC    TEXT_SIZE_11_ASCEND    // for 3 lines info
-#define FONT_SIZE_INFO_LONG_ASC     TEXT_SIZE_11_ASCEND    // for 3 lines info
-#define FONT_SIZE_INFO_LONG_WIDTH   TEXT_SIZE_11_WIDTH    // for 3 lines info
-#else
-#define FONT_SIZE_INFO_SHORT        TEXT_SIZE_16    // for 1 line info
-#define FONT_SIZE_INFO_LONG         TEXT_SIZE_14    // for 3 lines info
-#define FONT_SIZE_INFO_SHORT_ASC    TEXT_SIZE_16_ASCEND    // for 3 lines info
-#define FONT_SIZE_INFO_LONG_ASC     TEXT_SIZE_14_ASCEND    // for 3 lines info
-#define FONT_SIZE_INFO_LONG_WIDTH   TEXT_SIZE_14_WIDTH    // for 3 lines info
-#endif
-
-#define SLIDER_SIZE 24
-#define SLIDER_VPICKER_POS_X        0 // Position of slider
-#define SLIDER_VPICKER_INFO_X       (SLIDER_VPICKER_POS_X + SLIDER_SIZE)
-#define SLIDER_VPICKER_INFO_SHORT_Y (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
-#define SLIDER_VPICKER_INFO_LONG_Y  (3 * FONT_SIZE_INFO_LONG + FONT_SIZE_INFO_SHORT_ASC) // since font size is always 18
-
-#define SLIDER_TLEVEL_POS_X         (14 * FONT_SIZE_INFO_LONG_WIDTH) // Position of slider
-#define TRIGGER_LEVEL_INFO_SHORT_X  (SLIDER_TLEVEL_POS_X  + SLIDER_SIZE)
-#ifdef LOCAL_DISPLAY_EXISTS
-#define TRIGGER_LEVEL_INFO_LONG_X   (11 * FONT_SIZE_INFO_LONG_WIDTH)
-#else
-#define TRIGGER_LEVEL_INFO_LONG_X   (11 * FONT_SIZE_INFO_LONG_WIDTH +1) // +1 since we have a special character in the string before
-#endif
-#define TRIGGER_LEVEL_INFO_SHORT_Y  (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
-#define TRIGGER_LEVEL_INFO_LONG_Y   (2 * FONT_SIZE_INFO_LONG  + FONT_SIZE_INFO_LONG_ASC)
-
-#define TRIGGER_HIGH_DISPLAY_OFFSET 7 // for trigger state line
-
-/*
- * CONTROL Definitions
- */
-/*
  * DATA BUFFER
  */
-#ifdef STM32F303xC
-#define DATABUFFER_SIZE_FACTOR 10
-#else
-#define DATABUFFER_SIZE_FACTOR 7
-#endif
 #define DATABUFFER_DISPLAY_RESOLUTION_FACTOR 10
 #define DATABUFFER_DISPLAY_RESOLUTION (REMOTE_DISPLAY_WIDTH / DATABUFFER_DISPLAY_RESOLUTION_FACTOR)     // Base value for other (32)
 #define DATABUFFER_DISPLAY_INCREMENT DATABUFFER_DISPLAY_RESOLUTION // increment value for display scroll
@@ -151,7 +89,6 @@ extern unsigned int sDatabufferPreDisplaySize;
 #define DRAW_MODE_CLEAR_OLD 1 // DisplayBuffer is taken and cleared
 #define DRAW_MODE_CLEAR_OLD_MIN 2 // DisplayBufferMin is taken and cleared
 
-
 extern const uint8_t xScaleForTimebase[TIMEBASE_NUMBER_OF_XSCALE_CORRECTION];
 extern const uint16_t TimebaseDivValues[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t TimebaseTimerDividerValues[TIMEBASE_NUMBER_OF_ENTRIES];
@@ -160,24 +97,15 @@ extern const uint16_t TimebaseOversampleCountForMinMaxMode[TIMEBASE_NUMBER_OF_EN
 extern const uint16_t TimebaseOversampleIndexForMinMaxMode[TIMEBASE_NUMBER_OF_ENTRIES];
 extern const uint16_t ADCClockPrescalerValues[TIMEBASE_NUMBER_OF_ENTRIES];
 
-#define TRIGGER_HYSTERESIS_MANUAL 2 // value for effective trigger hysteresis in manual trigger mode
-
 // States of tTriggerStatus
 #define TRIGGER_STATUS_START 0 // No trigger condition met
-#define TRIGGER_STATUS_BEFORE_THRESHOLD 1 // slope condition met, wait to go beyond threshold hysteresis
+#define TRIGGER_STATUS_AFTER_HYSTERESIS 1 // slope condition met, wait to go beyond threshold hysteresis
 #define TRIGGER_OK 2 // Trigger condition met
 #define PHASE_PRE_TRIGGER 0 // load pre trigger values
 #define PHASE_SEARCH_TRIGGER 1 // wait for trigger condition
 #define PHASE_POST_TRIGGER 2 // trigger found -> acquire data
 #define TRIGGER_TIMEOUT_MILLIS 200 // Milliseconds to wait for trigger
 #define TRIGGER_TIMEOUT_MIN_SAMPLES (6 * TIMING_GRID_WIDTH) // take at least this amount of samples to find trigger
-
-/*
- * OFFSET
- */
-#define OFFSET_MODE_0_VOLT 0
-#define OFFSET_MODE_AUTOMATIC 1
-#define OFFSET_MODE_MANUAL 2    // Implies range mode manual.
 
 /*
  * RANGE (+ attenuator)
@@ -194,7 +122,6 @@ extern const uint16_t ADCClockPrescalerValues[TIMEBASE_NUMBER_OF_ENTRIES];
  */
 #define ATTENUATOR_TYPE_NO_ATTENUATOR 0
 #define ATTENUATOR_TYPE_FIXED_ATTENUATOR 1  // assume manual AC/DC switch
-#define NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR 3 // Channel0 = /1, Ch1= /10, Ch2= /100
 
 #define ATTENUATOR_TYPE_ACTIVE_ATTENUATOR 2 // and 3
 #define NUMBER_OF_CHANNEL_WITH_ACTIVE_ATTENUATOR 2
@@ -223,22 +150,9 @@ extern int ScaleFactorRawToDisplayShift18[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATO
 extern float actualDSORawToVoltFactor;
 // Attenuator declarations
 extern float RawAttenuationFactor[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR];
-extern float FixedAttenuationFactor[NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR];
+extern float FixedAttenuationFactor[NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR];
 extern const uint8_t AttenuatorHardwareValue[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR];
 extern uint16_t RawDSOReadingACZero;
-
-/*
- * CHANNEL
- */
-#define START_ADC_CHANNEL_INDEX 0  // see also ChannelSelectButtonString
-#ifdef STM32F303xC
-#define ADC_CHANNEL_COUNT 6 // The number of ADC channel
-#else
-#define ADC_CHANNEL_COUNT 6 // The number of ADC channel
-#endif
-extern const char * const ADCInputMUXChannelStrings[ADC_CHANNEL_COUNT];
-extern char ADCInputMUXChannelChars[ADC_CHANNEL_COUNT];
-extern uint8_t const ADCInputMUXChannels[ADC_CHANNEL_COUNT];
 
 /*
  * FFT
@@ -319,7 +233,7 @@ struct MeasurementControlStruct {
     bool ChannelHasActiveAttenuator; // actual channel has active attenuator attached
 
     // AC / DC Switch
-    bool ChannelHasACDCSwitch; // has AC / DC switch - only for channels with active or passive attenuators
+    bool ChannelHasAC_DCSwitch; // has AC / DC switch - only for channels with active or passive attenuators. Is at least false for TEMP and REF channels
     bool ChannelIsACMode; // actual AC Mode for actual channel
     bool isACMode; // user AC mode setting false: unipolar mode => 0V probe input -> 0V ADC input  - true: AC range => 0V probe input -> 1.5V ADC input
     volatile uint8_t ACModeFromISR; // 0 -> DC, 1 -> AC, 2 -> request was processed
@@ -398,7 +312,6 @@ struct DisplayControlStruct {
      * XScale < -1 : compression by factor -XScale
      */
     int8_t XScale; // Factor for X Data expansion(>0) or compression(<0). 2->display 1 value 2 times -2->display average of 2 values etc.
-    uint16_t DisplayIncrementPixel; // corresponds to XScale
 
     uint8_t DisplayPage; // START, CHART, SETTINGS, MORE_SETTINGS
 
@@ -407,7 +320,6 @@ struct DisplayControlStruct {
 #endif
     bool showTriggerInfoLine;
     bool ShowFFT;
-
 
     unsigned int DatabufferPreTriggerDisplaySize;
 
@@ -419,7 +331,7 @@ struct DisplayControlStruct {
     uint8_t showInfoMode;
 
     bool showHistory;
-    Color_t EraseColor;
+    color16_t EraseColor;
 };
 extern DisplayControlStruct DisplayControl;
 
@@ -462,32 +374,19 @@ void setOffsetGridCount(int aOffsetGridCount);
 void computeAutoTrigger(void);
 void computeAutoRangeAndAutoOffset(void);
 
-void computePeriodFrequency(void);
-
 void setTriggerLevelAndHysteresis(int aRawTriggerValue, int aRawTriggerHysteresis);
-bool changeInputRange(int aValue);
-int changeDisplayRange(int aValue);
+
 bool setDisplayRange(int aNewDisplayRangeIndex, bool aClipToIndexInputRange);
 void adjustPreTriggerBuffer(void);
 uint16_t computeNumberOfSamplesToTimeout(int8_t aTimebaseIndex);
 bool setDisplayRange(int aNewRangeIndex);
 void setOffsetGridCountAccordingToACMode(void);
 void setACMode(bool aACRangeEnable);
-void setChannel(int aChannel);
 
-void drawMinMaxLines(void);
-
-void printTriggerInfo(void);
-
-void printInfo(void);
-void clearInfo(void);
-void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor, int aDrawMode,
-bool aDrawAlsoMin);
-void drawRemainingDataBufferValues(Color_t aDrawColor);
+void drawRemainingDataBufferValues(color16_t aDrawColor);
 
 void initScaleValuesForDisplay(void);
 void testDSOConversions(void);
-int getDisplayFrowRawInputValue(int aAdcValue);
 int getDisplayFrowMultipleRawValues(uint16_t * aAdcValuePtr, int aCount);
 
 void initRawToDisplayFactors(void);
@@ -499,7 +398,7 @@ float getFloatFromDisplayValue(uint8_t aValue);
 float getDataBufferTimebaseExactValueMicros(int8_t aTimebaseIndex);
 
 float32_t * computeFFT(uint16_t * aDataBufferPointer);
-void draw128FFTValuesFast(Color_t aColor);
+void draw128FFTValuesFast(color16_t aColor);
 void clearFFTValuesOnDisplay(void);
 void drawFFT(void);
 

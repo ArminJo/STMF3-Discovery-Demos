@@ -62,33 +62,33 @@ static volatile bool numberpadInputHasCanceled;
 void drawNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor) {
     aYStart += (3 * TEXT_SIZE_11_HEIGHT);
     TouchButtonNumberPad7.init(aXStart, aYStart, BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, "7",
-    TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x37, &doNumberPad);
+    TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x37, &doNumberPad);
     TouchButtonNumberPad8.init(aXStart + BUTTON_WIDTH_6_POS_2, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "8", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x38, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "8", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x38, &doNumberPad);
     TouchButtonNumberPad9.init(aXStart + BUTTON_WIDTH_6_POS_3, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "9", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x39, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "9", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x39, &doNumberPad);
     TouchButtonNumberPadBack.init(aXStart + BUTTON_WIDTH_6_POS_4, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "<", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x60, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "<", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x60, &doNumberPad);
 
     aYStart += BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING;
     TouchButtonNumberPad4.init(aXStart, aYStart, BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, "4",
-    TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x34, &doNumberPad);
+    TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x34, &doNumberPad);
     TouchButtonNumberPad5.init(aXStart + BUTTON_WIDTH_6_POS_2, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "5", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x35, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "5", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x35, &doNumberPad);
     TouchButtonNumberPad6.init(aXStart + BUTTON_WIDTH_6_POS_3, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "6", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x36, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "6", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x36, &doNumberPad);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wwrite-strings"
     TouchButtonNumberPadClear.init(aXStart + BUTTON_WIDTH_6_POS_4, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "C", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x43, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "C", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x43, &doNumberPad);
 #pragma GCC diagnostic pop
     aYStart += BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING;
     TouchButtonNumberPad1.init(aXStart, aYStart, BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, "1",
-    TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x31, &doNumberPad);
+    TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x31, &doNumberPad);
     TouchButtonNumberPad2.init(aXStart + BUTTON_WIDTH_6_POS_2, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "2", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x32, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "2", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x32, &doNumberPad);
     TouchButtonNumberPad3.init(aXStart + BUTTON_WIDTH_6_POS_3, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, "3", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x33, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, "3", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x33, &doNumberPad);
     //Enter Button
     // size is 2 * BUTTON_WIDTH_6 or less if not enough space on screen
     int tWidth = 2 * BUTTON_WIDTH_6;
@@ -97,19 +97,19 @@ void drawNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor) {
     }
     TouchButtonNumberPadEnter.init(aXStart + BUTTON_WIDTH_6_POS_4, aYStart, tWidth,
             (2 * BUTTON_HEIGHT_6) + BUTTON_DEFAULT_SPACING, aButtonColor, StringEnterChar, 44,
-            BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x0D, &doNumberPad);
+            FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x0D, &doNumberPad);
 
     aYStart += BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING;
     TouchButtonNumberPad0.init(aXStart, aYStart, BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, "0",
-    TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0x30, &doNumberPad);
+    TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x30, &doNumberPad);
     TouchButtonNumberPadSign.init(aXStart + BUTTON_WIDTH_6_POS_2, aYStart, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_6, aButtonColor, StringPlusMinus, TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0xF3, &doNumberPad);
+    BUTTON_HEIGHT_6, aButtonColor, StringPlusMinus, TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0xF3, &doNumberPad);
     struct lconv * tLconfPtr = localeconv();
     TouchButtonNumberPadDecimalSeparator.init(aXStart + BUTTON_WIDTH_6_POS_3, aYStart,
     BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, tLconfPtr->decimal_point, TEXT_SIZE_22,
-            BUTTON_FLAG_NO_BEEP_ON_TOUCH, tLconfPtr->decimal_point[0], &doNumberPad);
+            FLAG_BUTTON_NO_BEEP_ON_TOUCH, tLconfPtr->decimal_point[0], &doNumberPad);
     TouchButtonNumberPadCancel.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, aButtonColor, "Cancel", TEXT_SIZE_22, BUTTON_FLAG_NO_BEEP_ON_TOUCH, 0xFF, &doNumberPad);
+    BUTTON_HEIGHT_4, aButtonColor, "Cancel", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0xFF, &doNumberPad);
     for (unsigned int i = 0; i < sizeof(TouchButtonsNumberPad) / sizeof(TouchButtonsNumberPad[0]); ++i) {
         TouchButtonsNumberPad[i]->drawButton();
     }
@@ -134,7 +134,7 @@ void clearNumberPadBuffer(void) {
 }
 
 void doNumberPad(BDButton * aTheTouchedButton, int16_t aValue) {
-    uint8_t tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+    uint8_t tFeedbackType = FEEDBACK_TONE_OK;
     if (aValue == 0x60) { // "<"
         if (sNumberPadBufferSignIndex < NUMBERPADBUFFER_INDEX_LAST_CHAR) {
             // copy all chars one right
@@ -143,7 +143,7 @@ void doNumberPad(BDButton * aTheTouchedButton, int16_t aValue) {
             }
             NumberPadBuffer[sNumberPadBufferSignIndex++] = 0x20;
         } else {
-            tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+            tFeedbackType = FEEDBACK_TONE_ERROR;
         }
     } else if (aValue == 0xF3) { // Change sign
         if (NumberPadBuffer[sNumberPadBufferSignIndex] == 0x2D) {
@@ -172,7 +172,7 @@ void doNumberPad(BDButton * aTheTouchedButton, int16_t aValue) {
             // set number at last (rightmost) position
             NumberPadBuffer[NUMBERPADBUFFER_INDEX_LAST_CHAR] = aValue;
         } else {
-            tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+            tFeedbackType = FEEDBACK_TONE_ERROR;
         }
     }
     drawNumberPadValue(NumberPadBuffer);

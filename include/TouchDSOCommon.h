@@ -1,28 +1,68 @@
 /*
  * TouchDSOCommon.h
- * Declarations from common section
  *
- *  Created on:  01.03.2017
- *      Author:  Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmx.de
- *      License: GPL v3 (http://www.gnu.org/licenses/gpl.html)
- *      Version: 1.0.0
+ * Declarations for AVR and ARM common section
+ *
+ *  Copyright (C) 2017  Armin Joachimsmeyer
+ *  Email: armin.joachimsmeyer@gmail.com
+ *  License: GPL v3 (http://www.gnu.org/licenses/gpl.html)
  */
 
 #ifndef TOUCHDSOCOMMON_H_
 #define TOUCHDSOCOMMON_H_
 
+#include "BlueDisplay.h"
 #ifdef AVR
-#else
+#include "FrequencyGeneratorPage.h"
 #endif
 
-#include "BDButton.h"
-
-#ifdef AVR
-#else
+#if ! defined(__AVR__)
 // No PROGMEM on ARM
 #define PROGMEM
+#define __FlashStringHelper char
+#define setCaptionPGM setCaption
+#define drawTextPGM drawText
+#  ifndef F
+#define F(a) a
+#  endif
+#  ifndef PSTR
+#define PSTR(a) a
+#  endif
 #endif
+
+#ifdef AVR
+// Data buffer size (must be small enough to leave appr. 7 % (144 Byte) for stack
+#define DATABUFFER_SIZE (3*REMOTE_DISPLAY_WIDTH) //960
+#else
+#ifdef STM32F303xC
+#define DATABUFFER_SIZE_FACTOR 9
+#else
+#define DATABUFFER_SIZE_FACTOR 7
+#endif
+#endif
+
+#define DISPLAY_VALUE_FOR_ZERO (REMOTE_DISPLAY_HEIGHT - 1)
+//#define DISPLAY_VALUE_FOR_ZERO (REMOTE_DISPLAY_HEIGHT - 2) // Zero line is not exactly at bottom of display to improve readability
+
+/*
+ * CHANNEL
+ */
+#define MAX_ADC_EXTERNAL_CHANNEL 4 // 5 channels 0-4, since ADC5/PC5 is used for AC/DC switching
+#ifdef AVR
+#define ADC_CHANNEL_COUNT ((MAX_ADC_EXTERNAL_CHANNEL + 1) + 2) // The number of external and internal ADC channels
+#else
+#define START_ADC_CHANNEL_INDEX 0  // see also ChannelSelectButtonString
+#ifdef STM32F303xC
+#define ADC_CHANNEL_COUNT 6 // The number of ADC channels
+#else
+#define ADC_CHANNEL_COUNT 6 // The number of ADC channels
+#endif
+extern uint8_t const ADCInputMUXChannels[ADC_CHANNEL_COUNT];
+#endif
+#define NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR 3 // Channel0 = /1, Ch1= /10, Ch2= /100
+
+extern const char * const ADCInputMUXChannelStrings[ADC_CHANNEL_COUNT];
+extern const char * const ChannelDivByButtonStrings[NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR];
 
 /*
  * Trigger values
@@ -32,66 +72,72 @@
 #define TRIGGER_MODE_MANUAL 2 // without timeout
 #define TRIGGER_MODE_FREE 3 // waits at least 23 ms (255 samples) for trigger
 #define TRIGGER_MODE_EXTERN 4
+#define TRIGGER_HYSTERESIS_FOR_MODE_MANUAL 4
 
 #ifdef AVR
 /*****************************
  * Timebase stuff
  *****************************/
-// ADC HW prescaler values
-#define PRESCALE4    2 // is noisy
-#define PRESCALE8    3 // is reasonable
-#define PRESCALE16   4
-#define PRESCALE32   5
-#define PRESCALE64   6
-#define PRESCALE128  7
+#define TIMEBASE_INDEX_START_VALUE 7 // 2 ms - shows 50 Hz
 
-#define PRESCALE_MIN_VALUE PRESCALE4
-#define PRESCALE_MAX_VALUE PRESCALE128
-#define PRESCALE_START_VALUE PRESCALE128
+// ADC HW prescaler values
+#define ADC_PRESCALE4    2 // is noisy
+#define ADC_PRESCALE8    3 // is reasonable
+#define ADC_PRESCALE16   4
+#define ADC_PRESCALE32   5
+#define ADC_PRESCALE64   6
+#define ADC_PRESCALE128  7
+
+#define ADC_PRESCALE_MAX_VALUE ADC_PRESCALE128
+#define ADC_PRESCALE_START_VALUE ADC_PRESCALE128
+#define ADC_PRESCALE_FOR_TRIGGER_SEARCH ADC_PRESCALE8
+
+#define TIMER0_PRESCALE0    1
+#define TIMER0_PRESCALE8    2
+#define TIMER0_PRESCALE64   3
+#define TIMER0_PRESCALE256  4
+#define TIMER0_PRESCALE1024 5
 
 /*
- * Don't need to use timer for timebase, since the ADC is also driven by clock and with a few delay times of the ISR
- * one can get reproducible timings just with the ADC conversion timing!
+ * Since prescaler PRESCALE4 gives bad quality, use PRESCALE8 for 201 us range and display each value twice.
+ * PRESCALE8 has pretty good quality, but PRESCALE16 (496 us/div) performs slightly better.
  *
  * Different Acquisition modes depending on Timebase:
- * Mode ultrafast  10us - ADC free running - one loop for read and store 10 bit => needs double buffer space - interrupts blocked for duration of loop
- * Mode fast   20-201us - ADC free running - one loop for read but pre process 10 -> 8 Bit and store - interrupts blocked for duration of loop
- * mode isr without delay 496us   - ADC generates Interrupts - because of ISR initial delay for push just start next conversion immediately
- * mode isr with delay    1,2,5ms - ADC generates Interrupts - busy delay, then start next conversion to match 1,2,5 timebase scale
- * mode isr with multiple read >=10ms - ADC generates Interrupts - to avoid excessive busy delays, start one ore more intermediate conversion just for delay purposes
+ * Mode ultrafast  10-50 us - ADC free running with PRESCALE4 - one loop for read and store 10 bit => needs double buffer space - interrupts blocked for duration of loop
+ * Mode fast       101-201 us - ADC free running with PRESCALE8 - one loop for read but pre process 10 -> 8 Bit and store - interrupts blocked for duration of loop
+ * mode ISR        >= 496 us  - ADC generates Interrupts. Waits free running with PRESCALE16 for trigger then switch to timer0 based timebase
  */
 
 #define HORIZONTAL_GRID_COUNT 6
 /**
  * Formula for Grid Height is:
- * 5V Reference, 10 bit Resolution => 1023/5 = 204.6 Pixel per Volt
- * 1 Volt per Grid -> 204,6 pixel. With scale (shift) 2 => 51.15 pixel.
- * 0.5 Volt -> 102.3 pixel with scale (shift) 1 => 51.15 pixel
- * 0.2 Volt -> 40.96 pixel
- * 1.1V Reference 1023/1.1 = 930 Pixel per Volt
- * 0.2 Volt -> 186 pixel with scale (shift) 2 => 46.5 pixel
- * 0.1 Volt -> 93 pixel with scale (shift) 1 => 46.5 pixel
- * 0.05 Volt -> 46.5 pixel
+ * 5 volt Reference, 10 bit Resolution => 1023/5 = 204.6 Pixel per volt
+ * 1 volt per Grid -> 204,6 pixel. With scale (shift) 2 => 51.15 pixel.
+ * 0.5 volt -> 102.3 pixel with scale (shift) 1 => 51.15 pixel
+ * 0.2 volt -> 40.96 pixel
+ * 1.1 volt Reference 1023/1.1 = 930 Pixel per volt
+ * 0.2 volt -> 186 pixel with scale (shift) 2 => 46.5 pixel
+ * 0.1 volt -> 93 pixel with scale (shift) 1 => 46.5 pixel
+ * 0.05 volt -> 46.5 pixel
  */
-#define HORIZONTAL_GRID_HEIGHT_1_1V_SHIFT8 11904 // 46.5*256 for 0.05 to 0.2 Volt/div for 6 divs per screen
-#define HORIZONTAL_GRID_HEIGHT_2V_SHIFT8 6554 // 25.6*256 for 0.05 to 0.2 Volt/div for 10 divs per screen
+
+#define HORIZONTAL_GRID_HEIGHT_1_1V_SHIFT8 11904 // 46.5*256 for 0.05 to 0.2 volt/div for 6 divs per screen
+#define HORIZONTAL_GRID_HEIGHT_2V_SHIFT8 6554 // 25.6*256 for 0.05 to 0.2 volt/div for 10 divs per screen
 #define ADC_CYCLES_PER_CONVERSION 13
 #define TIMING_GRID_WIDTH 31 // with 31 instead of 32 the values fit better to 1-2-5 timebase scale
 #define TIMEBASE_NUMBER_OF_ENTRIES 15 // the number of different timebases provided
 #define TIMEBASE_NUMBER_OF_FAST_PRESCALE 8 // the number of prescale values not equal slowest possible prescale (PRESCALE128)
-#define TIMEBASE_INDEX_ULTRAFAST_MODES 0 // first timebase (10) is ultrafast
-#define TIMEBASE_INDEX_FAST_MODES 4 // first 5 timebase (10 - 201) are fast free running modes with polling instead of ISR
-#define TIMEBASE_NUMBER_OF_XSCALE_CORRECTION 4  // number of timebase which are simulated by display XSale factor
+#define TIMEBASE_NUMBER_OF_FAST_MODES 5 // first 5 timebase (10 - 201) are fast free running modes with polling instead of ISR using PRESCALE4 + PRESCALE8
+#define TIMEBASE_INDEX_ULTRAFAST_MODES 2 // first 3 timebase (10 - 50) using PRESCALE4 is ultra fast polling without preprocessing and therefore needs double buffer size
+#define TIMEBASE_NUMBER_OF_XSCALE_CORRECTION 4  // number of timebase which are simulated by display XSale factor. Since PRESCALE4 gives bad quality, use PRESCALE8 and XScale for 201 us range
 #define TIMEBASE_INDEX_MILLIS 6 // min index to switch to ms instead of us display
-#define TIMEBASE_INDEX_DRAW_WHILE_ACQUIRE 11 // min index where chart is drawn while buffer is filled (11 => 50ms)
-// the delay between ADC end of conversion and first start of code in ISR
-#define ISR_ZERO_DELAY_MICROS 3
-#define ISR_DELAY_MICROS_TIMES_4 19 // minimum delay from interrupt to start ADC after delay code - actual 72++ cycles = 4,5++ us
-#define ADC_CONVERSION_AS_DELAY_MICROS 112 // only needed for prescaler 128 => 104us per conversion + 8us for 1 clock delay because of manual restarting
+#define TIMEBASE_INDEX_DRAW_WHILE_ACQUIRE 11 // min index where chart is drawn while buffer is filled (11 => 50 ms)
 #else
 /*
  * TIMEBASE
  */
+#define TIMEBASE_INDEX_START_VALUE 12
+
 #define CHANGE_REQUESTED_TIMEBASE_FLAG 0x01
 
 #define TIMEBASE_NUMBER_OF_ENTRIES 21 // the number of different timebase provided - 1. entry is not uses until interleaved acquisition is implemented
@@ -108,13 +154,155 @@
 #endif
 #define TIMEBASE_INDEX_MILLIS 11 // min index to switch to ms instead of ns display
 #define TIMEBASE_INDEX_MICROS 2 // min index to switch to us instead of ns display
-#define TIMEBASE_INDEX_START_VALUE 12
 #endif
 
 extern const float TimebaseExactDivValuesMicros[] PROGMEM;
 #define HORIZONTAL_LINE_LABELS_CAPION_X (REMOTE_DISPLAY_WIDTH - TEXT_SIZE_11_WIDTH * 4)
+/*
+ * OFFSET
+ */
+#define OFFSET_MODE_0_VOLT 0
+#define OFFSET_MODE_AUTOMATIC 1
+#define OFFSET_MODE_MANUAL 2    // not implemented for AVR Implies range mode manual.
+
+/*
+ * COLORS
+ */
+#define COLOR_BACKGROUND_DSO COLOR_WHITE
+#define COLOR_INFO_BACKGROUND RGB(0xC8,0xC8,0x00) // background for info lines or elements
+
+// Data colors
+#define COLOR_DATA_RUN COLOR_BLUE
+#define COLOR_DATA_HOLD COLOR_RED
+// to see old chart values
+#define COLOR_DATA_HISTORY RGB(0x20,0xFF,0x20)
+
+// Button colors
+#define COLOR_GUI_CONTROL COLOR_RED
+#define COLOR_GUI_TRIGGER COLOR_BLUE
+#define COLOR_GUI_SOURCE_TIMEBASE RGB(0x00,0xE0,0x00)
+
+// Line colors
+#define COLOR_VOLTAGE_PICKER COLOR_YELLOW
+#define COLOR_VOLTAGE_PICKER_SLIDER RGB(0xFF,0XFF,0xD0) // Light Yellow
+#define COLOR_TRIGGER_LINE COLOR_PURPLE
+#define COLOR_TRIGGER_SLIDER RGB(0xFF,0XE8,0xFF) // light Magenta
+#define COLOR_HOR_REF_LINE_LABEL COLOR_BLUE
+#define COLOR_MAX_MIN_LINE COLOR_GREEN
+#define COLOR_GRID_LINES RGB(0x00,0x98,0x00)
+
+// Label colors
+#define COLOR_HOR_GRID_LINE_LABEL COLOR_BLUE
+#define COLOR_HOR_GRID_LINE_LABEL_NEGATIVE COLOR_RED
+
+/*
+ * GUI LAYOUT,  POSITIONS + SIZES
+ */
+#define INFO_UPPER_MARGIN (1 + TEXT_SIZE_11_ASCEND)
+#define INFO_LEFT_MARGIN 0
+
+#ifdef AVR
+#define FONT_SIZE_INFO_SHORT        TEXT_SIZE_18    // for 1 line info
+#define FONT_SIZE_INFO_LONG         TEXT_SIZE_11    // for 2 lines info
+#define FONT_SIZE_INFO_SHORT_ASC    TEXT_SIZE_18_ASCEND
+#define FONT_SIZE_INFO_LONG_ASC     TEXT_SIZE_11_ASCEND
+#define FONT_SIZE_INFO_LONG_WIDTH   TEXT_SIZE_11_WIDTH
+
+#define SLIDER_SIZE 24
+#define SLIDER_VPICKER_POS_X        0 // Position of slider
+#define SLIDER_VPICKER_INFO_X       (SLIDER_VPICKER_POS_X + SLIDER_SIZE)
+#define SLIDER_VPICKER_INFO_SHORT_Y (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
+#define SLIDER_VPICKER_INFO_LONG_Y  (2 * FONT_SIZE_INFO_LONG + FONT_SIZE_INFO_SHORT_ASC) // since font size is always 18
+
+#define SLIDER_TLEVEL_POS_X         (14 * FONT_SIZE_INFO_LONG_WIDTH) // Position of slider
+#define TRIGGER_LEVEL_INFO_SHORT_X  (SLIDER_TLEVEL_POS_X  + SLIDER_SIZE)
+#define TRIGGER_LEVEL_INFO_LONG_X   (INFO_LEFT_MARGIN + (36 * FONT_SIZE_INFO_LONG_WIDTH))
+#define TRIGGER_LEVEL_INFO_SHORT_Y  (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
+#define TRIGGER_LEVEL_INFO_LONG_Y   FONT_SIZE_INFO_LONG_ASC
+
+#define SETTINGS_PAGE_ROW_INCREMENT BUTTON_HEIGHT_5_256_LINE_2
+#define SETTINGS_PAGE_BUTTON_HEIGHT BUTTON_HEIGHT_5_256
+#define START_PAGE_ROW_INCREMENT BUTTON_HEIGHT_4_256_LINE_2
+#define START_PAGE_BUTTON_HEIGHT BUTTON_HEIGHT_4_256
+
+#define SINGLESHOT_PPRINT_VALUE_X (REMOTE_DISPLAY_WIDTH - TEXT_SIZE_11_WIDTH)
+#define SETTINGS_PAGE_INFO_Y (BUTTON_HEIGHT_5_256_LINE_5 - (TEXT_SIZE_11_DECEND + 1))
+#else
+#ifdef LOCAL_DISPLAY_EXISTS
+#define FONT_SIZE_INFO_SHORT        TEXT_SIZE_11    // for 1 line info
+#define FONT_SIZE_INFO_LONG         TEXT_SIZE_11    // for 3 lines info
+#define FONT_SIZE_INFO_SHORT_ASC    TEXT_SIZE_11_ASCEND    // for 3 lines info
+#define FONT_SIZE_INFO_LONG_ASC     TEXT_SIZE_11_ASCEND    // for 3 lines info
+#define FONT_SIZE_INFO_LONG_WIDTH   TEXT_SIZE_11_WIDTH    // for 3 lines info
+#else
+#define FONT_SIZE_INFO_SHORT        TEXT_SIZE_16    // for 1 line info
+#define FONT_SIZE_INFO_LONG         TEXT_SIZE_14    // for 3 lines info
+#define FONT_SIZE_INFO_SHORT_ASC    TEXT_SIZE_16_ASCEND    // for 3 lines info
+#define FONT_SIZE_INFO_LONG_ASC     TEXT_SIZE_14_ASCEND    // for 3 lines info
+#define FONT_SIZE_INFO_LONG_WIDTH   TEXT_SIZE_14_WIDTH    // for 3 lines info
+#endif
+
+#define SLIDER_SIZE 24
+#define SLIDER_VPICKER_POS_X        0 // Position of slider
+#define SLIDER_VPICKER_INFO_X       (SLIDER_VPICKER_POS_X + SLIDER_SIZE)
+#define SLIDER_VPICKER_INFO_SHORT_Y (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
+#define SLIDER_VPICKER_INFO_LONG_Y  (3 * FONT_SIZE_INFO_LONG + FONT_SIZE_INFO_SHORT_ASC) // since font size is always 18
+
+#define SLIDER_TLEVEL_POS_X         (14 * FONT_SIZE_INFO_LONG_WIDTH) // Position of slider
+#define TRIGGER_LEVEL_INFO_SHORT_X  (SLIDER_TLEVEL_POS_X  + SLIDER_SIZE)
+#ifdef LOCAL_DISPLAY_EXISTS
+#define TRIGGER_LEVEL_INFO_LONG_X   (11 * FONT_SIZE_INFO_LONG_WIDTH)
+#else
+#define TRIGGER_LEVEL_INFO_LONG_X   (11 * FONT_SIZE_INFO_LONG_WIDTH +1) // +1 since we have a special character in the string before
+#endif
+#define TRIGGER_LEVEL_INFO_SHORT_Y  (FONT_SIZE_INFO_SHORT + FONT_SIZE_INFO_SHORT_ASC)
+#define TRIGGER_LEVEL_INFO_LONG_Y   (2 * FONT_SIZE_INFO_LONG  + FONT_SIZE_INFO_LONG_ASC)
+
+#define TRIGGER_HIGH_DISPLAY_OFFSET 7 // for trigger state line
+#define SETTINGS_PAGE_ROW_INCREMENT BUTTON_HEIGHT_5_LINE_2
+#define SETTINGS_PAGE_BUTTON_HEIGHT BUTTON_HEIGHT_5
+#define START_PAGE_ROW_INCREMENT BUTTON_HEIGHT_4_LINE_2
+#define START_PAGE_BUTTON_HEIGHT BUTTON_HEIGHT_4
+#endif
+
+extern uint8_t sLastPickerValue;
+
+#ifdef AVR
+extern BDButton TouchButtonADCReference;
+#else
+extern BDButton TouchButtonFFT;
+extern BDButton TouchButtonShowPretriggerValuesOnOff;
+extern BDButton TouchButtonDSOMoreSettings;
+extern BDButton TouchButtonCalibrateVoltage;
+extern BDButton TouchButtonMinMaxMode;
+extern BDButton TouchButtonDrawModeTriggerLine;
+#endif
+#ifdef LOCAL_DISPLAY_EXISTS
+extern BDButton TouchButtonDrawModeLinePixel;
+extern BDButton TouchButtonADS7846TestOnOff;
+extern BDSlider TouchSliderBacklight;
+#endif
+
+extern BDButton TouchButtonSingleshot;
+extern BDButton TouchButtonStartStopDSOMeasurement;
 
 extern BDButton TouchButtonSlope;
+extern BDButton TouchButtonTriggerMode;
+extern BDButton TouchButtonTriggerDelay;
+extern BDButton TouchButtonChartHistoryOnOff;
+extern BDButton TouchButtonSlope;
+extern BDButton TouchButtonAcDc;
+extern BDButton TouchButtonChannels[];
+extern BDButton TouchButtonChannelSelect;
+extern BDButton TouchButtonChannelMode;
+extern BDButton TouchButtonAutoOffsetMode;
+extern const char AutoOffsetButtonStringMan[];
+extern const char AutoOffsetButtonStringAuto[];
+extern const char AutoOffsetButtonString0[];
+extern BDButton TouchButtonAutoRangeOnOff;
+extern BDButton TouchButtonSettingsPage;
+extern BDButton TouchButtonFrequencyPage;
+
 extern char SlopeButtonString[];
 // the index of the slope indicator in char array
 #define SLOPE_STRING_INDEX 6
@@ -130,24 +318,136 @@ extern BDButton TouchButtonAutoRangeOnOff;
 extern const char AutoRangeButtonStringAuto[] PROGMEM;
 extern const char AutoRangeButtonStringManual[] PROGMEM;
 
+extern BDSlider TouchSliderTriggerLevel;
+extern BDSlider TouchSliderVoltagePicker;
+
+// Measurement section
+void startAcquisition(void);
+void prepareForStart(void);
+void setChannel(uint8_t aChannel);
+void clearDataBuffer();
+
+// Stack info
+void initStackFreeMeasurement(void);
+uint16_t getStackFreeMinimumBytes(void);
+void printFreeStack(void);
+
+// Data analysis section
 void computeMinMax(void);
 void computePeriodFrequency(void);
 void setTriggerLevelAndHysteresis(int aRawTriggerValue, int aRawTriggerHysteresis);
 
+// Logic section
+void resetOffset(void);
+void setOffsetAutomatic(bool aNewState);
+void setACMode(bool aNewACMode);
+int changeOffsetGridCount(int aValue);
+#ifdef AVR
+uint8_t changeRange(int8_t aChangeAmount);
+uint8_t changeTimeBaseValue(int8_t aChangeValue);
+#else
+int changeDisplayRangeAndAdjustOffsetGridCount(int aValue);
+int changeTimeBaseValue(int aChangeValue);
+
+#endif
+int changeXScale(int aValue);
+
+// Output and draw section
+void initDSOGUI(void);
+
 void redrawDisplay(void);
+void drawStartPage(void);
+void drawDSOSettingsPage(void);
+void drawDSOMoreSettingsPage(void);
+
 void drawGridLinesWithHorizLabelsAndTriggerLine();
+void clearHorizontalLineAndRestoreGrid(int aYposition);
 void drawTriggerLine(void);
+void drawMinMaxLines(void);
 void clearTriggerLine(uint8_t aTriggerLevelDisplayValue);
+void drawRunningOnlyPartOfGui(void);
+void activateChartGui(void);
+#ifdef AVR
+uint8_t scrollChart(int aValue);
+uint8_t getDisplayFromRawInputValue(uint16_t aRawValue);
+void drawDataBuffer(uint8_t *aByteBuffer, uint16_t aColor, uint16_t aClearBeforeColor);
+#else
+int scrollChart(int aValue);
+int getDisplayFromRawInputValue(int aAdcValue);
+void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, color16_t aColor, color16_t aClearBeforeColor, int aDrawMode,
+        bool aDrawAlsoMin);
+void startSystemInfoPage(void);
+#endif
+
+// Text output section
+void printfTriggerDelay(char * aDataBufferPtr, uint16_t aTriggerDelayMillisOrMicros);
+void printVCCAndTemperature(void);
+void clearInfo(uint8_t aOldMode);
+void printInfo(bool aRecomputeValues = true);
+void printTriggerInfo(void);
+
+// GUI event handler section
+void doSwitchInfoModeOnTouchUp(struct TouchEvent * const aTochPosition);
+void doLongTouchDownDSO(struct TouchEvent * const aTochPosition);
+void doSwipeEndDSO(struct Swipe * const aSwipeInfo);
+void doSetTriggerDelay(float aValue);
+
+// Button handler section
+#ifdef AVR
+void doADCReference(BDButton * aTheTouchedButton, int16_t aValue);
+#else
+void doShowPretriggerValuesOnOff(BDButton * aTheTouchedButton, int16_t aValue);
+void doShowFFT(BDButton * aTheTouchedButton, int16_t aValue);
+void doMinMaxMode(BDButton * aTheTouchedButton, int16_t aValue);
+void doShowMoreSettingsPage(BDButton * aTheTouchedButton, int16_t aValue);
+void doShowSystemInfoPage(BDButton * aTheTouchedButton, int16_t aValue);
+void doVoltageCalibration(BDButton * aTheTouchedButton, int16_t aValue);
+void doDrawModeTriggerLine(BDButton * aTheTouchedButton, int16_t aValue);
+#endif
+void doStartStopDSO(BDButton * aTheTouchedButton, int16_t aValue);
+void doDefaultBackButton(BDButton * aTheTouchedButton, int16_t aValue);
+void doShowFrequencyPage(BDButton * aTheTouchedButton, int16_t aValue);
+void doShowSettingsPage(BDButton * aTheTouchedButton, int16_t aValue);
+void doTriggerSlope(BDButton * aTheTouchedButton, int16_t aValue);
+void doStartSingleshot(BDButton * aTheTouchedButton, int16_t aValue);
+void doTriggerMode(BDButton * aTheTouchedButton, int16_t aValue);
+void doRangeMode(BDButton * aTheTouchedButton, int16_t aValue);
+void doChartHistory(BDButton * aTheTouchedButton, int16_t aValue);
+void doPromptForTriggerDelay(BDButton * aTheTouchedButton, int16_t aValue);
+void doChannelSelect(BDButton * aTheTouchedButton, int16_t aValue);
+void doOffsetMode(BDButton * aTheTouchedButton, int16_t aValue);
+void doAcDcMode(BDButton * aTheTouchedButton, int16_t aValue);
+#ifdef LOCAL_DISPLAY_EXISTS
+void readADS7846Channels(void);
+void doADS7846TestOnOff(BDButton * aTheTouchedButton, int16_t aValue);
+void doDrawMode(BDButton * aTheTouchedButton, int16_t aValue);
+#endif
+
+// Slider handler section
+void doTriggerLevel(BDSlider * aTheTouchedSlider, uint16_t aValue);
+void doVoltagePicker(BDSlider * aTheTouchedSlider, uint16_t aValue);
+
+// Button caption section
+#ifdef AVR
+#else
+void setMinMaxModeButtonCaption(void);
+#endif
 
 void setSlopeButtonCaption(void);
 void setTriggerModeButtonCaption(void);
 void setAutoRangeModeAndButtonCaption(bool aNewAutoRangeMode);
-
-void doTriggerSlope(BDButton * aTheTouchedButton, int16_t aValue);
-void doTriggerMode(BDButton * aTheTouchedButton, int16_t aValue);
-void doRangeMode(BDButton * aTheTouchedButton, int16_t aValue);
-void doChartHistory(BDButton * aTheTouchedButton, int16_t aValue);
+void setChannelButtonsCaption(void);
+void setReferenceButtonCaption(void);
+void setACModeButtonCaption(void);
+void setTriggerDelayCaption(void);
+void setAutoOffsetButtonCaption(void);
 
 uint32_t getMicrosFromHorizontalDisplayValue(uint16_t aDisplayValueHorizontal, uint8_t aNumberOfPeriods);
+
+#ifdef AVR
+#else
+#endif
+#ifndef AVR
+#endif
 
 #endif // TOUCHDSOCOMMON_H_

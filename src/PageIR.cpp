@@ -126,7 +126,7 @@ void doSetYawTrim(BDButton * aTheTouchedButton, int16_t aValue) {
     snprintf(sStringBuffer, sizeof sStringBuffer, "% 3d", sYawTrimValue);
     BlueDisplay1.drawText(BUTTON_WIDTH_3_POS_2 + BUTTON_WIDTH_8 + TEXT_SIZE_11_WIDTH,
     BUTTON_HEIGHT_4_LINE_3 + TEXT_SIZE_22_HEIGHT, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
-    TouchSliderYaw.setActualValueAndDrawBar(sYawValue + sYawTrimValue);
+    TouchSliderYaw.setValueAndDrawBar(sYawValue + sYawTrimValue);
 }
 
 void doToggleSendReceive(BDButton * aTheTouchedButton, int16_t aValue) {
@@ -202,15 +202,15 @@ void startIRPage(void) {
     int tXPos = 0;
     for (unsigned int i = 0; i < NUMBER_OF_IR_BUTTONS; ++i) {
         TouchButtonsIRSend[i].init(tXPos, 0, BUTTON_WIDTH_4, BUTTON_HEIGHT_5, COLOR_GREEN, IRButtonStrings[i],
-        TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, i, &doIRButtons);
+        TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, i, &doIRButtons);
         tXPos += BUTTON_WIDTH_4 + BUTTON_DEFAULT_SPACING;
     }
 
     TouchButtonToggleSendReceive.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_RED, StringReceive, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doToggleSendReceive);
+    COLOR_RED, StringReceive, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doToggleSendReceive);
 
     TouchButtonToggleLights.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_GREEN, StringLights, TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_TOGGLE_RED_GREEN,
+    COLOR_GREEN, StringLights, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
             sLightValue, NULL);
 
     // Velocity
@@ -246,11 +246,11 @@ void startIRPage(void) {
 
     TouchButtonYaw_Minus.init(BUTTON_WIDTH_3_POS_2,
     BUTTON_HEIGHT_4_LINE_3 + BUTTON_HEIGHT_4 - BUTTON_HEIGHT_6, BUTTON_WIDTH_10, BUTTON_HEIGHT_6, COLOR_RED, "-",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, -3, &doSetYawTrim);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -3, &doSetYawTrim);
 
     TouchButtonYaw_Plus.init( BUTTON_WIDTH_3_POS_2 + BUTTON_WIDTH_8 + 2 * BUTTON_DEFAULT_SPACING,
     BUTTON_HEIGHT_4_LINE_3 + BUTTON_HEIGHT_4 - BUTTON_HEIGHT_6, BUTTON_WIDTH_8, BUTTON_HEIGHT_6, COLOR_RED, "+",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 3, &doSetYawTrim);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 3, &doSetYawTrim);
 
     /* Enable fast mode plus driving capability for selected I2C pin */
 //    SYSCFG->CFGR1 |= HAL_SYSCFG_FASTMODEPLUS_I2C1;
@@ -368,16 +368,16 @@ void loopIRPage(void) {
      */
     if (sVelocitySliderDisplayValue != tVelocityValue) {
         sVelocitySliderDisplayValue = tVelocityValue;
-        TouchSliderVelocity.setActualValueAndDrawBar(tVelocityValue >> 1);
+        TouchSliderVelocity.setValueAndDrawBar(tVelocityValue >> 1);
     }
 
     if (sPitchValue != tPitchValue) {
         sPitchValue = tPitchValue;
-        TouchSliderPitch.setActualValueAndDrawBar(sPitchValue);
+        TouchSliderPitch.setValueAndDrawBar(sPitchValue);
     }
     if (sYawValue != tYawValue) {
         sYawValue = tYawValue;
-        TouchSliderYaw.setActualValueAndDrawBar(tYawValue + sYawTrimValue);
+        TouchSliderYaw.setValueAndDrawBar(tYawValue + sYawTrimValue);
     }
 
     if (sSend) {

@@ -128,7 +128,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
 
     uint32_t tTimerReloadValue = sTimerReloadValue + aValue;
     if (tTimerReloadValue < DAC_TIMER_MIN_RELOAD_VALUE) {
-        FeedbackTone(FEEDBACK_TONE_SHORT_ERROR);
+        FeedbackTone(FEEDBACK_TONE_ERROR);
         return;
     }
     FeedbackToneOK();
@@ -144,7 +144,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
             } while (ComputeReloadValue(tNewSliderValue) <= sTimerReloadValue);
             tNewSliderValue++;
             sLastFrequencySliderValue = tNewSliderValue;
-            TouchSliderDACFrequency.setActualValueAndDrawBar(tNewSliderValue);
+            TouchSliderDACFrequency.setValueAndDrawBar(tNewSliderValue);
         }
     } else {
         tNewSliderValue++;
@@ -154,7 +154,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
             } while (ComputeReloadValue(tNewSliderValue) >= sTimerReloadValue);
             tNewSliderValue--;
             sLastFrequencySliderValue = tNewSliderValue;
-            TouchSliderDACFrequency.setActualValueAndDrawBar(tNewSliderValue);
+            TouchSliderDACFrequency.setValueAndDrawBar(tNewSliderValue);
         }
     }
 }
@@ -167,7 +167,7 @@ void doDACVolumeSlider(BDSlider * aTheTouchedSlider, uint16_t aAmplitude) {
     unsigned int tValue = (0x01 << ((aAmplitude / 16) + 1)) - 1;
     sAmplitude = tValue + 1;
 // update frequency
-    ComputeFrequencyAndSetTimer(ComputeReloadValue(TouchSliderDACFrequency.getActualValue()), false);
+    ComputeFrequencyAndSetTimer(ComputeReloadValue(TouchSliderDACFrequency.getCurrentValue()), false);
     TouchSliderDACFrequency.printValue(); // print new value for frequency slider
     snprintf(sStringBuffer, sizeof sStringBuffer, "%4u", tValue);
     aTheTouchedSlider->printValue(sStringBuffer);
@@ -226,7 +226,7 @@ void startDACPage(void) {
     //1. row
     int tPosY = 0;
     TouchButtonStartStop.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Stop", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTO_RED_GREEN,
+    BUTTON_HEIGHT_4, COLOR_RED, "Stop", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
     true, &doDACStop);
     initMainHomeButtonWithPosition(BUTTON_WIDTH_3_POS_3, 0, false);
 
@@ -246,13 +246,13 @@ void startDACPage(void) {
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonSetWaveform.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4,
-    COLOR_RED, StringTriangle, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 1, &doChangeDACWaveform);
+    COLOR_RED, StringTriangle, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doChangeDACWaveform);
 
     TouchButtonAutorepeatFrequencyMinus.init( FREQUENCY_SLIDER_START_X + 6, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4,
-    COLOR_RED, "-", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1,
+    COLOR_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doChangeDACFrequency);
     TouchButtonAutorepeatFrequencyPlus.init(230, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4, COLOR_RED, "+", TEXT_SIZE_22,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1, &doChangeDACFrequency);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeDACFrequency);
     TouchButtonAutorepeatFrequencyMinus.setButtonAutorepeatTiming(600, 100, 10, 20);
     TouchButtonAutorepeatFrequencyPlus.setButtonAutorepeatTiming(600, 100, 10, 20);
 

@@ -16,8 +16,8 @@
 
 #define THOUSANDS_SEPARATOR '.'
 
-void showRTCTime(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aBGColor, bool aForceDisplay);
-void showRTCTimeEverySecond(uint16_t x, uint16_t y, Color_t aFGColor, Color_t aBGColor);
+void showRTCTime(uint16_t x, uint16_t y, color16_t aFGColor, color16_t aBGColor, bool aForceDisplay);
+void showRTCTimeEverySecond(uint16_t x, uint16_t y, color16_t aFGColor, color16_t aBGColor);
 void formatThousandSeparator(char * aDestPointer, char * aSeparatorAddress);
 
 #endif /* UTILS_H_ */

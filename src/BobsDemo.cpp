@@ -41,7 +41,7 @@ unsigned int sHomeMidY = HOME_MID_Y;
 void initBobsDemo(void) {
 
     TouchButtonNextLevel.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_CYAN, "Next", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doNextLevel);
+    BUTTON_HEIGHT_4, COLOR_CYAN, "Next", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doNextLevel);
 }
 
 void startBobsDemo(void) {

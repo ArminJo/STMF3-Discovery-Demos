@@ -190,7 +190,7 @@ const float ScaleVoltagePerDiv[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR] = { 0.01
 float RawAttenuationFactor[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR] = { 0.5, 1, 1, 1, 1, 1, 4.05837, 4.05837, 41.6666, 41.6666,
         41.6666, 100 };
 // Attenuation values for fixed attenuator - Channel0 = /1, Ch1= /10, Ch2= /100
-float FixedAttenuationFactor[NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR] = { 1, 10, 100 };
+float FixedAttenuationFactor[NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR] = { 1, 10, 100 };
 
 const uint8_t RangePrecision[NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR] = { 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0 }; // number of digits to be printed after the decimal point
 
@@ -263,14 +263,23 @@ void initAcquisition(void) {
         MeasurementControl.FirstChannelIndexWithoutAttenuator = NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR;
         //initTimer2(); // start timer2 for generating VEE (negative Voltage for external hardware)
     }
+    /*
+     * Values must be set before initGui()
+     */
     MeasurementControl.ADCInputMUXChannelIndex = tStartChannel;
 
     // AC mode off (needs DisplayRangeIndex if true)
     MeasurementControl.isACMode = false;
+    MeasurementControl.isMinMaxMode = true;
+
 #endif
 
     // Timebase
     MeasurementControl.TimebaseEffectiveIndex = TIMEBASE_INDEX_START_VALUE;
+}
+
+void clearDataBuffer() {
+    memset(DataBufferControl.DataBuffer, 0, sizeof(DataBufferControl.DataBuffer));
 }
 
 /**
@@ -478,7 +487,7 @@ void DMACheckForTriggerCondition(void) {
                     // rising slope - wait for value below 1. threshold
                     // falling slope - wait for value above 1. threshold
                     if (!tValueGreaterRef) {
-                        tTriggerStatus = TRIGGER_STATUS_BEFORE_THRESHOLD;
+                        tTriggerStatus = TRIGGER_STATUS_AFTER_HYSTERESIS;
                         tActualCompareValue = MeasurementControl.RawTriggerLevel;
                     }
                 } else {
@@ -554,8 +563,8 @@ void DMACheckForTriggerCondition(void) {
             MeasurementControl.StopAcknowledged = true;
         } else {
             // set end pointer to end of display for reproducible min max + average findings - XScale is known to be >=0 here
-            int tAdjust = adjustIntWithScaleFactor(
-            REMOTE_DISPLAY_WIDTH - DisplayControl.DatabufferPreTriggerDisplaySize - 1, DisplayControl.XScale);
+            int tAdjust = adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH - DisplayControl.DatabufferPreTriggerDisplaySize - 1,
+                    DisplayControl.XScale);
             DataBufferControl.DataBufferEndPointer = tDMAMemoryAddress + tAdjust;
         }
     }
@@ -695,7 +704,7 @@ extern "C" void ADC1_2_IRQHandler(void) {
                 // rising slope - wait for value below 1. threshold
                 if (tValue < MeasurementControl.RawTriggerLevelHysteresis
                         || tValueMin < MeasurementControl.RawTriggerLevelHysteresis) {
-                    MeasurementControl.TriggerStatus = TRIGGER_STATUS_BEFORE_THRESHOLD;
+                    MeasurementControl.TriggerStatus = TRIGGER_STATUS_AFTER_HYSTERESIS;
                 }
             } else {
                 // here tTriggerStatus == TRIGGER_BEFORE_THRESHOLD
@@ -711,7 +720,7 @@ extern "C" void ADC1_2_IRQHandler(void) {
                 // falling slope - wait for value above 1. threshold
                 if (tValue > MeasurementControl.RawTriggerLevelHysteresis
                         || tValueMin > MeasurementControl.RawTriggerLevelHysteresis) {
-                    MeasurementControl.TriggerStatus = TRIGGER_STATUS_BEFORE_THRESHOLD;
+                    MeasurementControl.TriggerStatus = TRIGGER_STATUS_AFTER_HYSTERESIS;
                 }
             } else {
                 // here tTriggerStatus == TRIGGER_BEFORE_THRESHOLD
@@ -1011,7 +1020,7 @@ void computeAutoRangeAndAutoOffset(void) {
 /**
  * adjusts trigger level if needed
  * sets exclusively: DisplayRangeIndex, DisplayRangeIndexForPrint, actualDSOReadingACZeroForInputRange and hardware attenuator
- * @param aValue value to change range
+ * @param aNewRangeIndex
  * @return true if range has changed false otherwise
  */ //
 bool setDisplayRange(int aNewRangeIndex) {
@@ -1045,7 +1054,7 @@ bool setDisplayRange(int aNewRangeIndex) {
         DSO_setAttenuator(AttenuatorHardwareValue[aNewRangeIndex]);
         MeasurementControl.actualDSORawToVoltFactor = sADCToVoltFactor * RawAttenuationFactor[aNewRangeIndex];
     } else if (MeasurementControl.AttenuatorType == ATTENUATOR_TYPE_FIXED_ATTENUATOR
-            && MeasurementControl.ADCInputMUXChannelIndex < NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR) {
+            && MeasurementControl.ADCInputMUXChannelIndex < NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR) {
         MeasurementControl.actualDSORawToVoltFactor = sADCToVoltFactor
                 * FixedAttenuationFactor[MeasurementControl.ADCInputMUXChannelIndex];
         // for display of grid and for precision use other index for print
@@ -1086,28 +1095,39 @@ bool setDisplayRange(int aNewRangeIndex) {
 }
 
 /**
- * Handler for display range up / down
+ * Adds aValue to existing DisplayRangeIndex and checks for bounds, then just calls setDisplayRange()
+ * Additionally adjust OffsetGridCount (for offset != 0) so that bottom line will stay.
+ *
  * @param aValue to add to MeasurementControl.IndexDisplayRange
  * @return true if no clipping if index occurs
  */
-int changeDisplayRange(int aValue) {
-    int tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+int changeDisplayRangeAndAdjustOffsetGridCount(int aValue) {
+    int tFeedbackType = FEEDBACK_TONE_OK;
     float tOldFactor = ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndex];
 
     int tNewDisplayRange = MeasurementControl.DisplayRangeIndex + aValue;
     // check for bounds
     if (tNewDisplayRange < 0) {
         tNewDisplayRange = 0;
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
     } else if (tNewDisplayRange > NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR) {
         tNewDisplayRange = NUMBER_OF_RANGES_WITH_ACTIVE_ATTENUATOR;
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
     }
     setDisplayRange(tNewDisplayRange);
     // adjust OffsetGridCount so that bottom line will stay
     setOffsetGridCount(MeasurementControl.OffsetGridCount * tOldFactor / ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndex]);
 
     return tFeedbackType;
+}
+
+/**
+ * Handler for offset up / down
+ */
+int changeOffsetGridCount(int aValue) {
+    setOffsetGridCount(MeasurementControl.OffsetGridCount + aValue);
+    drawGridLinesWithHorizLabelsAndTriggerLine();
+    return FEEDBACK_TONE_OK;
 }
 
 /**
@@ -1120,6 +1140,37 @@ void setOffsetGridCount(int aOffsetGridCount) {
     MeasurementControl.RawOffsetValueForDisplayRange = getRawOffsetValueFromGridCount(aOffsetGridCount);
     MeasurementControl.RawValueOffsetClippingLower = getInputRawFromDisplayValue(DISPLAY_VALUE_FOR_ZERO); // value for bottom of display
     MeasurementControl.RawValueOffsetClippingUpper = getInputRawFromDisplayValue(0); // value for top of display
+}
+
+/**
+ * Changes timebase
+ * sometimes interrupts just stops after the first reading if we set ADC_SetClockPrescaler value here
+ * so delay it to the start of a new acquisition
+ *
+ * @param aValue
+ * @return
+ */
+int changeTimeBaseValue(int aChangeValue) {
+    uint8_t tFeedbackType = FEEDBACK_TONE_OK;
+    int tOldIndex = MeasurementControl.TimebaseEffectiveIndex;
+// positive value means increment timebase index!
+    int tNewIndex = tOldIndex + aChangeValue;
+// do not decrement below TIMEBASE_NUMBER_START or increment above TIMEBASE_NUMBER_OF_ENTRIES -1
+// skip 1./3 entry(s) because it makes no sense yet (wait until interleaving acquisition is implemented :-))
+    if (tNewIndex < TIMEBASE_NUMBER_START) {
+        tNewIndex = TIMEBASE_NUMBER_START;
+    }
+    if (tNewIndex > TIMEBASE_NUMBER_OF_ENTRIES - 1) {
+        tNewIndex = TIMEBASE_NUMBER_OF_ENTRIES - 1;
+    }
+    if (tNewIndex == tOldIndex) {
+        tFeedbackType = FEEDBACK_TONE_ERROR;
+    } else {
+        // signal change to main loop in thread mode
+        MeasurementControl.TimebaseNewIndex = tNewIndex;
+        MeasurementControl.ChangeRequestedFlags |= CHANGE_REQUESTED_TIMEBASE_FLAG;
+    }
+    return tFeedbackType;
 }
 
 /**
@@ -1182,35 +1233,19 @@ void setOffsetGridCountAccordingToACMode(void) {
         setOffsetGridCount(0);
     }
 }
-/*
- * Sets isACMode and in turn ChannelIsACMode accordingly
- * uses MeasurementControl.DisplayRangeIndex for getRawOffsetValueFromGridCount()
- */
-void setACMode(bool aACMode) {
-    MeasurementControl.isACMode = aACMode;
-    if (MeasurementControl.ChannelHasACDCSwitch) {
-        MeasurementControl.ChannelIsACMode = aACMode;
-    } else {
-        MeasurementControl.ChannelIsACMode = false;
-    }
-    setOffsetGridCountAccordingToACMode();
-    DSO_setACMode(aACMode);
-}
-
 /**
  * Sets all channel as well as all range values and attached attenuator
  * @param aChannelIndex - Index into ADCInputMUXChannels array
  * @return true - If ChannelIsACMode has changed and page must be redrawn
  */
-void setChannel(int aChannelIndex) {
+void setChannel(uint8_t aChannelIndex) {
 
     int tNewRange = NO_ATTENUATOR_MAX_DISPLAY_RANGE_INDEX;
-    if (aChannelIndex >= ADC_CHANNEL_COUNT || aChannelIndex == 0) {
+    if (aChannelIndex == 0) {
         /*
-         * wrap to first channel and set Channel related flags
+         * Set Channel related flags
          */
-        aChannelIndex = 0;
-        MeasurementControl.ChannelHasACDCSwitch = true;
+        MeasurementControl.ChannelHasAC_DCSwitch = true;
         // restore user AC mode
         MeasurementControl.ChannelIsACMode = MeasurementControl.isACMode;
         if (MeasurementControl.AttenuatorType >= ATTENUATOR_TYPE_ACTIVE_ATTENUATOR) {
@@ -1224,12 +1259,12 @@ void setChannel(int aChannelIndex) {
          * SHandle no-attenuator channels
          */
         MeasurementControl.ChannelHasActiveAttenuator = false;
-        MeasurementControl.ChannelHasACDCSwitch = false;
+        MeasurementControl.ChannelHasAC_DCSwitch = false;
         MeasurementControl.ChannelIsACMode = false;
 
     } else if (MeasurementControl.AttenuatorType == ATTENUATOR_TYPE_FIXED_ATTENUATOR
-            && aChannelIndex < NUMBER_OF_CHANNEL_WITH_FIXED_ATTENUATOR) {
-        MeasurementControl.ChannelHasACDCSwitch = true;
+            && aChannelIndex < NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR) {
+        MeasurementControl.ChannelHasAC_DCSwitch = true;
         MeasurementControl.ChannelIsACMode = MeasurementControl.isACMode;
     }
     MeasurementControl.ADCInputMUXChannelIndex = aChannelIndex;

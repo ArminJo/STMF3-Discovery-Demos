@@ -586,7 +586,7 @@ void sendUSARTArgsAndByteBuffer(uint8_t aFunctionTag, int aNumberOfArgs, ...) {
  * Assembles parameter header and appends header for data field
  */
 void sendUSART5ArgsAndByteBuffer(uint8_t aFunctionTag, uint16_t aXStart, uint16_t aYStart, uint16_t aParam3,
-        uint16_t aParam4, Color_t aColor, uint8_t * aBuffer, size_t aBufferLength) {
+        uint16_t aParam4, color16_t aColor, uint8_t * aBuffer, size_t aBufferLength) {
 
     uint16_t tParamBuffer[9];
 
@@ -610,7 +610,7 @@ void sendUSART5ArgsAndByteBuffer(uint8_t aFunctionTag, uint16_t aXStart, uint16_
  * Assembles parameter header and appends header for data field
  */
 void sendUSART5ArgsAndShortBuffer(uint8_t aFunctionTag, uint16_t aXStart, uint16_t aYStart, uint16_t aParam3,
-        uint16_t aParam4, Color_t aColor, uint16_t * aBuffer, size_t aBufferLength) {
+        uint16_t aParam4, color16_t aColor, uint16_t * aBuffer, size_t aBufferLength) {
 
     uint16_t tParamBuffer[9];
 

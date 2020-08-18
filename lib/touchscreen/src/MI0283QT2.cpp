@@ -71,7 +71,7 @@ void MI0283QT2::init(void) {
     setBrightness(BACKLIGHT_START_VALUE);
 
 // deactivate read output control
-    HY32D_RD_GPIO_PORT->BSRRL = HY32D_RD_PIN;
+    HY32D_RD_GPIO_PORT->BSRR = HY32D_RD_PIN;
 //initalize display
     if (initalizeDisplay()) {
         isLocalDisplayAvailable = true;
@@ -104,11 +104,11 @@ void MI0283QT2::clearDisplay(uint16_t aColor) {
     for (size = (LOCAL_DISPLAY_HEIGHT * LOCAL_DISPLAY_WIDTH); size != 0; size--) {
         HY32D_DATA_GPIO_PORT->ODR = aColor;
         // Latch data write
-        HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-        HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+        HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+        HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 
     }
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
 
 }
 
@@ -117,28 +117,28 @@ void MI0283QT2::clearDisplay(uint16_t aColor) {
  */
 void drawStart(void) {
 // CS enable (low)
-    HY32D_CS_GPIO_PORT->BSRRH = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = (uint32_t) HY32D_CS_PIN << 16;
 // Control enable (low)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRH = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = (uint32_t) HY32D_DATA_CONTROL_PIN << 16;
 // set value
     HY32D_DATA_GPIO_PORT->ODR = LCD_GRAM_WRITE_REGISTER;
 // Latch data write
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 // Data enable (high)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRL = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = HY32D_DATA_CONTROL_PIN;
 }
 
 inline void draw(uint16_t color) {
 // set value
     HY32D_DATA_GPIO_PORT->ODR = color;
 // Latch data write
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 }
 
 void drawStop(void) {
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
 }
 
 void MI0283QT2::drawPixel(uint16_t aXPos, uint16_t aYPos, uint16_t aColor) {
@@ -208,7 +208,7 @@ void MI0283QT2::fillRect(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uin
     drawStop();
 }
 
-void MI0283QT2::fillRectRel(uint16_t aXStart, uint16_t aYStart, uint16_t aWidth, uint16_t aHeight, Color_t aColor) {
+void MI0283QT2::fillRectRel(uint16_t aXStart, uint16_t aYStart, uint16_t aWidth, uint16_t aHeight, color16_t aColor) {
     LocalDisplay.fillRect(aXStart, aYStart, aXStart + aWidth - 1, aYStart + aHeight - 1, aColor);
 }
 
@@ -283,10 +283,10 @@ uint16_t readPixel(uint16_t aXPos, uint16_t aYPos) {
     delayNanos(300);
 
     tValue = HY32D_DATA_GPIO_PORT->IDR;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_RD_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_RD_PIN;
 // set port pins to output
     HY32D_DATA_GPIO_PORT->MODER = 0x55555555;
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
 
     return tValue;
 }
@@ -692,53 +692,53 @@ int clipBrightnessValue(int aBrightnessValue) {
 
 void writeCommand(int aRegisterAddress, int aRegisterValue) {
 // CS enable (low)
-    HY32D_CS_GPIO_PORT->BSRRH = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = (uint32_t) HY32D_CS_PIN << 16;
 // Control enable (low)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRH = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = (uint32_t) HY32D_DATA_CONTROL_PIN << 16;
 // set value
     HY32D_DATA_GPIO_PORT->ODR = aRegisterAddress;
 // Latch data write
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 
 // Data enable (high)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRL = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = HY32D_DATA_CONTROL_PIN;
 // set value
     HY32D_DATA_GPIO_PORT->ODR = aRegisterValue;
 // Latch data write
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 
 // CS disable (high)
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
     return;
 }
 
 uint16_t readCommand(int aRegisterAddress) {
 // CS enable (low)
-    HY32D_CS_GPIO_PORT->BSRRH = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = (uint32_t) HY32D_CS_PIN << 16;
 // Control enable (low)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRH = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = (uint32_t) HY32D_DATA_CONTROL_PIN << 16;
 // set value
     HY32D_DATA_GPIO_PORT->ODR = aRegisterAddress;
 // Latch data write
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_WR_PIN;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_WR_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 
 // Data enable (high)
-    HY32D_DATA_CONTROL_GPIO_PORT->BSRRL = HY32D_DATA_CONTROL_PIN;
+    HY32D_DATA_CONTROL_GPIO_PORT->BSRR = HY32D_DATA_CONTROL_PIN;
 // set port pins to input
     HY32D_DATA_GPIO_PORT->MODER = 0x00000000;
 // Latch data read
-    HY32D_WR_GPIO_PORT->BSRRH = HY32D_RD_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_RD_PIN << 16;
 // wait >250ns
     delayNanos(300);
     uint16_t tValue = HY32D_DATA_GPIO_PORT->IDR;
-    HY32D_WR_GPIO_PORT->BSRRL = HY32D_RD_PIN;
+    HY32D_WR_GPIO_PORT->BSRR = HY32D_RD_PIN;
 // set port pins to output
     HY32D_DATA_GPIO_PORT->MODER = 0x55555555;
 // CS disable (high)
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
     return tValue;
 }
 
@@ -890,7 +890,7 @@ uint16_t * fillDisplayLineBuffer(uint16_t * aBufferPtr, uint16_t yLineNumber) {
     HY32D_DATA_GPIO_PORT->MODER = 0x00000000;
     for (uint16_t i = 0; i <= LOCAL_DISPLAY_WIDTH; ++i) {
         // Latch data read
-        HY32D_WR_GPIO_PORT->BSRRH = HY32D_RD_PIN;
+        HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_RD_PIN << 16;
         // wait >250ns (and process former value)
         if (i > 1) {
             // skip inital value (=0) and first reading from display (is from last read => scrap)
@@ -899,14 +899,14 @@ uint16_t * fillDisplayLineBuffer(uint16_t * aBufferPtr, uint16_t yLineNumber) {
             *aBufferPtr++ = tValue;
         }
         tValue = HY32D_DATA_GPIO_PORT->IDR;
-        HY32D_WR_GPIO_PORT->BSRRL = HY32D_RD_PIN;
+        HY32D_WR_GPIO_PORT->BSRR = HY32D_RD_PIN;
     }
 // last value
     tValue = (tValue & BLUEMASK) | ((tValue >> 1) & ~BLUEMASK);
     *aBufferPtr++ = tValue;
 // set port pins to output
     HY32D_DATA_GPIO_PORT->MODER = 0x55555555;
-    HY32D_CS_GPIO_PORT->BSRRL = HY32D_CS_PIN;
+    HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
     return aBufferPtr;
 }
 
@@ -951,10 +951,27 @@ extern "C" void storeScreenshot(void) {
             }
             free(tFourDisplayLinesBufferPointer);
             f_close(&tFile);
-            tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+            tFeedbackType = FEEDBACK_TONE_OK;
         }
     }
     FeedbackTone(tFeedbackType);
+}
+
+/*
+ * fast divide by 11 for MI0283QT2 driver arguments
+ */
+uint16_t getLocalTextSize(uint16_t aTextSize) {
+    if (aTextSize <= 11) {
+        return 1;
+    }
+#ifdef PGMSPACE_MATTERS
+    return 2;
+#else
+    if (aTextSize == 22) {
+        return 2;
+    }
+    return aTextSize / 11;
+#endif
 }
 
 /** @} */

@@ -179,8 +179,8 @@ void loopGuiDemo(void) {
                     ActionSliderUp = true;
                 }
             }
-            TouchSliderAction.setActualValueAndDrawBar(ActionSliderValue);
-            TouchSliderActionWithoutBorder.setActualValueAndDrawBar(ACTION_SLIDER_MAX - ActionSliderValue);
+            TouchSliderAction.setValueAndDrawBar(ActionSliderValue);
+            TouchSliderActionWithoutBorder.setValueAndDrawBar(ACTION_SLIDER_MAX - ActionSliderValue);
         }
         break;
 
@@ -236,37 +236,37 @@ void createDemoButtonsAndSliders(void) {
     //1. row
     int tPosY = 0;
     TouchButtonChartDemo.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "Chart",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // Back text button for sub pages
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "Back",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonGameOfLife.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, StringGOL,
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonDemoSettings.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "Settings",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
 #ifdef LOCAL_DISPLAY_EXISTS
     // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonADS7846Channels.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "ADS7846",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doADS7846Channels);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doADS7846Channels);
 
     // sub pages
     TouchButtonCalibration.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED,
-            StringTPCalibration, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+            StringTPCalibration, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 #endif
     TouchButtonNew.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "New", TEXT_SIZE_22,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doNew);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doNew);
 
     TouchButtonContinue.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "Continue",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doContinue);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doContinue);
 
     /*
      * Slider
@@ -283,7 +283,7 @@ void createDemoButtonsAndSliders(void) {
 
 // ON OFF button relative to slider
     TouchButtonGolDying.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_RED, "Show dying", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTO_RED_GREEN, false,
+    COLOR_RED, "Show dying", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, false,
             &doGolDying);
 
 // self moving sliders
@@ -329,7 +329,7 @@ void doGolSpeed(BDSlider * aTheTouchedSlider, uint16_t aSliderValue) {
         break;
     }
     aTheTouchedSlider->printValue(tValueString);
-    aTheTouchedSlider->setActualValueAndDrawBar(aSliderValue * 25);
+    aTheTouchedSlider->setValueAndDrawBar(aSliderValue * 25);
 }
 
 void doGuiDemoButtons(BDButton * aTheTouchedButton, int16_t aValue) {

@@ -2,6 +2,7 @@
 /* MMCv3/SDv1/SDv2 (in SPI mode) control module  (C)ChaN, 2010           */
 /*-----------------------------------------------------------------------*/
 
+#define _SYS_SELECT_H //to avoid error "conflicting types for 'select'"
 #include "timing.h"
 #include "stm32fx0xPeripherals.h"
 #include "diskio.h"

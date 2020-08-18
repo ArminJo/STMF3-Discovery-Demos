@@ -121,19 +121,19 @@ void startSettingsPage(void) {
 #ifdef LOCAL_DISPLAY_EXISTS
     TouchButtonToggleTouchXYDisplay.init(BUTTON_WIDTH_3_POS_2, tPosY,
     BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Touch X Y", TEXT_SIZE_11,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTO_RED_GREEN, getDisplayXYValuesFlag(),
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, getDisplayXYValuesFlag(),
             &doToggleTouchXYDisplay);
 #endif
     //2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonTogglePrintMode.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, 0, StringUSBPrint, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTO_RED_GREEN,
+    BUTTON_HEIGHT_4, 0, StringUSBPrint, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
             0, &doTogglePrintEnable);
 
 #ifdef LOCAL_DISPLAY_EXISTS
     TouchButtonTPCalibration.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4,
-    COLOR_RED, StringTPCal, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTPCalibration);
+    COLOR_RED, StringTPCal, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTPCalibration);
 #endif
 
     ADC_setRawToVoltFactor();
@@ -179,14 +179,14 @@ void initClockSettingElements(void) {
 
     TouchButtonSetDate.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3,
     BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, StringSetDateCaption, TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
+    BUTTON_HEIGHT_4, COLOR_RED, StringSetDateCaption, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
     // for RTC setting
     TouchButtonAutorepeatDate_Plus.init(BUTTON_WIDTH_6_POS_4, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_5, COLOR_RED, "+", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1,
+    BUTTON_HEIGHT_5, COLOR_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doSetDate);
 
     TouchButtonAutorepeatDate_Minus.init(BUTTON_WIDTH_6_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_5, COLOR_RED, "-", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1,
+    BUTTON_HEIGHT_5, COLOR_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1,
             &doSetDate);
 
     TouchButtonAutorepeatDate_Plus.setButtonAutorepeatTiming(500, 300, 5, 100);
@@ -305,7 +305,7 @@ void initBacklightElements(void) {
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
     TouchButtonAutorepeatBacklight_Plus.init(BACKLIGHT_CONTROL_X, BACKLIGHT_CONTROL_Y, BUTTON_WIDTH_10,
-    BUTTON_HEIGHT_6, COLOR_RED, "+", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1,
+    BUTTON_HEIGHT_6, COLOR_RED, "+", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doChangeBacklight);
     /*
      * Backlight slider
@@ -321,7 +321,7 @@ void initBacklightElements(void) {
 
     TouchButtonAutorepeatBacklight_Minus.init(BACKLIGHT_CONTROL_X, TouchSliderBacklight.getPositionYBottom() + 30,
     BUTTON_WIDTH_10, BUTTON_HEIGHT_6, COLOR_RED, "-", TEXT_SIZE_11,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1, &doChangeBacklight);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeBacklight);
 
     TouchButtonAutorepeatBacklight_Plus.setButtonAutorepeatTiming(600, 100, 10, 20);
     TouchButtonAutorepeatBacklight_Minus.setButtonAutorepeatTiming(600, 100, 10, 20);
@@ -348,7 +348,7 @@ void doBacklightSlider(BDSlider * aTheTouchedSlider, uint16_t aValue) {
 void doChangeBacklight(BDButton * aTheTouchedButton, int16_t aValue) {
     FeedbackToneOK();
     setBacklightValue(getBacklightValue() + aValue);
-    TouchSliderBacklight.setActualValueAndDrawBar(getBacklightValue());
+    TouchSliderBacklight.setValueAndDrawBar(getBacklightValue());
 }
 #endif
 

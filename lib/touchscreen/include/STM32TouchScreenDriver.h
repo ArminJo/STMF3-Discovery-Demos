@@ -73,8 +73,8 @@ void MI0283QT2_IO_initalize(void);
 void ADS7846_IO_initalize(void);
 void ADS7846_clearAndEnableInterrupt(void);
 void ADS7846_disableInterrupt(void);
-#define ADS7846_CSEnable() (ADS7846_CS_GPIO_PORT->BSRRH = ADS7846_CS_PIN)
-#define ADS7846_CSDisable() (ADS7846_CS_GPIO_PORT->BSRRL = ADS7846_CS_PIN)
+#define ADS7846_CSEnable() (ADS7846_CS_GPIO_PORT->BSRR = (uint32_t) ADS7846_CS_PIN << 16)
+#define ADS7846_CSDisable() (ADS7846_CS_GPIO_PORT->BSRR = ADS7846_CS_PIN)
 /**
  * @return true if line is NOT active
  */

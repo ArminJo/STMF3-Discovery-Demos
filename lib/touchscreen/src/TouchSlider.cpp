@@ -614,7 +614,7 @@ bool TouchSlider::checkSlider(uint16_t aTouchPositionX, uint16_t aTouchPositionY
             if (mFlags & FLAG_USE_BDSLIDER_FOR_CALLBACK) {
                 mOnChangeHandler((TouchSlider *) this->mBDSliderPtr, tActualTouchValue);
                 // Synchronize remote slider
-                BlueDisplay1.setSliderActualValueAndDrawBar(this->mBDSliderPtr->mSliderHandle, tActualTouchValue);
+                BlueDisplay1.setSliderValueAndDrawBar(this->mBDSliderPtr->mSliderHandle, tActualTouchValue);
             } else {
                 mOnChangeHandler(this, tActualTouchValue);
             }
@@ -655,25 +655,25 @@ bool TouchSlider::checkAllSliders(unsigned int aTouchPositionX, unsigned int aTo
     return false;
 }
 
-int16_t TouchSlider::getActualValue(void) const {
+int16_t TouchSlider::getCurrentValue(void) const {
     return mActualValue;
 }
 
 /*
  * also redraws value bar
  */
-void TouchSlider::setActualValue(int16_t actualValue) {
-    mActualValue = actualValue;
+void TouchSlider::setValue(int16_t aCurrentValue) {
+    mActualValue = aCurrentValue;
 }
 
-void TouchSlider::setActualValueAndDraw(int16_t actualValue) {
-    mActualValue = actualValue;
+void TouchSlider::setValueAndDraw(int16_t aCurrentValue) {
+    mActualValue = aCurrentValue;
     drawBar();
     printValue(); // this checks for flag TOUCHFLAG_SLIDER_SHOW_VALUE itself
 }
 
-void TouchSlider::setActualValueAndDrawBar(int16_t actualValue) {
-    mActualValue = actualValue;
+void TouchSlider::setValueAndDrawBar(int16_t aCurrentValue) {
+    mActualValue = aCurrentValue;
     drawBar();
     printValue(); // this checks for flag TOUCHFLAG_SLIDER_SHOW_VALUE itself
 }

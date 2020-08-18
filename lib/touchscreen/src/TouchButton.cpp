@@ -20,6 +20,8 @@
  *
  */
 
+#include "MI0283QT2.h"
+
 #include "TouchButton.h"
 #include "TouchButtonAutorepeat.h"
 #include "EventHandler.h"
@@ -111,7 +113,7 @@ TouchButton * TouchButton::getLocalButtonFromBDButtonHandle(BDButtonHandle_t aBu
         }
         tButtonPointer = tButtonPointer->mNextObject;
     }
-    if (tButtonPointer->mFlags & BUTTON_FLAG_TYPE_AUTOREPEAT) {
+    if (tButtonPointer->mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         return (TouchButtonAutorepeat *) tButtonPointer;
     } else {
         return tButtonPointer;
@@ -129,13 +131,12 @@ void TouchButton::reinitAllLocalButtonsForRemote(void) {
         while (tButtonPointer != NULL) {
             // cannot use BDButton.init since this allocates a new TouchButton
             sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 11, tButtonPointer->mBDButtonPtr->mButtonHandle,
-                    tButtonPointer->mPositionX, tButtonPointer->mPositionY, tButtonPointer->mWidthX,
-                    tButtonPointer->mHeightY, tButtonPointer->mButtonColor, tButtonPointer->mCaptionSize,
-                    tButtonPointer->mFlags & ~(LOCAL_BUTTON_FLAG_MASK), tButtonPointer->mValue,
-                    tButtonPointer->mOnTouchHandler,
-                    (reinterpret_cast<uint32_t>(tButtonPointer->mOnTouchHandler) >> 16),
-                    strlen(tButtonPointer->mCaption), tButtonPointer->mCaption);
-            if (tButtonPointer->mFlags & BUTTON_FLAG_TYPE_AUTOREPEAT) {
+                    tButtonPointer->mPositionX, tButtonPointer->mPositionY, tButtonPointer->mWidthX, tButtonPointer->mHeightY,
+                    tButtonPointer->mButtonColor, tButtonPointer->mCaptionSize, tButtonPointer->mFlags & ~(LOCAL_BUTTON_FLAG_MASK),
+                    tButtonPointer->mValue, tButtonPointer->mOnTouchHandler,
+                    (reinterpret_cast<uint32_t>(tButtonPointer->mOnTouchHandler) >> 16), strlen(tButtonPointer->mCaption),
+                    tButtonPointer->mCaption);
+            if (tButtonPointer->mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
                 TouchButtonAutorepeat * tAutorepeatButtonPointer = (TouchButtonAutorepeat*) tButtonPointer;
                 sendUSARTArgs(FUNCTION_BUTTON_SETTINGS, 7, tAutorepeatButtonPointer->mBDButtonPtr->mButtonHandle,
                         SUBFUNCTION_BUTTON_SET_AUTOREPEAT_TIMING, tAutorepeatButtonPointer->mMillisFirstDelay,
@@ -154,8 +155,8 @@ void TouchButton::reinitAllLocalButtonsForRemote(void) {
  * if aWidthX == 0 render only text no background box
  * if aCaptionSize == 0 don't render anything, just check touch area -> transparent button ;-)
  */
-int8_t TouchButton::initButton(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY,
-        uint16_t aButtonColor, const char * aCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
+int8_t TouchButton::initButton(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, uint16_t aButtonColor,
+        const char * aCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
         void (*aOnTouchHandler)(TouchButton *, int16_t)) {
     mWidthX = aWidthX;
     mHeightY = aHeightY;
@@ -165,7 +166,7 @@ int8_t TouchButton::initButton(uint16_t aPositionX, uint16_t aPositionY, uint16_
     mCaptionSize = aCaptionSize;
     mOnTouchHandler = aOnTouchHandler;
 
-    if (aFlags & BUTTON_FLAG_TYPE_AUTO_RED_GREEN) {
+    if (aFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         if (aValue != 0) {
             // map to boolean
             aValue = true;
@@ -259,23 +260,22 @@ void TouchButton::drawCaption(void) {
             } else {
                 tYCaptionPosition = mPositionY + ((mHeightY - tCaptionHeight) / 2);
             }
-            LocalDisplay.drawNCharacters(tXCaptionPosition, tYCaptionPosition, (char*) mCaption,
-                    getLocalTextSize(mCaptionSize), mCaptionColor, mButtonColor, tStringlength);
+            LocalDisplay.drawNCharacters(tXCaptionPosition, tYCaptionPosition, (char*) mCaption, getLocalTextSize(mCaptionSize),
+                    mCaptionColor, mButtonColor, tStringlength);
             if (tPosOfNewline != NULL) {
                 // 2. line - position the string in the middle of the box again
                 tStringlength = strlen(mCaption) - tStringlength - 1;
                 tLength = getTextWidth(mCaptionSize) * tStringlength;
                 tXCaptionPosition = mPositionX + ((mWidthX - tLength) / 2);
                 LocalDisplay.drawNCharacters(tXCaptionPosition, tYCaptionPosition + getTextHeight(mCaptionSize),
-                        (tPosOfNewline + 1), getLocalTextSize(mCaptionSize), mCaptionColor, mButtonColor,
-                        tStringlength);
+                        (tPosOfNewline + 1), getLocalTextSize(mCaptionSize), mCaptionColor, mButtonColor, tStringlength);
             }
         }
     }
 }
 
 bool TouchButton::isAutorepeatButton(void) {
-    return (mFlags & BUTTON_FLAG_TYPE_AUTOREPEAT);
+    return (mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN);
 }
 
 /**
@@ -301,13 +301,19 @@ bool TouchButton::checkButton(uint16_t aTouchPositionX, uint16_t aTouchPositionY
         /*
          *  Touch position is in button - call callback function
          */
-        if (mFlags & BUTTON_FLAG_DO_BEEP_ON_TOUCH) {
+        if (mFlags & FLAG_BUTTON_DO_BEEP_ON_TOUCH) {
             FeedbackToneOK();
         }
+        /*
+         * Handle Toggle red/green button
+         */
+        if (mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
+            setValueAndDraw(!mValue);
+        }
+
 #ifdef REMOTE_DISPLAY_SUPPORTED
         if ((mFlags & FLAG_USE_BDBUTTON_FOR_CALLBACK)
-                && (&TouchButtonAutorepeat::autorepeatTouchHandler
-                        != (void (*)(TouchButtonAutorepeat *, int16_t)) mOnTouchHandler)) {
+                && (&TouchButtonAutorepeat::autorepeatTouchHandler != (void (*)(TouchButtonAutorepeat *, int16_t)) mOnTouchHandler)) {
             mOnTouchHandler((TouchButton *) this->mBDButtonPtr, mValue);
         } else {
             mOnTouchHandler(this, mValue);
@@ -327,9 +333,8 @@ uint8_t TouchButton::checkAllButtons(unsigned int aTouchPositionX, unsigned int 
 // walk through list of active elements
     TouchButton * tButtonPointer = sButtonListStart;
     while (tButtonPointer != NULL) {
-        if ((tButtonPointer->mFlags & FLAG_IS_ACTIVE)
-                && tButtonPointer->checkButton(aTouchPositionX, aTouchPositionY)) {
-            if (tButtonPointer->mFlags & BUTTON_FLAG_TYPE_AUTOREPEAT) {
+        if ((tButtonPointer->mFlags & FLAG_IS_ACTIVE) && tButtonPointer->checkButton(aTouchPositionX, aTouchPositionY)) {
+            if (tButtonPointer->mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
                 return BUTTON_TOUCHED_AUTOREPEAT;
             } else {
                 return BUTTON_TOUCHED;
@@ -407,7 +412,7 @@ void TouchButton::setCaptionColor(uint16_t aColor) {
  * value 0 -> red, 1 -> green
  */
 void TouchButton::setValue(int16_t aValue) {
-    if (mFlags & BUTTON_FLAG_TYPE_AUTO_RED_GREEN) {
+    if (mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         if (aValue != 0) {
             // map to boolean
             aValue = true;
@@ -420,7 +425,7 @@ void TouchButton::setValue(int16_t aValue) {
 }
 
 void TouchButton::setValueAndDraw(int16_t aValue) {
-    if (mFlags & BUTTON_FLAG_TYPE_AUTO_RED_GREEN) {
+    if (mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         if (aValue != 0) {
             // map to boolean
             aValue = true;
@@ -498,7 +503,7 @@ TouchButton * TouchButton::allocAndInitButton(uint16_t aPositionX, uint16_t aPos
         void (*aOnTouchHandler)(TouchButton *, int16_t)) {
 
     TouchButton * tButton;
-    if (aFlags & BUTTON_FLAG_TYPE_AUTOREPEAT) {
+    if (aFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         tButton = TouchButtonAutorepeat::allocAutorepeatButton();
     } else {
         tButton = allocButton(false);
@@ -512,7 +517,7 @@ TouchButton * TouchButton::allocAndInitButton(uint16_t aPositionX, uint16_t aPos
     tButton->mCaptionSize = aCaptionSize;
     tButton->mOnTouchHandler = aOnTouchHandler;
 
-    if (aFlags & BUTTON_FLAG_TYPE_AUTO_RED_GREEN) {
+    if (aFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) {
         if (aValue != 0) {
             // map to boolean
             aValue = true;

@@ -443,7 +443,7 @@ void USBD_static_free(void *p) {
  */
 void HAL_PCDEx_SetConnectionState(PCD_HandleTypeDef *hpcd, uint8_t state) {
 #if defined(USB_USE_EXTERNAL_PULLUP)
-    GPIOA->BSRRL = GPIO_PIN_10;
+    GPIOA->BSRR = GPIO_PIN_10;
 #endif
     /* The STM32F3 Discovery Board emmbed the external
      DP Pull-UP 1.5 K resistor R16 */

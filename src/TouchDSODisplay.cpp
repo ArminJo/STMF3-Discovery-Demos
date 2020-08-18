@@ -50,22 +50,6 @@ Chart ChartFFT;
  ************************************************************************/
 
 
-/*
- * draws min, max lines
- */
-void drawMinMaxLines(void) {
-// draw max line
-    int tValueDisplay = getDisplayFrowRawInputValue(MeasurementControl.RawValueMax);
-    if (tValueDisplay != 0) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
-    }
-// min line
-    tValueDisplay = getDisplayFrowRawInputValue(MeasurementControl.RawValueMin);
-    if (tValueDisplay != DISPLAY_VALUE_FOR_ZERO) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
-    }
-}
-
 /**
  * Draws data on screen
  * @param aDataBufferPointer Data is taken from DataBufferPointer.
@@ -80,7 +64,7 @@ void drawMinMaxLines(void) {
  * @note if isEffectiveMinMaxMode == true then DisplayBufferMin is processed subsequently
  * @note NOT used for drawing while acquiring
  */
-void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, Color_t aClearBeforeColor, int aDrawMode,
+void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, color16_t aColor, color16_t aClearBeforeColor, int aDrawMode,
         bool aDrawAlsoMin) {
     int i;
     int tValue;
@@ -106,7 +90,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
     uint8_t *ScreenBufferWritePointer2 = &DisplayBuffer2[0]; // for trigger state line
     int tXScale = DisplayControl.XScale;
     int tXScaleCounter = tXScale;
-    int tTriggerValue = getDisplayFrowRawInputValue(MeasurementControl.RawTriggerLevel);
+    int tTriggerValue = getDisplayFromRawInputValue(MeasurementControl.RawTriggerLevel);
 
     do {
         if (tXScale <= 0) {
@@ -117,7 +101,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
                 // get data from screen buffer in order to erase it
                 tValue = *ScreenBufferReadPointer;
             } else {
-                tValue = getDisplayFrowRawInputValue(*tDataBufferPointer);
+                tValue = getDisplayFromRawInputValue(*tDataBufferPointer);
                 /*
                  * get data from data buffer and perform X scaling
                  */
@@ -134,7 +118,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
                     if (tXScaleCounter < 0) {
                         if (tValue != DISPLAYBUFFER_INVISIBLE_VALUE) {
                             // get average of actual and next value
-                            tValue += getDisplayFrowRawInputValue(*tDataBufferPointer++);
+                            tValue += getDisplayFromRawInputValue(*tDataBufferPointer++);
                             tValue /= 2;
                         }
                         tXScaleCounter = 1;
@@ -268,7 +252,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, Color_t aColor, C
  * Draws all chart values till DataBufferNextInPointer is reached - used for drawing while acquiring
  * @param aDrawColor
  */
-void drawRemainingDataBufferValues(Color_t aDrawColor) {
+void drawRemainingDataBufferValues(color16_t aDrawColor) {
     // Check needed because of last acquisition, which uses the whole data buffer
     while (DataBufferControl.DataBufferNextDrawPointer < DataBufferControl.DataBufferNextInPointer
             && DataBufferControl.DataBufferNextDrawPointer <= &DataBufferControl.DataBuffer[DATABUFFER_DISPLAY_END]
@@ -300,7 +284,7 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
         if (DisplayControl.drawPixelMode) {
             // new values in data buffer => draw one pixel
             // clear pixel or restore grid
-            Color_t tColor = DisplayControl.EraseColor;
+            color16_t tColor = DisplayControl.EraseColor;
             if (tDisplayX % TIMING_GRID_WIDTH == TIMING_GRID_WIDTH - 1) {
                 tColor = COLOR_GRID_LINES;
             }
@@ -339,10 +323,10 @@ void drawRemainingDataBufferValues(Color_t aDrawColor) {
         /*
          * get new value
          */
-        tValue = getDisplayFrowRawInputValue(*DataBufferControl.DataBufferNextDrawPointer);
+        tValue = getDisplayFromRawInputValue(*DataBufferControl.DataBufferNextDrawPointer);
         DisplayBuffer[tDisplayX] = tValue;
         if (MeasurementControl.isEffectiveMinMaxMode) {
-            tValueMin = getDisplayFrowRawInputValue(*(DataBufferControl.DataBufferNextDrawPointer + DATABUFFER_MIN_OFFSET));
+            tValueMin = getDisplayFromRawInputValue(*(DataBufferControl.DataBufferNextDrawPointer + DATABUFFER_MIN_OFFSET));
             DisplayBufferMin[tDisplayX] = tValueMin;
         }
 
@@ -441,7 +425,7 @@ void drawFFT(void) {
  * Draws area chart for fft values. 3 pixel for each value (for a 320 pixel screen)
  * Data is scaled to max = HORIZONTAL_GRID_HEIGHT pixel high and drawn at bottom of screen
  */
-void draw128FFTValuesFast(Color_t aColor) {
+void draw128FFTValuesFast(color16_t aColor) {
     if (DisplayControl.ShowFFT) {
         float *tFFTDataPointer = computeFFT(DataBufferControl.DataBufferDisplayStart);
 
@@ -487,14 +471,11 @@ void clearFFTValuesOnDisplay(void) {
 /************************************************************************
  * Text output section
  ************************************************************************/
-void clearInfo(void) {
-    BlueDisplay1.fillRectRel(0, 0, REMOTE_DISPLAY_WIDTH, 3 * FONT_SIZE_INFO_LONG + 1, COLOR_BACKGROUND_DSO);
-}
-
 /*
  * Output info line
+ * aRecomputeValues - not used yet for STM Version
  */
-void printInfo(void) {
+void printInfo(bool aRecomputeValues) {
     if (DisplayControl.DisplayPage != DISPLAY_PAGE_CHART || DisplayControl.showInfoMode == INFO_MODE_NO_INFO) {
         return;
     }
@@ -723,7 +704,7 @@ void printTriggerInfo(void) {
  * @param aAdcValue raw ADC value
  * @return Display value (0 to 240-DISPLAY_VALUE_FOR_ZERO) or 0 if raw value to high
  */
-int getDisplayFrowRawInputValue(int aAdcValue) {
+int getDisplayFromRawInputValue(int aAdcValue) {
     if (aAdcValue == DATABUFFER_INVISIBLE_RAW_VALUE) {
         return DISPLAYBUFFER_INVISIBLE_VALUE;
     }
@@ -763,7 +744,7 @@ int getDisplayFrowMultipleRawValues(uint16_t * aAdcValuePtr, int aCount) {
     for (int i = 0; i < aCount; ++i) {
         tAdcValue += *aAdcValuePtr++;
     }
-    return getDisplayFrowRawInputValue(tAdcValue / aCount);
+    return getDisplayFromRawInputValue(tAdcValue / aCount);
 }
 
 int getRawOffsetValueFromGridCount(int aCount) {
@@ -812,9 +793,85 @@ float getFloatFromDisplayValue(uint8_t aDisplayValue) {
     return getFloatFromRawValue(tRawValue);
 }
 
+/************************************************************************
+ * Utils section
+ ************************************************************************/
+bool checkDatabufferPointerForDrawing(void) {
+    bool tReturn = true;
+// check for DataBufferDisplayStart
+    if (DataBufferControl.DataBufferDisplayStart
+            > DataBufferControl.DataBufferEndPointer
+                    - (adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1)) {
+        DataBufferControl.DataBufferDisplayStart = (uint16_t *) DataBufferControl.DataBufferEndPointer
+                - (adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1);
+        // Check begin - if no screen full of data acquired (by forced stop)
+        if ((DataBufferControl.DataBufferDisplayStart < &DataBufferControl.DataBuffer[0])) {
+            DataBufferControl.DataBufferDisplayStart = &DataBufferControl.DataBuffer[0];
+        }
+        tReturn = false;
+    }
+    return tReturn;
+}
+
 /*
- * for internal test of the conversion routines
+ * changes x resolution and draws data - only for analyze mode
  */
+int changeXScale(int aValue) {
+    int tFeedbackType = FEEDBACK_TONE_OK;
+    DisplayControl.XScale += aValue;
+
+    if (DisplayControl.XScale < -DATABUFFER_DISPLAY_RESOLUTION_FACTOR) {
+        tFeedbackType = FEEDBACK_TONE_ERROR;
+        DisplayControl.XScale = -DATABUFFER_DISPLAY_RESOLUTION_FACTOR;
+    }
+    printInfo(false);
+
+// Check end
+    if (!checkDatabufferPointerForDrawing()) {
+        tFeedbackType = FEEDBACK_TONE_ERROR;
+    }
+// do tone before draw
+#ifdef LOCAL_DISPLAY_EXISTS
+    FeedbackTone(tFeedbackType);
+#else
+    BlueDisplay1.playFeedbackTone(tFeedbackType);
+#endif
+    tFeedbackType = FEEDBACK_TONE_NO_TONE;
+    drawDataBuffer(DataBufferControl.DataBufferDisplayStart, REMOTE_DISPLAY_WIDTH, COLOR_DATA_HOLD, COLOR_BACKGROUND_DSO,
+    DRAW_MODE_REGULAR, MeasurementControl.isEffectiveMinMaxMode);
+
+    return tFeedbackType;
+}
+
+/**
+ * set start of display in data buffer and draws data - only for analyze mode
+ * @param aValue number of DisplayControl.DisplayIncrementPixel to scroll
+ */
+int scrollChart(int aValue) {
+    uint8_t tFeedbackType = FEEDBACK_TONE_OK;
+    if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
+        DataBufferControl.DataBufferDisplayStart += adjustIntWithScaleFactor(aValue, DisplayControl.XScale);
+
+        // Check begin
+        if ((DataBufferControl.DataBufferDisplayStart < &DataBufferControl.DataBuffer[0])) {
+            DataBufferControl.DataBufferDisplayStart = &DataBufferControl.DataBuffer[0];
+            tFeedbackType = FEEDBACK_TONE_ERROR;
+        }
+        // Check end
+        if (!checkDatabufferPointerForDrawing()) {
+            tFeedbackType = FEEDBACK_TONE_ERROR;
+        }
+        // delete old graph and draw new one
+        drawDataBuffer(DataBufferControl.DataBufferDisplayStart, REMOTE_DISPLAY_WIDTH, COLOR_DATA_HOLD, COLOR_BACKGROUND_DSO,
+        DRAW_MODE_REGULAR, MeasurementControl.isEffectiveMinMaxMode);
+    }
+    return tFeedbackType;
+}
+
+
+/************************************************************************
+ * Test section for internal test of the conversion routines
+ ************************************************************************/
 void testDSOConversions(void) {
 // Prerequisites
     MeasurementControl.ChannelIsACMode = false;
@@ -827,17 +884,17 @@ void testDSOConversions(void) {
     int tValue;
     tValue = getRawOffsetValueFromGridCount(3);    // appr. 416
 
-    tValue = getDisplayFrowRawInputValue(400);
+    tValue = getDisplayFromRawInputValue(400);
     tValue = getInputRawFromDisplayValue(tValue);
 
     MeasurementControl.ChannelIsACMode = true;
 
-    tValue = getDisplayFrowRawInputValue(2200);    // since it is AC range
+    tValue = getDisplayFromRawInputValue(2200);    // since it is AC range
     tValue = getInputRawFromDisplayValue(tValue);
 
     float tFloatValue;
     tFloatValue = getFloatFromRawValue(400 + MeasurementControl.RawDSOReadingACZero);
-    tFloatValue = getFloatFromDisplayValue(getDisplayFrowRawInputValue(400));
+    tFloatValue = getFloatFromDisplayValue(getDisplayFromRawInputValue(400));
     tFloatValue = sADCToVoltFactor * 400;
     tFloatValue = tFloatValue / sADCToVoltFactor;
 // to see above result in debugger

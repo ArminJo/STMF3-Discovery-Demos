@@ -15,6 +15,7 @@
 #ifndef TOUCHSLIDER_H_
 #define TOUCHSLIDER_H_
 
+// should be globally set
 //#define REMOTE_DISPLAY_SUPPORTED
 
 #include "MI0283QT2.h"
@@ -54,7 +55,7 @@ class BDSlider;
 #define SLIDER_DEFAULT_BAR_COLOR            COLOR_GREEN
 #define SLIDER_DEFAULT_BAR_THRESHOLD_COLOR  COLOR_RED
 #define SLIDER_DEFAULT_BAR_BACK_COLOR       COLOR_WHITE
-#define SLIDER_DEFAULT_CAPTION_COLOR        COLOR_RED
+#define SLIDER_DEFAULT_CAPTION_COLOR        COLOR_BLACK
 #define SLIDER_DEFAULT_VALUE_COLOR          COLOR_BLUE
 #define SLIDER_DEFAULT_CAPTION_VALUE_BACK_COLOR  COLOR_NO_BACKGROUND
 #define SLIDER_DEFAULT_BAR_WIDTH            8
@@ -144,10 +145,10 @@ public:
     void setBarThresholdColor(uint16_t barThresholdColor);
     uint16_t getBarColor(void) const;
 
-    void setActualValue(int16_t actualValue);
-    void setActualValueAndDraw(int16_t actualValue);
-    void setActualValueAndDrawBar(int16_t actualValue);
-    int16_t getActualValue(void) const;
+    void setValue(int16_t aCurrentValue);
+    void setValueAndDraw(int16_t aCurrentValue);
+    void setValueAndDrawBar(int16_t aCurrentValue);
+    int16_t getCurrentValue(void) const;
 
     void setCaption(const char* aCaption);
     void printCaption(void);

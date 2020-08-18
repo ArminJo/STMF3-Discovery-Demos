@@ -96,13 +96,13 @@ void drawTestvalue(void) {
 }
 
 void doSetTestvalue(BDButton * aTheTouchedButton, int16_t aValue) {
-    int tFeedbackType = FEEDBACK_TONE_NO_ERROR;
+    int tFeedbackType = FEEDBACK_TONE_OK;
     int tTestValue = testValueIntern + aValue;
     if (tTestValue < 0) {
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
         tTestValue = 0;
     } else if (tTestValue > MAX_TEST_VALUE) {
-        tFeedbackType = FEEDBACK_TONE_SHORT_ERROR;
+        tFeedbackType = FEEDBACK_TONE_ERROR;
         tTestValue = MAX_TEST_VALUE;
     }
     FeedbackTone(tFeedbackType);
@@ -239,52 +239,52 @@ void startTestsPage(void) {
     int tPosY = 0;
     //1. row
     TouchButtonTestReset.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "Reset",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonTestMandelbrot.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4, COLOR_GREEN, "Mandelbrot",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Back", TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, -1, &doTestsBackButton);
+    BUTTON_HEIGHT_4, COLOR_RED, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -1, &doTestsBackButton);
 
     // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonTestExceptions.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "Exceptions",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonTestMisc.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Misc Test", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "Misc Test", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonTestGraphics.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Graph. Test", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "Graph. Test", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonTestFunction1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "Baud",
-    TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonTestFunction2.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "LED reset", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "LED reset", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     TouchButtonTestFunction3.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Func 3", TEXT_SIZE_11, BUTTON_FLAG_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
+    BUTTON_HEIGHT_4, COLOR_GREEN, "Func 3", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTestButtons);
 
     // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     TouchButtonSPIPrescalerPlus.init(0, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_5, COLOR_BLUE, "+", TEXT_SIZE_22,
-            BUTTON_FLAG_DO_BEEP_ON_TOUCH, 1, &doSetTestvalue);
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetTestvalue);
 
     TouchButtonSPIPrescalerMinus.init(BUTTON_WIDTH_6_POS_2, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_5, COLOR_BLUE, "-",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH, -1, &doSetTestvalue);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -1, &doSetTestvalue);
 
     TouchButtonAutorepeatBaudPlus.init(BUTTON_WIDTH_6_POS_5, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_5, COLOR_GREEN, "+",
-    TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, 1, &doChangeBaudrate);
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1, &doChangeBaudrate);
     TouchButtonAutorepeatBaudPlus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
     TouchButtonAutorepeatBaudMinus.init(BUTTON_WIDTH_6_POS_6, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_5, COLOR_GREEN,
             "-",
-            TEXT_SIZE_22, BUTTON_FLAG_DO_BEEP_ON_TOUCH | BUTTON_FLAG_TYPE_AUTOREPEAT, -1, &doChangeBaudrate);
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeBaudrate);
     TouchButtonAutorepeatBaudMinus.setButtonAutorepeatTiming(600, 100, 10, 40);
 
 #pragma GCC diagnostic pop

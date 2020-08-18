@@ -1,7 +1,9 @@
 /*
  * BDButton.cpp
  *
- *   SUMMARY
+ * Implementation of the Button client stub for the Android BlueDisplay app.
+ *
+ *  SUMMARY
  *  Blue Display is an Open Source Android remote Display for Arduino etc.
  *  It receives basic draw requests from Arduino etc. over Bluetooth and renders it.
  *  It also implements basic GUI elements as buttons and sliders.
@@ -10,17 +12,18 @@
  *  Copyright (C) 2015  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
- *  This file is part of BlueDisplay.
+ *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
+ *
  *  BlueDisplay is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
-
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
-
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/gpl.html>.
  *
@@ -40,10 +43,10 @@
  */
 BDButtonHandle_t sLocalButtonIndex = 0;
 
-BDButton::BDButton(void) {
+BDButton::BDButton(void) { // @suppress("Class members should be properly initialized")
 }
 
-BDButton::BDButton(BDButtonHandle_t aButtonHandle) {
+BDButton::BDButton(BDButtonHandle_t aButtonHandle) { // @suppress("Class members should be properly initialized")
     mButtonHandle = aButtonHandle;
 }
 
@@ -80,17 +83,18 @@ bool BDButton::operator!=(const BDButton &aButton) {
 /*
  * initialize a button stub
  * If local display is attached, allocate a button from the local pool, so do not forget to call deinit()
- * Caption is value for false (0) for BUTTON_FLAG_TYPE_TOGGLE_RED_GREEN buttons
+ * Caption is value for false (0) if FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN is set
+ * Multi-line caption has \n as line separator.
  */
-void BDButton::init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, Color_t aButtonColor,
+void BDButton::init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, color16_t aButtonColor,
         const char * aCaption, uint16_t aCaptionSize, uint8_t aFlags, int16_t aValue, void (*aOnTouchHandler)(BDButton*, int16_t)) {
 
     BDButtonHandle_t tButtonNumber = sLocalButtonIndex++;
     if (USART_isBluetoothPaired()) {
-#ifndef AVR
-        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 11, tButtonNumber, aPositionX, aPositionY, aWidthX,
-                aHeightY, aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler,
-                (reinterpret_cast<uint32_t>(aOnTouchHandler) >> 16), strlen(aCaption), aCaption);
+#if __SIZEOF_POINTER__ == 4
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 11, tButtonNumber, aPositionX, aPositionY, aWidthX, aHeightY,
+                aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler, (reinterpret_cast<uint32_t>(aOnTouchHandler) >> 16),
+                strlen(aCaption), aCaption);
 #else
         sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 10, tButtonNumber, aPositionX, aPositionY, aWidthX, aHeightY,
                 aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler, strlen(aCaption), aCaption);
@@ -98,20 +102,20 @@ void BDButton::init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, 
     }
     mButtonHandle = tButtonNumber;
 #ifdef LOCAL_DISPLAY_EXISTS
-    if (aFlags & BUTTON_FLAG_TYPE_AUTOREPEAT) {
+    if (aFlags & FLAG_BUTTON_TYPE_AUTOREPEAT) {
         mLocalButtonPtr = new TouchButtonAutorepeat();
     } else {
         mLocalButtonPtr = new TouchButton();
     }
-    // Cast needed here. At runtime the right pointer is returned because of FLAG_USE_BDBUTTON_FOR_CALLBACK
+    // Cast required here. At runtime the right pointer is returned because of FLAG_USE_BDBUTTON_FOR_CALLBACK
     mLocalButtonPtr->initButton(aPositionX, aPositionY, aWidthX, aHeightY, aButtonColor, aCaption, aCaptionSize,
-            aFlags | FLAG_USE_BDBUTTON_FOR_CALLBACK, aValue,
-            reinterpret_cast<void (*)(TouchButton*, int16_t)> (aOnTouchHandler));
+            aFlags | FLAG_USE_BDBUTTON_FOR_CALLBACK, aValue, reinterpret_cast<void (*)(TouchButton*, int16_t)> (aOnTouchHandler));
 
+#ifdef REMOTE_DISPLAY_SUPPORTED
     mLocalButtonPtr ->mBDButtonPtr = this;
 #endif
+#endif
 }
-
 #ifdef LOCAL_DISPLAY_EXISTS
 /*
  * Assume a button stack, e.g. only local buttons are deinitialize which were initialized last.
@@ -125,14 +129,16 @@ void BDButton::deinit(void) {
 
 void BDButton::drawButton(void) {
 #ifdef LOCAL_DISPLAY_EXISTS
-    mLocalButtonPtr->drawButton();
+    if (mLocalButtonPtr != NULL) {
+        mLocalButtonPtr->drawButton();
+    }
 #endif
     if (USART_isBluetoothPaired()) {
         sendUSARTArgs(FUNCTION_BUTTON_DRAW, 1, mButtonHandle);
     }
 }
 
-void BDButton::removeButton(Color_t aBackgroundColor) {
+void BDButton::removeButton(color16_t aBackgroundColor) {
 #ifdef LOCAL_DISPLAY_EXISTS
     mLocalButtonPtr->removeButton(aBackgroundColor);
 #endif
@@ -230,7 +236,7 @@ void BDButton::setValueAndDraw(int16_t aValue) {
     }
 }
 
-void BDButton::setButtonColor(Color_t aButtonColor) {
+void BDButton::setButtonColor(color16_t aButtonColor) {
 #ifdef LOCAL_DISPLAY_EXISTS
     mLocalButtonPtr->setButtonColor(aButtonColor);
 #endif
@@ -239,7 +245,7 @@ void BDButton::setButtonColor(Color_t aButtonColor) {
     }
 }
 
-void BDButton::setButtonColorAndDraw(Color_t aButtonColor) {
+void BDButton::setButtonColorAndDraw(color16_t aButtonColor) {
 #ifdef LOCAL_DISPLAY_EXISTS
     mLocalButtonPtr->setButtonColor(aButtonColor);
     mLocalButtonPtr->drawButton();
@@ -265,8 +271,8 @@ void BDButton::setPosition(int16_t aPositionX, int16_t aPositionY) {
 void BDButton::setButtonAutorepeatTiming(uint16_t aMillisFirstDelay, uint16_t aMillisFirstRate, uint16_t aFirstCount,
         uint16_t aMillisSecondRate) {
 #ifdef LOCAL_DISPLAY_EXISTS
-    ((TouchButtonAutorepeat*) mLocalButtonPtr)->setButtonAutorepeatTiming(aMillisFirstDelay, aMillisFirstRate,
-            aFirstCount, aMillisSecondRate);
+//    ((TouchButtonAutorepeat*) mLocalButtonPtr)->setButtonAutorepeatTiming(aMillisFirstDelay, aMillisFirstRate, aFirstCount,
+//            aMillisSecondRate);
 #endif
     if (USART_isBluetoothPaired()) {
         sendUSARTArgs(FUNCTION_BUTTON_SETTINGS, 7, mButtonHandle, SUBFUNCTION_BUTTON_SET_AUTOREPEAT_TIMING, aMillisFirstDelay,
@@ -310,13 +316,13 @@ void BDButton::setGlobalFlags(uint16_t aFlags) {
  */
 void BDButton::setButtonsTouchTone(uint8_t aToneIndex, uint16_t aToneDuration) {
     if (USART_isBluetoothPaired()) {
-        sendUSARTArgs(FUNCTION_BUTTON_GLOBAL_SETTINGS, 3, BUTTONS_SET_BEEP_TONE, aToneIndex, aToneDuration);
+        sendUSARTArgs(FUNCTION_BUTTON_GLOBAL_SETTINGS, 3, FLAG_BUTTON_GLOBAL_SET_BEEP_TONE, aToneIndex, aToneDuration);
     }
 }
 
 void BDButton::setButtonsTouchTone(uint8_t aToneIndex, uint16_t aToneDuration, uint8_t aToneVolume) {
     if (USART_isBluetoothPaired()) {
-        sendUSARTArgs(FUNCTION_BUTTON_GLOBAL_SETTINGS, 4, BUTTONS_SET_BEEP_TONE, aToneIndex, aToneDuration, aToneVolume);
+        sendUSARTArgs(FUNCTION_BUTTON_GLOBAL_SETTINGS, 4, FLAG_BUTTON_GLOBAL_SET_BEEP_TONE, aToneIndex, aToneDuration, aToneVolume);
     }
 }
 
@@ -335,33 +341,33 @@ void BDButton::deactivateAllButtons(void) {
     }
 }
 
-#ifdef AVR
-void BDButton::initPGM(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, Color_t aButtonColor,
-        const char * aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
+#ifdef ARDUINO
+// Arduino has mapping defines
+void BDButton::init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, color16_t aButtonColor,
+        const __FlashStringHelper * aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
         void (*aOnTouchHandler)(BDButton*, int16_t)) {
 
     BDButtonHandle_t tButtonNumber = sLocalButtonIndex++;
+    PGM_P tPGMCaption = reinterpret_cast<PGM_P>(aPGMCaption);
+
     if (USART_isBluetoothPaired()) {
-        uint8_t tCaptionLength = strlen_P(aPGMCaption);
-        if (tCaptionLength < STRING_BUFFER_STACK_SIZE) {
-            char tStringBuffer[STRING_BUFFER_STACK_SIZE];
-            strcpy_P(tStringBuffer, aPGMCaption);
-            sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 10, tButtonNumber, aPositionX, aPositionY, aWidthX, aHeightY,
-                    aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler, tCaptionLength, tStringBuffer);
+        uint8_t tCaptionLength = strlen_P(tPGMCaption);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
         }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, tPGMCaption, tCaptionLength);
+
+#if __SIZEOF_POINTER__ == 4
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 11, tButtonNumber, aPositionX, aPositionY, aWidthX, aHeightY,
+                aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler, (reinterpret_cast<uint32_t>(aOnTouchHandler) >> 16),
+                tCaptionLength, tStringBuffer);
+#else
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_CREATE, 10, tButtonNumber, aPositionX, aPositionY, aWidthX, aHeightY,
+                aButtonColor, aCaptionSize, aFlags, aValue, aOnTouchHandler, tCaptionLength, tStringBuffer);
+#endif
     }
     mButtonHandle = tButtonNumber;
-}
-
-void BDButton::setCaptionPGM(const char * aPGMCaption) {
-    if (USART_isBluetoothPaired()) {
-        uint8_t tCaptionLength = strlen_P(aPGMCaption);
-        if (tCaptionLength < STRING_BUFFER_STACK_SIZE) {
-            char tStringBuffer[STRING_BUFFER_STACK_SIZE];
-            strcpy_P(tStringBuffer, aPGMCaption);
-            sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION, 1, mButtonHandle, tCaptionLength, tStringBuffer);
-        }
-    }
 }
 
 /*
@@ -370,26 +376,88 @@ void BDButton::setCaptionPGM(const char * aPGMCaption) {
 void BDButton::setCaptionPGMForValueTrue(const char * aPGMCaption) {
     if (USART_isBluetoothPaired()) {
         uint8_t tCaptionLength = strlen_P(aPGMCaption);
-        if (tCaptionLength < STRING_BUFFER_STACK_SIZE) {
-            char tStringBuffer[STRING_BUFFER_STACK_SIZE];
-            strcpy_P(tStringBuffer, aPGMCaption);
-            sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION_FOR_VALUE_TRUE, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
         }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, aPGMCaption, tCaptionLength);
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION_FOR_VALUE_TRUE, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+    }
+}
+
+void BDButton::setCaptionForValueTrue(const __FlashStringHelper * aPGMCaption) {
+    if (USART_isBluetoothPaired()) {
+        PGM_P tPGMCaption = reinterpret_cast<PGM_P>(aPGMCaption);
+
+        uint8_t tCaptionLength = strlen_P(tPGMCaption);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
+        }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, tPGMCaption, tCaptionLength);
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION_FOR_VALUE_TRUE, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+    }
+}
+
+void BDButton::setCaptionPGM(const char * aPGMCaption) {
+    if (USART_isBluetoothPaired()) {
+        uint8_t tCaptionLength = strlen_P(aPGMCaption);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
+        }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, aPGMCaption, tCaptionLength);
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION, 1, mButtonHandle, tCaptionLength, tStringBuffer);
     }
 }
 
 void BDButton::setCaptionPGM(const char * aPGMCaption, bool doDrawButton) {
     if (USART_isBluetoothPaired()) {
         uint8_t tCaptionLength = strlen_P(aPGMCaption);
-        if (tCaptionLength < STRING_BUFFER_STACK_SIZE) {
-            char tStringBuffer[STRING_BUFFER_STACK_SIZE];
-            strcpy_P(tStringBuffer, aPGMCaption);
-            uint8_t tFunctionCode = FUNCTION_BUTTON_SET_CAPTION;
-            if (doDrawButton) {
-                tFunctionCode = FUNCTION_BUTTON_SET_CAPTION_AND_DRAW_BUTTON;
-            }
-            sendUSARTArgsAndByteBuffer(tFunctionCode, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
         }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, aPGMCaption, tCaptionLength);
+        uint8_t tFunctionCode = FUNCTION_BUTTON_SET_CAPTION;
+        if (doDrawButton) {
+            tFunctionCode = FUNCTION_BUTTON_SET_CAPTION_AND_DRAW_BUTTON;
+        }
+        sendUSARTArgsAndByteBuffer(tFunctionCode, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+    }
+}
+
+/*
+ * sets only caption
+ */
+void BDButton::setCaption(const __FlashStringHelper * aPGMCaption) {
+    if (USART_isBluetoothPaired()) {
+        PGM_P tPGMCaption = reinterpret_cast<PGM_P>(aPGMCaption);
+
+        uint8_t tCaptionLength = strlen_P(tPGMCaption);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
+        }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, tPGMCaption, tCaptionLength);
+        sendUSARTArgsAndByteBuffer(FUNCTION_BUTTON_SET_CAPTION, 1, mButtonHandle, tCaptionLength, tStringBuffer);
+    }
+}
+void BDButton::setCaption(const __FlashStringHelper * aPGMCaption, bool doDrawButton) {
+    if (USART_isBluetoothPaired()) {
+        PGM_P tPGMCaption = reinterpret_cast<PGM_P>(aPGMCaption);
+
+        uint8_t tCaptionLength = strlen_P(tPGMCaption);
+        if (tCaptionLength > STRING_BUFFER_STACK_SIZE) {
+            tCaptionLength = STRING_BUFFER_STACK_SIZE;
+        }
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE];
+        strncpy_P(tStringBuffer, tPGMCaption, tCaptionLength);
+        uint8_t tFunctionCode = FUNCTION_BUTTON_SET_CAPTION;
+        if (doDrawButton) {
+            tFunctionCode = FUNCTION_BUTTON_SET_CAPTION_AND_DRAW_BUTTON;
+        }
+        sendUSARTArgsAndByteBuffer(tFunctionCode, 1, mButtonHandle, tCaptionLength, tStringBuffer);
     }
 }
 #endif

@@ -62,7 +62,8 @@ TIM_HandleTypeDef TIMToneHandle;
 TIM_HandleTypeDef TIM_DSOHandle;
 TIM_HandleTypeDef TIM7Handle;
 RTC_HandleTypeDef RTCHandle;
-SPI_HandleTypeDef * SPI1HandlePtr;
+extern SPI_HandleTypeDef SpiHandle; // from stm32f3_discovery.c line 98 - must remove static there
+SPI_HandleTypeDef * SPI1HandlePtr = &SpiHandle;
 #ifdef HAL_WWDG_MODULE_ENABLED
 WWDG_HandleTypeDef WWDGHandle;
 #endif
@@ -80,8 +81,7 @@ void ADC_setRawToVoltFactor(void) {
 
     if (isADCInitializedForTimerEvents) {
 #ifdef STM32F30X
-        MODIFY_REG(ADC1Handle.Instance->CFGR, ADC_CFGR_EXTSEL|ADC_CFGR_EXTEN,
-                ADC_SOFTWARE_START | ADC_EXTERNALTRIGCONVEDGE_NONE);
+        MODIFY_REG(ADC1Handle.Instance->CFGR, ADC_CFGR_EXTSEL|ADC_CFGR_EXTEN, ADC_SOFTWARE_START | ADC_EXTERNALTRIGCONVEDGE_NONE);
 #else
         MODIFY_REG(ADC1Handle.Instance->CR2, ADC_CR2_EXTSEL, ADC_SOFTWARE_START);
 #endif
@@ -176,11 +176,13 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* aADCHandle) {
             __HAL_RCC_ADC_CONFIG(RCC_ADCPCLK2_DIV8); // 9 MHz
 #endif
     if (aADCHandle == &ADC1Handle) {
-        __ADC1_CLK_ENABLE();
+        __ADC1_CLK_ENABLE()
+        ;
         /**
          * ADC GPIO input pin init
          */
-        __GPIOA_CLK_ENABLE();
+        __GPIOA_CLK_ENABLE()
+        ;
         // Configure pin A0 + A1 + A2 (+ A3) as analog input
         GPIO_InitStructure.Pin = DSO_INPUT_PINS;
         GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
@@ -193,11 +195,13 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* aADCHandle) {
 
         ADC1_DMA_initialize();
     } else {
-        __ADC2_CLK_ENABLE();
+        __ADC2_CLK_ENABLE()
+        ;
         /**
          * ADC GPIO input pin init
          */
-        __GPIOC_CLK_ENABLE();
+        __GPIOC_CLK_ENABLE()
+        ;
         /* Configure pin as analog input */
         GPIO_InitStructure.Pin = ADC2_INPUT1_PIN | ADC2_INPUT2_PIN;
         GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
@@ -256,8 +260,10 @@ void ADC12_init(void) {
 #endif
     int tErrorCode;
 
-    __ADC1_CLK_ENABLE();
-    __ADC2_CLK_ENABLE();
+    __ADC1_CLK_ENABLE()
+    ;
+    __ADC2_CLK_ENABLE()
+    ;
     /*
      * Configure and enable special channels / set sample time
      */
@@ -407,8 +413,7 @@ uint16_t ADC1_getChannelValue(uint8_t aChannel, int aOversamplingExponent) {
 
     if (isADCInitializedForTimerEvents) {
 #ifdef STM32F30X
-        MODIFY_REG(ADC1Handle.Instance->CFGR, ADC_CFGR_EXTSEL|ADC_CFGR_EXTEN,
-                ADC_SOFTWARE_START | ADC_EXTERNALTRIGCONVEDGE_NONE);
+        MODIFY_REG(ADC1Handle.Instance->CFGR, ADC_CFGR_EXTSEL|ADC_CFGR_EXTEN, ADC_SOFTWARE_START | ADC_EXTERNALTRIGCONVEDGE_NONE);
 #else
         MODIFY_REG(ADC1Handle.Instance->CR2, ADC_CR2_EXTSEL, ADC_SOFTWARE_START);
 #endif
@@ -524,7 +529,8 @@ void ADC_initalizeTimer(void) {
     TIM_DSOHandle.Instance = ADC_DSO_TIMER;
 
     /* TIM3 TIM6 clock enable */
-    ADC_DSO_TIMER_CLK_ENABLE();
+    ADC_DSO_TIMER_CLK_ENABLE()
+    ;
 
     /* Time base configuration */
     TIM_DSOHandle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -565,7 +571,8 @@ void ADC_SetTimerPeriod(uint16_t aDivider, uint16_t aPrescalerDivider) {
  * ADC DMA
  */
 void ADC1_DMA_initialize(void) {
-    __DMA1_CLK_ENABLE();
+    __DMA1_CLK_ENABLE()
+    ;
 
     DMA_HandleTypeDef * tDMA_ADCHandle = ADC1Handle.DMA_Handle;
 
@@ -710,8 +717,7 @@ int ADC1_getTemperatureMilligrades(void) {
 // not initialized -> do it here
 // tTempValueAt30Degree - (((tTempValueAt110Degree - tTempValueAt30Degree)/80)*30)
 // => tTempValueAt30Degree - (((tTempValueAt110Degree - tTempValueAt30Degree)/8)*3)
-        sTempValueAtZeroDegreeShift3 = (tTempValueAt30Degree << 3)
-                - ((tTempValueAt110Degree - tTempValueAt30Degree) * 3);
+        sTempValueAtZeroDegreeShift3 = (tTempValueAt30Degree << 3) - ((tTempValueAt110Degree - tTempValueAt30Degree) * 3);
     }
     return ((sTempValueAtZeroDegreeShift3 - tADCTempShift3) * 10000) / (tTempValueAt30Degree - tTempValueAt110Degree);
 
@@ -741,7 +747,8 @@ void DSO_initializeAttenuatorAndAC(void) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     /* Enable the GPIO Clock */
-    __GPIOC_CLK_ENABLE();
+    __GPIOC_CLK_ENABLE()
+    ;
 
 // Bit 0,1,2 pin, AC range pin
     GPIO_InitStructure.Pin =
@@ -899,7 +906,8 @@ extern "C" uint8_t SPI1_sendReceiveFast(uint8_t byte) {
 
 bool sRTCIsInitalized = false;
 void RTC_InitLSEOn(void) {
-    __PWR_CLK_ENABLE(); // must be done prior to __HAL_RCC_LSE_CONFIG(RCC_LSE_ON)
+    __PWR_CLK_ENABLE()
+    ; // must be done prior to __HAL_RCC_LSE_CONFIG(RCC_LSE_ON)
 #ifndef STM32F30X
     /* Enable BKP CLK enable for backup registers */
     __HAL_RCC_BKP_CLK_ENABLE()
@@ -971,7 +979,7 @@ void RTC_initialize(void) {
     HAL_RTC_Init(&RTCHandle);
 
     if (__HAL_RCC_GET_FLAG(RCC_FLAG_LSERDY) == RESET) {
-        RTC_setTime(0, 0, 12, 6, 12, 9, 2015);
+        RTC_setTime(0, 0, 12, 6, 16, 4, 2017);
     }
     sRTCIsInitalized = true;
 }
@@ -1059,8 +1067,7 @@ int RTC_getTimeStringForFile(char * aStringBuffer) {
     HAL_RTC_GetTime(&RTCHandle, &RTC_TimeStructure, FORMAT_BIN);
     /* Display  Format : hh-mm-ss */
 // do not have a buffer size :-(
-    return sprintf(aStringBuffer, "%02i-%02i-%02i", RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes,
-            RTC_TimeStructure.Seconds);
+    return sprintf(aStringBuffer, "%02i-%02i-%02i", RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes, RTC_TimeStructure.Seconds);
 }
 
 /**
@@ -1097,9 +1104,8 @@ int RTC_getDateStringForFile(char * aStringBuffer) {
     }
     /* Display  Format : yyyy-mm-dd hh-mm-ss */
 // do not have a buffer size :-(
-    return sprintf(aStringBuffer, "%04i-%02i-%02i %02i-%02i-%02i", 2000 + RTC_DateStructure.Year,
-            RTC_DateStructure.Month, RTC_DateStructure.Date, RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes,
-            RTC_TimeStructure.Seconds);
+    return sprintf(aStringBuffer, "%04i-%02i-%02i %02i-%02i-%02i", 2000 + RTC_DateStructure.Year, RTC_DateStructure.Month,
+            RTC_DateStructure.Date, RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes, RTC_TimeStructure.Seconds);
 }
 
 bool RTC_DateIsValid = false; // true if year != 0
@@ -1131,12 +1137,10 @@ int RTC_getTimeString(char * aStringBuffer) {
     /* Display  Format : dd.mm.yyyy hh:mm:ss */
 // do not have a buffer size :-(
     return sprintf(aStringBuffer, "%02i.%02i.%04i %02i:%02i:%02i", RTC_DateStructure.Date, RTC_DateStructure.Month,
-            2000 + RTC_DateStructure.Year, RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes,
-            RTC_TimeStructure.Seconds);
+            2000 + RTC_DateStructure.Year, RTC_TimeStructure.Hours, RTC_TimeStructure.Minutes, RTC_TimeStructure.Seconds);
 }
 
-void RTC_setTime(uint8_t sec, uint8_t min, uint8_t hour, uint8_t dayOfWeek, uint8_t day, uint8_t month,
-        uint16_t year) {
+void RTC_setTime(uint8_t sec, uint8_t min, uint8_t hour, uint8_t dayOfWeek, uint8_t day, uint8_t month, uint16_t year) {
     RTC_DateTypeDef RTC_DateStructure;
     RTC_TimeTypeDef RTC_TimeStructure;
 
@@ -1164,7 +1168,8 @@ void RTC_setTime(uint8_t sec, uint8_t min, uint8_t hour, uint8_t dayOfWeek, uint
 static int WWDG_ExtendedCounter;
 #define WWDG_EXTENDED_COUNTER_RELOAD_VALUE 100 // -> 6 sec
 void Watchdog_init(void) {
-    __WWDG_CLK_ENABLE();
+    __WWDG_CLK_ENABLE()
+    ;
 // Disable WWDG on debug
     __HAL_FREEZE_WWDG_DBGMCU();
 // set high priority
@@ -1181,9 +1186,13 @@ void Watchdog_init(void) {
 
 void Watchdog_start(void) {
 // Start it with interrupt enabled
-    HAL_WWDG_Start_IT(&WWDGHandle);
-// Because of BUG in HAL Driver (missing unlock)
-    __HAL_UNLOCK(&WWDGHandle);
+    //HAL_WWDG_Start_IT();
+    /* Enable the Early Wakeup Interrupt */
+    __HAL_WWDG_ENABLE_IT(&WWDGHandle, WWDG_IT_EWI);
+
+    /* Enable the peripheral */
+    __HAL_WWDG_ENABLE(&WWDGHandle);
+
 }
 
 // must be reloaded after appr. 57 ms
@@ -1220,7 +1229,8 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *aTIMHandle) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     if (aTIMHandle == &TIMToneHandle) {
-        TONE_TIMER_IO_CLK_ENABLE();
+        TONE_TIMER_IO_CLK_ENABLE()
+        ;
         GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStructure.Pull = GPIO_NOPULL; //GPIO_PuPd_DOWN;
         GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
@@ -1231,7 +1241,8 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *aTIMHandle) {
         HAL_GPIO_Init(TONE_TIMER_PORT, &GPIO_InitStructure);
 
     } else if (aTIMHandle == &TIMSynthHandle) {
-        SYNTH_TIMER_IO_CLOCK_ENABLE();
+        SYNTH_TIMER_IO_CLOCK_ENABLE()
+        ;
 // Synthesizer output pin
         GPIO_InitStructure.Pin = SYNTH_TIMER_PIN;
         GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
@@ -1257,7 +1268,8 @@ void initalizeTone(void) {
     TIMToneHandle.Instance = TONE_TIMER;
 
     /* clock enable */
-    TONE_TIMER_CLK_ENABLE();
+    TONE_TIMER_CLK_ENABLE()
+    ;
     uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / (TONE_TIMER_TICK_FREQ)) - 1; // 1 MHZ Timer Frequency
 
     /* Time base configuration */
@@ -1277,16 +1289,15 @@ void initalizeTone(void) {
     TIM_OCInitStructure.OCIdleState = TIM_OCIDLESTATE_RESET;
     TIM_OCInitStructure.OCNPolarity = TIM_OCNPOLARITY_HIGH;
     TIM_OCInitStructure.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-//    HAL_TIM_PWM_ConfigChannel(&TIMToneHandle, &TIM_OCInitStructure, TIM_CHANNEL_1);
 
+    HAL_TIM_PWM_ConfigChannel(&TIMToneHandle, &TIM_OCInitStructure, TIM_CHANNEL_1);
 // substitution here by 3 lines and one line at Synth_Timer_initialize saves 1464 bytes code
     /* Configure the Channel 1 in PWM mode */
-    TIM_OC1_SetConfig(TIMToneHandle.Instance, &TIM_OCInitStructure);
+//    TIM_OC1_SetConfig(TIMToneHandle.Instance, &TIM_OCInitStructure);
     /* Set the Preload enable bit for channel1 */
-    SET_BIT(TIMToneHandle.Instance->CCMR1, TIM_CCMR1_OC1PE);
+//    SET_BIT(TIMToneHandle.Instance->CCMR1, TIM_CCMR1_OC1PE);
     /* Configure the Output Fast mode */
-    CLEAR_BIT(TIMToneHandle.Instance->CCMR1, TIM_CCMR1_OC1FE);
-
+//    CLEAR_BIT(TIMToneHandle.Instance->CCMR1, TIM_CCMR1_OC1FE);
     __HAL_TIM_ENABLE(&TIMToneHandle);
 }
 
@@ -1313,23 +1324,22 @@ void noTone(void) {
 }
 
 void FeedbackToneOK(void) {
-    FeedbackTone(FEEDBACK_TONE_NO_ERROR);
+    FeedbackTone(FEEDBACK_TONE_OK);
 }
 
 void FeedbackTone(unsigned int aFeedbackType) {
-    if (aFeedbackType == FEEDBACK_TONE_NO_TONE) {
-        return;
-    }
-    if (aFeedbackType == FEEDBACK_TONE_NO_ERROR) {
+    if (aFeedbackType == FEEDBACK_TONE_OK) {
         tone(3000, 50);
-    } else if (aFeedbackType == FEEDBACK_TONE_SHORT_ERROR) {
+    } else if (aFeedbackType == FEEDBACK_TONE_ERROR) {
 // two short beeps
         tone(4000, 30);
         delayMillis(60);
         tone(2000, 30);
+    } else if (aFeedbackType == FEEDBACK_TONE_NO_TONE) {
+        return;
     } else {
 // long tone
-        tone(4500, 500);
+        tone(3000, 500);
     }
 }
 
@@ -1355,7 +1365,8 @@ void MICROSD_IO_initalize(void) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
 // Enable the GPIO Clock
-    __GPIOC_CLK_ENABLE();
+    __GPIOC_CLK_ENABLE()
+    ;
 
 // CS pin
     GPIO_InitStructure.Pin = MICROSD_CS_PIN;
@@ -1389,7 +1400,8 @@ void MICROSD_IO_initalize(void) {
 void HAL_DAC_MspInit(DAC_HandleTypeDef* aDACHandle) {
     GPIO_InitTypeDef GPIO_InitStructure;
     /* GPIOA clock enable */
-    __GPIOA_CLK_ENABLE();
+    __GPIOA_CLK_ENABLE()
+    ;
 
     /* Configure PA.04 (DAC_OUT1) as analog in to avoid parasitic consumption */
     GPIO_InitStructure.Pin = DAC_OUTPUT_PIN;
@@ -1400,7 +1412,8 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* aDACHandle) {
     TIM7Handle.Instance = TIM7;
 
     /* TIM7 Peripheral clock enable */
-    __TIM7_CLK_ENABLE();
+    __TIM7_CLK_ENABLE()
+    ;
 
     /* Time base configuration */
     TIM7Handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1421,7 +1434,8 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* aDACHandle) {
 void DAC_init(void) {
     DAC1Handle.Instance = DAC;
     /* DAC Periph clock enable */
-    __DAC1_CLK_ENABLE();
+    __DAC1_CLK_ENABLE()
+    ;
 
     HAL_DAC_Init(&DAC1Handle);
 
@@ -1456,7 +1470,8 @@ void DAC_Timer_SetReloadValue(uint32_t aReloadValue) {
     }
 // BUG in Library (space) __HAL_TIM_PRESCALER(&TIM7Handle, tPrescalerValue - 1);
     TIM7Handle.Instance->PSC = tPrescalerValue - 1;
-    __HAL_TIM_SetAutoreload(&TIM7Handle, tReloadValue - 1);
+    __HAL_TIM_SetAutoreload(&TIM7Handle, tReloadValue - 1)
+    ;
 }
 
 /**
@@ -1500,7 +1515,8 @@ void DAC_TriangleAmplitude(unsigned int aAmplitude) {
  */
 void IR_Timer_initialize(uint16_t aAutoreload) {
     TIM15Handle.Instance = TIM15;
-    __TIM15_CLK_ENABLE();
+    __TIM15_CLK_ENABLE()
+    ;
 
     TIM15Handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     TIM15Handle.Init.Prescaler = 0x0; // no prescaler
@@ -1528,7 +1544,8 @@ void Synth_Timer_initialize(uint32_t aAutoreload) {
 
     TIMSynthHandle.Instance = SYNTH_TIMER;
 
-    SYNTH_TIMER_CLOCK_ENABLE();
+    SYNTH_TIMER_CLOCK_ENABLE()
+    ;
 
     /* Time base configuration */
     TIMSynthHandle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1546,14 +1563,14 @@ void Synth_Timer_initialize(uint32_t aAutoreload) {
     TIM_OCInitStructure.OCNPolarity = TIM_OCNPOLARITY_HIGH;
     TIM_OCInitStructure.OCNIdleState = TIM_OCNIDLESTATE_RESET;
     TIM_OCInitStructure.OCFastMode = TIM_OCFAST_DISABLE;
-//    HAL_TIM_OC_ConfigChannel(&TIMSynthHandle, &TIM_OCInitStructure, SYNTH_TIMER_CHANNEL);
+    HAL_TIM_OC_ConfigChannel(&TIMSynthHandle, &TIM_OCInitStructure, SYNTH_TIMER_CHANNEL);
 #ifdef STM32F30X
-    TIM_OC3_SetConfig(TIMSynthHandle.Instance, &TIM_OCInitStructure);
+//    TIM_OC3_SetConfig(TIMSynthHandle.Instance, &TIM_OCInitStructure);
 #else
     /* Configure the TIM Channel 1 in Output Compare */
-    TIM_OC1_SetConfig(TIMSynthHandle.Instance, &TIM_OCInitStructure); // saves 1464 bytes
+//    TIM_OC1_SetConfig(TIMSynthHandle.Instance, &TIM_OCInitStructure); // saves 1464 bytes
 #endif
-// TODO direct counter update not wait til next change esp at 1/10 Hz
+// TODO direct counter update not wait until next change esp at 1/10 Hz
 }
 
 /**
@@ -1609,7 +1626,8 @@ void Misc_IO_initalize(void) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     /* Enable the GPIO Clocks */
-    DEBUG_CLOCK_ENABLE();
+    DEBUG_CLOCK_ENABLE()
+    ;
 
 // Debug pin
     GPIO_InitStructure.Pin = DEBUG_PIN;
@@ -1636,11 +1654,11 @@ void AccuCapacity_IO_initalize(void) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     /* Enable the GPIO Clock */
-    ACCUCAP_CLOCK_ENABLE();
+    ACCUCAP_CLOCK_ENABLE()
+    ;
 
 // Discharge 1+2 pin, Charge 1+2 pin
-    GPIO_InitStructure.Pin = ACCUCAP_DISCHARGE_1_PIN | ACCUCAP_DISCHARGE_2_PIN | ACCUCAP_CHARGE_1_PIN
-            | ACCUCAP_CHARGE_2_PIN;
+    GPIO_InitStructure.Pin = ACCUCAP_DISCHARGE_1_PIN | ACCUCAP_DISCHARGE_2_PIN | ACCUCAP_CHARGE_1_PIN | ACCUCAP_CHARGE_2_PIN;
     GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStructure.Pull = GPIO_PULLUP;
     GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
@@ -1733,7 +1751,6 @@ extern "C" void MICROSD_ClearITPendingBit(void) {
  */
 extern "C" void TIM6_DAC_IRQHandler(void) {
     __HAL_TIM_CLEAR_FLAG(&TIM_DSOHandle, TIM_IT_UPDATE);
-
 }
 
 #ifdef USE_STM32F3_DISCO

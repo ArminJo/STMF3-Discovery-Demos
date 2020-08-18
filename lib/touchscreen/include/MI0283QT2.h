@@ -95,6 +95,10 @@ uint16_t drawInteger(uint16_t x, uint16_t y, int val, uint8_t base, uint8_t size
 
 uint16_t readPixel(uint16_t aXPos, uint16_t aYPos);
 void storeScreenshot(void);
+/*
+ * fast divide by 11 for MI0283QT2 driver arguments
+ */
+uint16_t getLocalTextSize(uint16_t aTextSize);
 
 #ifdef __cplusplus
 }

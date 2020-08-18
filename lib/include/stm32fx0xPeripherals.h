@@ -221,7 +221,7 @@ extern DMA_HandleTypeDef DMA11_ADC1_Handle;
 extern TIM_HandleTypeDef TIM_DSOHandle;
 extern TIM_HandleTypeDef TIM15Handle;
 extern RTC_HandleTypeDef RTCHandle;
-extern SPI_HandleTypeDef SPI1Handle;
+//extern SPI_HandleTypeDef SPI1Handle;
 
 #ifdef STM32F303xC
 /**
@@ -340,19 +340,11 @@ extern SPI_HandleTypeDef SPI1Handle;
 #define DAC_TIMER_MIN_RELOAD_VALUE 4
 
 __STATIC_INLINE void Set_GpioPin(GPIO_TypeDef * aGpioBase, uint16_t aPin) {
-#ifdef STM32F30X
-    aGpioBase->BSRRL = aPin;
-#else
     aGpioBase->BSRR = aPin;
-#endif
 }
 
 __STATIC_INLINE void Reset_GpioPin(GPIO_TypeDef * aGpioBase, uint16_t aPin) {
-#ifdef STM32F30X
-    aGpioBase->BSRRH = aPin;
-#else
     aGpioBase->BSRR = (uint32_t) aPin << 16;
-#endif
 }
 
 __STATIC_INLINE void Set_DebugPin(void) {
@@ -514,14 +506,6 @@ void Watchdog_reload(void);
 }
 #endif
 void reset(void);
-
-/*
- * Tone
- */
-#define FEEDBACK_TONE_NO_ERROR 0
-#define FEEDBACK_TONE_SHORT_ERROR 1
-#define FEEDBACK_TONE_LONG_ERROR 2
-#define FEEDBACK_TONE_NO_TONE 7
 
 void initalizeTone(void);
 void tone(uint16_t aFreqHertz, uint16_t aDurationMillis);

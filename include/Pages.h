@@ -88,7 +88,7 @@ void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue);
 
 // for loop timings
 extern uint32_t MillisLastLoop;
-extern uint32_t sMillisSinceLastInfoOutput;
+extern unsigned int sMillisSinceLastInfoOutput;
 
 /**
  * From MainMenuPage
