@@ -31,11 +31,11 @@ BDButton TouchButtonNumberPadClear;
 BDButton TouchButtonNumberPadSign;
 BDButton TouchButtonNumberPadEnter;
 BDButton TouchButtonNumberPadCancel;
-BDButton * const TouchButtonsNumberPad[] = { &TouchButtonNumberPad7, &TouchButtonNumberPad8, &TouchButtonNumberPad9,
+BDButton *const TouchButtonsNumberPad[] = { &TouchButtonNumberPad7, &TouchButtonNumberPad8, &TouchButtonNumberPad9,
         &TouchButtonNumberPadBack, &TouchButtonNumberPad4, &TouchButtonNumberPad5, &TouchButtonNumberPad6,
         &TouchButtonNumberPadClear, &TouchButtonNumberPad1, &TouchButtonNumberPad2, &TouchButtonNumberPad3,
-        &TouchButtonNumberPadEnter, &TouchButtonNumberPad0, &TouchButtonNumberPadSign,
-        &TouchButtonNumberPadDecimalSeparator, &TouchButtonNumberPadCancel };
+        &TouchButtonNumberPadEnter, &TouchButtonNumberPad0, &TouchButtonNumberPadSign, &TouchButtonNumberPadDecimalSeparator,
+        &TouchButtonNumberPadCancel };
 
 static uint16_t sXStart;
 static uint16_t sYStart;
@@ -43,8 +43,8 @@ static uint16_t sYStart;
 /*************************************************************
  * Numberpad stuff
  *************************************************************/
-void drawNumberPadValue(char * aNumberPadBuffer);
-void doNumberPad(BDButton * aTheTouchedButton, int16_t aValue);
+void drawNumberPadValue(char *aNumberPadBuffer);
+void doNumberPad(BDButton *aTheTouchedButton, int16_t aValue);
 
 // for Touch numberpad
 #define SIZEOF_NUMBERPADBUFFER 9
@@ -95,19 +95,18 @@ void drawNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor) {
     if ((tWidth + aXStart + BUTTON_WIDTH_6_POS_4) > BlueDisplay1.getDisplayWidth()) {
         tWidth = BlueDisplay1.getDisplayWidth() - (aXStart + BUTTON_WIDTH_6_POS_4);
     }
-    TouchButtonNumberPadEnter.init(aXStart + BUTTON_WIDTH_6_POS_4, aYStart, tWidth,
-            (2 * BUTTON_HEIGHT_6) + BUTTON_DEFAULT_SPACING, aButtonColor, StringEnterChar, 44,
-            FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x0D, &doNumberPad);
+    TouchButtonNumberPadEnter.init(aXStart + BUTTON_WIDTH_6_POS_4, aYStart, tWidth, (2 * BUTTON_HEIGHT_6) + BUTTON_DEFAULT_SPACING,
+            aButtonColor, StringEnterChar, 44, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x0D, &doNumberPad);
 
     aYStart += BUTTON_HEIGHT_6 + BUTTON_DEFAULT_SPACING;
     TouchButtonNumberPad0.init(aXStart, aYStart, BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, "0",
     TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0x30, &doNumberPad);
     TouchButtonNumberPadSign.init(aXStart + BUTTON_WIDTH_6_POS_2, aYStart, BUTTON_WIDTH_6,
     BUTTON_HEIGHT_6, aButtonColor, StringPlusMinus, TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0xF3, &doNumberPad);
-    struct lconv * tLconfPtr = localeconv();
+    struct lconv *tLconfPtr = localeconv();
     TouchButtonNumberPadDecimalSeparator.init(aXStart + BUTTON_WIDTH_6_POS_3, aYStart,
-    BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, tLconfPtr->decimal_point, TEXT_SIZE_22,
-            FLAG_BUTTON_NO_BEEP_ON_TOUCH, tLconfPtr->decimal_point[0], &doNumberPad);
+    BUTTON_WIDTH_6, BUTTON_HEIGHT_6, aButtonColor, tLconfPtr->decimal_point, TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, '.',
+            &doNumberPad); // using tLconfPtr->decimal_point[0] instead of '.' does not work :-(
     TouchButtonNumberPadCancel.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4, aButtonColor, "Cancel", TEXT_SIZE_22, FLAG_BUTTON_NO_BEEP_ON_TOUCH, 0xFF, &doNumberPad);
     for (unsigned int i = 0; i < sizeof(TouchButtonsNumberPad) / sizeof(TouchButtonsNumberPad[0]); ++i) {
@@ -115,9 +114,9 @@ void drawNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor) {
     }
 }
 
-void drawNumberPadValue(char * aNumberPadBuffer) {
+void drawNumberPadValue(char *aNumberPadBuffer) {
     BlueDisplay1.drawText(sXStart, sYStart + TEXT_SIZE_22_ASCEND, aNumberPadBuffer, TEXT_SIZE_22, COLOR_PAGE_INFO,
-            COLOR_WHITE);
+    COLOR_WHITE);
 }
 
 /**
@@ -133,7 +132,7 @@ void clearNumberPadBuffer(void) {
     drawNumberPadValue(NumberPadBuffer);
 }
 
-void doNumberPad(BDButton * aTheTouchedButton, int16_t aValue) {
+void doNumberPad(BDButton *aTheTouchedButton, int16_t aValue) {
     uint8_t tFeedbackType = FEEDBACK_TONE_OK;
     if (aValue == 0x60) { // "<"
         if (sNumberPadBufferSignIndex < NUMBERPADBUFFER_INDEX_LAST_CHAR) {

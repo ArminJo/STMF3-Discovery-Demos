@@ -40,8 +40,8 @@ void printSystemInfo() {
     clearDisplayAndDisableButtonsAndSliders(COLOR_WHITE);
     TouchButtonBack.drawButton();
 
-    BlueDisplay1.setPrintfSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE, true);
-    BlueDisplay1.setPrintfPosition(0, 0);
+    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE, true);
+    BlueDisplay1.setWriteStringPosition(0, 0);
 
     /*
      * then print constant values

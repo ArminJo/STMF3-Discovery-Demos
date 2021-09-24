@@ -12,7 +12,11 @@
 
 #include "tinyPrint.h"
 #include "BlueDisplay.h"
+#if defined(USE_HY32D)
+#include "SSD1289.h"
+#else
 #include "MI0283QT2.h"
+#endif
 // need external StringBuffer to save RAM space
 extern char * sStringBuffer;
 

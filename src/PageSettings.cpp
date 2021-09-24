@@ -12,7 +12,11 @@
 
 #ifdef LOCAL_DISPLAY_EXISTS
 #include "ADS7846.h"
+#  if defined(USE_HY32D)
+#include "SSD1289.h"
+#  else
 #include "MI0283QT2.h"
+#  endif
 #endif
 
 #include "tinyPrint.h"

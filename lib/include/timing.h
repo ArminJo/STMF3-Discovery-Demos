@@ -36,15 +36,15 @@ __STATIC_INLINE bool hasSysticCounted(void) {
     return (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk);
 }
 
-// some microsecond values for timing
-#define ONE_SECOND 1000
-#define TWO_SECONDS 2000
-#define FIVE_SECONDS 5000
-#define TEN_SECONDS 10000
-#define THIRTY_SECONDS 30000
-#define ONE_MINUTE 60000
-#define TWO_MINUTES 120000
-#define TEN_MINUTES 600000
+// some milliseconds values for timing
+#define ONE_SECOND_MILLIS 1000
+#define TWO_SECONDS_MILLIS 2000
+#define FIVE_SECONDS_MILLIS 5000
+#define TEN_SECONDS_MILLIS 10000
+#define THIRTY_SECONDS_MILLIS 30000
+#define ONE_MINUTE_MILLIS 60000
+#define TWO_MINUTES_MILLIS 120000
+#define TEN_MINUTES_MILLIS 600000
 
 #define SYSCLK_VALUE (HSE_VALUE*9) // compile time value is 72 MHZ / runtime value is RCC_Clocks.SYSCLK_Frequency
 #define NANOS_PER_CLOCK (1000000000/SYSCLK_VALUE)

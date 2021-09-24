@@ -8,7 +8,11 @@
  * @version 1.5.0
  */
 
+#if defined(USE_HY32D)
+#include "SSD1289.h"
+#else
 #include "MI0283QT2.h"
+#endif
 #include "Pages.h"
 #include "Chart.h"
 
@@ -132,7 +136,7 @@ void doChangeBaudrate(BDButton * aTheTouchedButton, int16_t aValue) {
 }
 
 void showPrintfExamples() {
-    BlueDisplay1.setPrintfPosition(0, BUTTON_HEIGHT_4_LINE_2);
+    BlueDisplay1.setWriteStringPosition(0, BUTTON_HEIGHT_4_LINE_2);
     float tTest = 1.23456789;
     printf("5.2f=%5.2f 0.3f=%0.3f 4f=%4f\n", tTest, tTest, tTest);
     tTest = -1.23456789;
@@ -186,8 +190,9 @@ void doTestButtons(BDButton * aTheTouchedButton, int16_t aValue) {
         do {
             Mandel(320, 240, 160, 120, i);
             i += 10;
-            if (i > 1000)
+            if (i > 1000) {
                 i = 0;
+            }
             checkAndHandleEvents();
         } while (!sBackButtonPressed);
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonTestGraphics.mButtonHandle) {

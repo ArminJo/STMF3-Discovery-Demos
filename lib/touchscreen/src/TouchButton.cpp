@@ -20,7 +20,11 @@
  *
  */
 
+#if defined(USE_HY32D)
+#include "SSD1289.h"
+#else
 #include "MI0283QT2.h"
+#endif
 
 #include "TouchButton.h"
 #include "TouchButtonAutorepeat.h"

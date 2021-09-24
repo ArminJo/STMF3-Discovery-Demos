@@ -149,7 +149,7 @@ void printStackpointerAndStacktrace(int aStackEntriesToSkip, int aStartLine) {
     /*
      * Stackpointer and stacktrace
      */
-    BlueDisplay1.setPrintfPositionColumnLine(0, aStartLine);
+    BlueDisplay1.setWriteStringPositionColumnLine(0, aStartLine);
 
     char* tHeapEnd = (char*) (malloc(16));
     free(tHeapEnd);
@@ -189,8 +189,8 @@ void printStackpointerAndStacktrace(int aStackEntriesToSkip, int aStartLine) {
 }
 
 void FaultHandler(struct ExceptionStackFrame * aStackPointer) {
-    BlueDisplay1.setPrintfSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_RED, COLOR_WHITE, true);
-    BlueDisplay1.setPrintfPosition(0, 0);
+    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_RED, COLOR_WHITE, true);
+    BlueDisplay1.setWriteStringPosition(0, 0);
     printf("PC=%lX LR [R14]=%lX\n", aStackPointer->pc, aStackPointer->lr);
     printf("R0=%lX R1=%lX\n", aStackPointer->r0, aStackPointer->r1);
     printf("R2=%lX R3=%lX R12=%lX\n", aStackPointer->r2, aStackPointer->r3, aStackPointer->r12);

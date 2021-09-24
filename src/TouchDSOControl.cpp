@@ -59,7 +59,7 @@ BDButton * const TouchButtonsDSO[] = {&TouchButtonBack, &TouchButtonStartStopDSO
 uint32_t MillisLastLoop;
 unsigned int sMillisSinceLastInfoOutput;
 #endif
-#define MILLIS_BETWEEN_INFO_OUTPUT ONE_SECOND
+#define MILLIS_BETWEEN_INFO_OUTPUT ONE_SECOND_MILLIS
 
 /*******************************************************************************************
  * Function declaration section

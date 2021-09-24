@@ -42,6 +42,7 @@
 #include "BlueDisplayProtocol.h"
 #endif
 
+extern bool sBDEventJustReceived; // is exclusively set to true by BD library
 extern unsigned long sMillisOfLastReceivedBDEvent; // is updated with millis() at each received event. Can be used for timeout detection.
 
 #define TOUCH_STANDARD_CALLBACK_PERIOD_MILLIS 20 // Period between callbacks while touched (a swipe is app 100 ms)
@@ -89,13 +90,13 @@ void registerConnectCallback(void (*aConnectCallback)(void));
 void registerReorientationCallback(void (*aReorientationCallback)(void));
 
 /*
- * Connect always include a redraw
+ * Connect and reorientation always include a redraw
  */
 void registerRedrawCallback(void (*aRedrawCallback)(void));
 void (* getRedrawCallback(void))(void);
 
 void registerSensorChangeCallback(uint8_t aSensorType, uint8_t aSensorRate, uint8_t aFilterFlag,
-        void (*aSensorChangeCallback)(uint8_t aSensorType, struct SensorCallback * aSensorCallbackInfo));
+        void (*aSensorChangeCallback)(uint8_t aSensorType, struct SensorCallback *aSensorCallbackInfo));
 
 // defines for backward compatibility
 #define registerSimpleConnectCallback(aConnectCallback) registerConnectCallback(aConnectCallback)
@@ -105,9 +106,9 @@ void registerSensorChangeCallback(uint8_t aSensorType, uint8_t aSensorRate, uint
 #define getSimpleResizeAndConnectCallback() getRedrawCallback()
 
 #ifndef DO_NOT_NEED_BASIC_TOUCH_EVENTS
-void registerTouchDownCallback(void (*aTouchDownCallback)(struct TouchEvent * aActualPositionPtr));
-void registerTouchMoveCallback(void (*aTouchMoveCallback)(struct TouchEvent * aActualPositionPtr));
-void registerTouchUpCallback(void (*aTouchUpCallback)(struct TouchEvent * aActualPositionPtr));
+void registerTouchDownCallback(void (*aTouchDownCallback)(struct TouchEvent *aActualPositionPtr));
+void registerTouchMoveCallback(void (*aTouchMoveCallback)(struct TouchEvent *aActualPositionPtr));
+void registerTouchUpCallback(void (*aTouchUpCallback)(struct TouchEvent *aActualPositionPtr));
 void setTouchUpCallbackEnabled(bool aTouchUpCallbackEnabled);
 void (* getTouchUpCallback(void))(struct TouchEvent * );
 #endif
@@ -115,11 +116,11 @@ void (* getTouchUpCallback(void))(struct TouchEvent * );
 #ifdef LOCAL_DISPLAY_EXISTS
 void handleLocalTouchUp(void);
 void callbackLongTouchDownTimeout(void);
-void simpleTouchDownHandler(struct TouchEvent * aActualPositionPtr);
-void simpleTouchHandlerOnlyForButtons(struct TouchEvent * aActualPositionPtr);
-void simpleTouchDownHandlerOnlyForSlider(struct TouchEvent * aActualPositionPtr);
-void simpleTouchDownHandlerForSlider(struct TouchEvent * aActualPositionPtr);
-void simpleTouchMoveHandlerForSlider(struct TouchEvent * aActualPositionPtr);
+void simpleTouchDownHandler(struct TouchEvent *aActualPositionPtr);
+void simpleTouchHandlerOnlyForButtons(struct TouchEvent *aActualPositionPtr);
+void simpleTouchDownHandlerOnlyForSlider(struct TouchEvent *aActualPositionPtr);
+void simpleTouchDownHandlerForSlider(struct TouchEvent *aActualPositionPtr);
+void simpleTouchMoveHandlerForSlider(struct TouchEvent *aActualPositionPtr);
 
 // for local autorepeat button
 void registerPeriodicTouchCallback(bool (*aPeriodicTouchCallback)(int, int), uint32_t aCallbackPeriodMillis);
@@ -133,9 +134,11 @@ void printTPData(int x, int y,  color16_t aColor,  color16_t aBackColor);
 #ifdef __cplusplus
 extern "C" {
 #endif
-void handleEvent(struct BluetoothEvent * aEvent);
+void handleEvent(struct BluetoothEvent *aEvent);
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* EVENTHANDLER_H_ */
+
+#pragma once

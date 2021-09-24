@@ -40,8 +40,25 @@
 #include "WString.h"    // for __FlashStringHelper
 #endif
 
-#define BUTTON_AUTO_RED_GREEN_FALSE_COLOR COLOR_RED
-#define BUTTON_AUTO_RED_GREEN_TRUE_COLOR COLOR_GREEN
+#define BUTTON_AUTO_RED_GREEN_FALSE_COLOR COLOR16_RED
+#define BUTTON_AUTO_RED_GREEN_TRUE_COLOR COLOR16_GREEN
+
+// Flags for BUTTON_GLOBAL_SETTINGS
+static const int FLAG_BUTTON_GLOBAL_USE_DOWN_EVENTS_FOR_BUTTONS = 0x00; // Default
+static const int FLAG_BUTTON_GLOBAL_USE_UP_EVENTS_FOR_BUTTONS = 0x01;   // If swipe can start on a button, you require this.
+static const int FLAG_BUTTON_GLOBAL_SET_BEEP_TONE = 0x02;   // Beep on button touch
+
+// Flags for init
+static const int FLAG_BUTTON_NO_BEEP_ON_TOUCH = 0x00;
+static const int FLAG_BUTTON_DO_BEEP_ON_TOUCH = 0x01;  // Beep on this button touch
+static const int FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN = 0x02; // Value true -> green, false -> red
+static const int FLAG_BUTTON_TYPE_AUTOREPEAT = 0x04;
+static const int FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH = 0x0A; // Button must be manually drawn after event to show new caption/color
+
+#ifdef USE_BUTTON_POOL
+#define INTERNAL_FLAG_MASK 0x80
+#define FLAG_IS_ALLOCATED 0x80 // For use with get and releaseButton
+#endif
 
 /**********************
  * BUTTON WIDTHS
@@ -79,12 +96,14 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 
 // width 3.5
 #define BUTTON_WIDTH_3_5 82
+#define BUTTON_WIDTH_3_5_POS_2 (BUTTON_WIDTH_3_5 + BUTTON_DEFAULT_SPACING)
+#define BUTTON_WIDTH_3_5_POS_3 (2*(BUTTON_WIDTH_3_5 + BUTTON_DEFAULT_SPACING))
 //
 // for 4 buttons horizontal - 8 characters
 #define BUTTON_WIDTH_4 68
 #define BUTTON_WIDTH_4_POS_2 (BUTTON_WIDTH_4 + BUTTON_DEFAULT_SPACING)
 #define BUTTON_WIDTH_4_POS_3 (2*(BUTTON_WIDTH_4 + BUTTON_DEFAULT_SPACING))
-#define BUTTON_WIDTH_4_POS_4 (LAYOUT_320_WIDTH - BUTTON_WIDTH_4)//
+#define BUTTON_WIDTH_4_POS_4 (LAYOUT_320_WIDTH - BUTTON_WIDTH_4)
 //
 // for 4 buttons horizontal - dynamic
 #define BUTTON_WIDTH_4_DYN (BlueDisplay1.mCurrentDisplaySize.XWidth/4 - BUTTON_HORIZONTAL_SPACING_DYN)
@@ -106,11 +125,11 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 //
 // for 6 buttons horizontal
 #define BUTTON_WIDTH_6 40
-#define BUTTON_WIDTH_6_POS_2 (BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING)
-#define BUTTON_WIDTH_6_POS_3 (2*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING))
-#define BUTTON_WIDTH_6_POS_4 (3*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING))
-#define BUTTON_WIDTH_6_POS_5 (4*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING))
-#define BUTTON_WIDTH_6_POS_6 (LAYOUT_320_WIDTH - BUTTON_WIDTH_6)
+#define BUTTON_WIDTH_6_POS_2 (BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING) // 56
+#define BUTTON_WIDTH_6_POS_3 (2*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING)) // 112
+#define BUTTON_WIDTH_6_POS_4 (3*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING)) // 168
+#define BUTTON_WIDTH_6_POS_5 (4*(BUTTON_WIDTH_6 + BUTTON_DEFAULT_SPACING)) // 224
+#define BUTTON_WIDTH_6_POS_6 (LAYOUT_320_WIDTH - BUTTON_WIDTH_6) // 280
 //
 // for 6 buttons horizontal - dynamic
 #define BUTTON_WIDTH_6_DYN (BlueDisplay1.mCurrentDisplaySize.XWidth/6 - BUTTON_HORIZONTAL_SPACING_DYN)
@@ -141,6 +160,10 @@ constexpr int ButtonWidth ( int aNumberOfButtonsPerLine, int aDisplayWidth ) {re
 #define BUTTON_WIDTH_10_POS_8 (7*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
 #define BUTTON_WIDTH_10_POS_9 (8*(BUTTON_WIDTH_10 + BUTTON_DEFAULT_SPACING_QUARTER))
 #define BUTTON_WIDTH_10_POS_10 (LAYOUT_320_WIDTH - BUTTON_WIDTH_0)
+
+#define BUTTON_WIDTH_12 23 // 12*23 + 11*4 = 276 + 44 = 320 :-)
+
+#define BUTTON_WIDTH_14 19 // 19*14 + 13*4 = 266 + 52 = 318
 
 #define BUTTON_WIDTH_16 16
 #define BUTTON_WIDTH_16_POS_2 (BUTTON_WIDTH_16 + BUTTON_DEFAULT_SPACING_QUARTER)
@@ -244,7 +267,7 @@ public:
     BDButton();
     BDButton(BDButtonHandle_t aButtonHandle);
 #ifdef LOCAL_DISPLAY_EXISTS
-    BDButton(BDButtonHandle_t aButtonHandle, TouchButton * aLocalButtonPtr);
+    BDButton(BDButtonHandle_t aButtonHandle, TouchButton *aLocalButtonPtr);
 #endif
     BDButton(const BDButton &aButton);
     // Operators
@@ -253,18 +276,18 @@ public:
     bool operator!=(const BDButton &aButton);
 
     void init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, color16_t aButtonColor,
-            const char * aCaption, uint16_t aCaptionSize, uint8_t aFlags, int16_t aValue,
+            const char *aCaption, uint16_t aCaptionSize, uint8_t aFlags, int16_t aValue,
             void (*aOnTouchHandler)(BDButton*, int16_t));
+//    void init(const struct ButtonInit *aButtonInfo, const __FlashStringHelper *aPGMCaption);
+//    void init(const struct ButtonInit *aButtonInfo, const __FlashStringHelper *aPGMCaption, int16_t aValue);
 
     void drawButton(void);
     void removeButton(color16_t aBackgroundColor);
     void drawCaption(void);
-    void setCaption(const char * aCaption);
-    void setCaption(const char * aCaption, bool doDrawButton);
-    void setCaptionForValueTrue(const char * aCaption);
-    void setCaptionAndDraw(const char * aCaption);
-    void setValue(int16_t aValue);
-    void setValue(int16_t aValue, bool doDrawButton);
+    void setCaption(const char *aCaption, bool doDrawButton = false);
+    void setCaptionFromStringArray(const char *const aCaptionStringArrayPtr[], uint8_t aStringIndex, bool doDrawButton);
+    void setCaptionForValueTrue(const char *aCaption);
+    void setValue(int16_t aValue, bool doDrawButton = false);
     void setValueAndDraw(int16_t aValue);
     void setButtonColor(color16_t aButtonColor);
     void setButtonColorAndDraw(color16_t aButtonColor);
@@ -277,31 +300,51 @@ public:
 
 #ifdef ARDUINO
     void initPGM(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, color16_t aButtonColor,
-            const char * aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
+            const char *aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
             void (*aOnTouchHandler)(BDButton*, int16_t));
 
-    void setCaptionPGM(const char * aPGMCaption);
-    void setCaptionPGMForValueTrue(const char * aCaption);
-    void setCaptionPGM(const char * aPGMCaption, bool doDrawButton);
+    void setCaptionPGMForValueTrue(const char *aCaption);
+    void setCaptionPGM(const char *aPGMCaption, bool doDrawButton = false);
+    void setCaptionFromStringArrayPGM(const char *const aPGMCaptionStringArrayPtr[], uint8_t aStringIndex,
+            bool doDrawButton = false);
 
     void init(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidthX, uint16_t aHeightY, color16_t aButtonColor,
-            const __FlashStringHelper * aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
+            const __FlashStringHelper *aPGMCaption, uint8_t aCaptionSize, uint8_t aFlags, int16_t aValue,
             void (*aOnTouchHandler)(BDButton*, int16_t));
-    void setCaption(const __FlashStringHelper * aPGMCaption);
-    void setCaptionForValueTrue(const __FlashStringHelper * aCaption);
-    void setCaption(const __FlashStringHelper * aPGMCaption, bool doDrawButton);
+    void init(uint16_t aPositionX, uint16_t aPositionY, const __FlashStringHelper *aPGMCaption, int16_t aValue,
+            void (*aOnTouchHandler)(BDButton*, int16_t));
+    void setCaptionForValueTrue(const __FlashStringHelper *aCaption);
+    void setCaption(const __FlashStringHelper *aPGMCaption, bool doDrawButton = false);
 #endif
 
     BDButtonHandle_t mButtonHandle; // Index for BlueDisplay button functions
 
 #ifdef LOCAL_DISPLAY_EXISTS
     void deinit(void);
-    TouchButton * mLocalButtonPtr;
+    TouchButton *mLocalButtonPtr;
 #endif
 
 private:
 };
 
+///**
+// * @brief Button Init Structure definition
+// * This uses around 200 bytes and saves 8 to 24 bytes per button
+// */
+//struct ButtonInit {
+//    uint16_t PositionX;
+//    uint16_t PositionY;
+//    uint16_t WidthX;
+//    uint16_t HeightY;
+//    color16_t ButtonColor;
+//    uint16_t CaptionSize;
+//    uint16_t Flags;
+//    int16_t Value;
+//    void (*aOnTouchHandler)(BDButton*, int16_t);
+////    const __FlashStringHelper *PGMCaption;
+//};
 #endif
 
 #endif /* BLUEDISPLAY_INCLUDE_BDBUTTON_H_ */
+
+#pragma once

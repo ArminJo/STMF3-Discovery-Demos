@@ -23,9 +23,9 @@
  *
  */
 
-#include "TouchSlider.h"
-
 #include "BlueDisplay.h"
+
+#include "TouchSlider.h"
 
 #ifndef AVR
 #include "AssertErrorAndMisc.h"
@@ -49,7 +49,7 @@
  * @{
  */
 
-TouchSlider * TouchSlider::sSliderListStart = NULL;
+TouchSlider *TouchSlider::sSliderListStart = NULL;
 uint16_t TouchSlider::sDefaultSliderColor = SLIDER_DEFAULT_SLIDER_COLOR;
 uint16_t TouchSlider::sDefaultBarColor = SLIDER_DEFAULT_BAR_COLOR;
 uint16_t TouchSlider::sDefaultBarThresholdColor = SLIDER_DEFAULT_BAR_THRESHOLD_COLOR;
@@ -195,7 +195,7 @@ TouchSlider::TouchSlider(void) {
         sSliderListStart = this;
     } else {
         // put object in slider list
-        TouchSlider * tSliderPointer = sSliderListStart;
+        TouchSlider *tSliderPointer = sSliderListStart;
         // search last list element
         while (tSliderPointer->mNextObject != NULL) {
             tSliderPointer = tSliderPointer->mNextObject;
@@ -260,7 +260,7 @@ void TouchSlider::setValueColor(uint16_t aValueColor) {
  * @see deactivateAllSliders()
  */
 void TouchSlider::activateAllSliders(void) {
-    TouchSlider * tObjectPointer = sSliderListStart;
+    TouchSlider *tObjectPointer = sSliderListStart;
     while (tObjectPointer != NULL) {
         tObjectPointer->activate();
         tObjectPointer = tObjectPointer->mNextObject;
@@ -272,7 +272,7 @@ void TouchSlider::activateAllSliders(void) {
  * @see activateAllSliders()
  */
 void TouchSlider::deactivateAllSliders(void) {
-    TouchSlider * tObjectPointer = sSliderListStart;
+    TouchSlider *tObjectPointer = sSliderListStart;
     while (tObjectPointer != NULL) {
         tObjectPointer->deactivate();
         tObjectPointer = tObjectPointer->mNextObject;
@@ -296,8 +296,8 @@ void TouchSlider::deactivateAllSliders(void) {
  *  or if not enough space to draw caption or value.
  */
 void TouchSlider::initSlider(uint16_t aPositionX, uint16_t aPositionY, uintForPgmSpaceSaving aBarWidth, uint16_t aBarLength,
-        uint16_t aThresholdValue, uint16_t aInitalValue, const char * aCaption, int8_t aTouchBorder, uint8_t aOptions,
-        void (*aOnChangeHandler)(TouchSlider *, uint16_t), const char * (*aValueHandler)(uint16_t)) {
+        uint16_t aThresholdValue, uint16_t aInitalValue, const char *aCaption, int8_t aTouchBorder, uint8_t aOptions,
+        void (*aOnChangeHandler)(TouchSlider*, uint16_t), const char* (*aValueHandler)(uint16_t)) {
 
     mSliderColor = sDefaultSliderColor;
     mBarColor = sDefaultBarColor;
@@ -453,7 +453,7 @@ void TouchSlider::drawBar(void) {
     }
 }
 
-void TouchSlider::setCaption(const char* aCaption) {
+void TouchSlider::setCaption(const char *aCaption) {
     mCaption = aCaption;
 }
 
@@ -509,7 +509,7 @@ void TouchSlider::printCaption(void) {
         tCaptionPositionY = LOCAL_DISPLAY_HEIGHT - TEXT_SIZE_11;
     }
 
-    LocalDisplay.drawText(tCaptionPositionX, tCaptionPositionY, (char *) mCaption, 1, mCaptionColor, mValueCaptionBackgroundColor);
+    LocalDisplay.drawText(tCaptionPositionX, tCaptionPositionY, (char*) mCaption, 1, mCaptionColor, mValueCaptionBackgroundColor);
 }
 
 /**
@@ -519,7 +519,7 @@ int TouchSlider::printValue(void) {
     if (!(mFlags & FLAG_SLIDER_SHOW_VALUE)) {
         return 0;
     }
-    char * pValueAsString;
+    char *pValueAsString;
     unsigned int tValuePositionY = mPositionYBottom + mBarWidth / 2 + getTextAscend(TEXT_SIZE_11);
     if (mCaption != NULL && !((mFlags & TOUCHFLAG_SLIDER_IS_HORIZONTAL) && !(mFlags & TOUCHSLIDER_HORIZONTAL_VALUE_BELOW_TITLE))) {
         tValuePositionY += TEXT_SIZE_11_HEIGHT;
@@ -537,7 +537,7 @@ int TouchSlider::printValue(void) {
         sprintf(tValueAsString, "%03d", mActualValue);
     } else {
         // mValueHandler has to provide the char array
-        pValueAsString = (char *) mValueHandler(mActualValue);
+        pValueAsString = (char*) mValueHandler(mActualValue);
     }
     return LocalDisplay.drawText(mPositionX + mXOffsetValue, tValuePositionY - TEXT_SIZE_11_ASCEND, pValueAsString, 1, mValueColor,
             mValueCaptionBackgroundColor);
@@ -546,7 +546,7 @@ int TouchSlider::printValue(void) {
 /**
  * Print value left aligned to slider below caption or beneath if SLIDER_HORIZONTAL_VALUE_LEFT
  */
-int TouchSlider::printValue(const char * aValueString) {
+int TouchSlider::printValue(const char *aValueString) {
 
     unsigned int tValuePositionY = mPositionYBottom + mBarWidth / 2 + getTextAscend(TEXT_SIZE_11);
     if (mCaption != NULL && !((mFlags & TOUCHFLAG_SLIDER_IS_HORIZONTAL) && !(mFlags & TOUCHSLIDER_HORIZONTAL_VALUE_BELOW_TITLE))) {
@@ -643,7 +643,7 @@ bool TouchSlider::checkSlider(uint16_t aTouchPositionX, uint16_t aTouchPositionY
  */
 
 bool TouchSlider::checkAllSliders(unsigned int aTouchPositionX, unsigned int aTouchPositionY) {
-    TouchSlider * tObjectPointer = sSliderListStart;
+    TouchSlider *tObjectPointer = sSliderListStart;
 
 // walk through list of active elements
     while (tObjectPointer != NULL) {

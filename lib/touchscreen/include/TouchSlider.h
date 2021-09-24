@@ -17,8 +17,11 @@
 
 // should be globally set
 //#define REMOTE_DISPLAY_SUPPORTED
-
+#if defined(USE_HY32D)
+#include "SSD1289.h"
+#else
 #include "MI0283QT2.h"
+#endif
 
 #ifdef REMOTE_DISPLAY_SUPPORTED
 typedef uint8_t BDSliderHandle_t;
@@ -52,10 +55,14 @@ class BDSlider;
 /** @} */
 
 #define SLIDER_DEFAULT_SLIDER_COLOR         RGB( 180, 180, 180)
+#ifndef SLIDER_DEFAULT_BAR_COLOR
 #define SLIDER_DEFAULT_BAR_COLOR            COLOR_GREEN
+#endif
 #define SLIDER_DEFAULT_BAR_THRESHOLD_COLOR  COLOR_RED
 #define SLIDER_DEFAULT_BAR_BACK_COLOR       COLOR_WHITE
+#ifndef SLIDER_DEFAULT_CAPTION_COLOR
 #define SLIDER_DEFAULT_CAPTION_COLOR        COLOR_BLACK
+#endif
 #define SLIDER_DEFAULT_VALUE_COLOR          COLOR_BLUE
 #define SLIDER_DEFAULT_CAPTION_VALUE_BACK_COLOR  COLOR_NO_BACKGROUND
 #define SLIDER_DEFAULT_BAR_WIDTH            8

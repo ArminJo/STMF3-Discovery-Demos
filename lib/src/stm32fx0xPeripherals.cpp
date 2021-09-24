@@ -1210,7 +1210,7 @@ extern "C" void WWDG_IRQHandler(void) {
     __HAL_WWDG_CLEAR_FLAG(&WWDGHandle, WWDG_FLAG_EWIF);
     if (WWDG_ExtendedCounter-- < 0) {
         WWDG_ExtendedCounter = WWDG_EXTENDED_COUNTER_RELOAD_VALUE * 10;
-        BlueDisplay1.setPrintfSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_RED, COLOR_WHITE, true);
+        BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_RED, COLOR_WHITE, true);
         printStackpointerAndStacktrace(9, 8);
     }
 }
@@ -1676,7 +1676,6 @@ void AccuCapacity_SwitchDischarge(unsigned int aChannelIndex, bool aActive) {
     if (aActive) {
         Set_GpioPin(ACCUCAP_PORT, tPinNr);
     } else {
-// Low
         Reset_GpioPin(ACCUCAP_PORT, tPinNr);
     }
 }
@@ -1689,7 +1688,6 @@ void AccuCapacity_SwitchCharge(unsigned int aChannelIndex, bool aActive) {
     if (aActive) {
         Set_GpioPin(ACCUCAP_PORT, tPinNr);
     } else {
-// Low
         Reset_GpioPin(ACCUCAP_PORT, tPinNr);
     }
 }

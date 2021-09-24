@@ -179,6 +179,9 @@ struct GuiCallback {
     union ByteShortLongFloatUnion ValueForGuiHandler;
 };
 
+/*
+ * Values received from accelerator sensor range from -10 to 10
+ */
 struct SensorCallback {
     float ValueX;
     float ValueY;
@@ -368,6 +371,9 @@ static const int SUBFUNCTION_SLIDER_SET_VALUE = 0x0C;
 static const int FUNCTION_SLIDER_ACTIVATE_ALL = 0x58;
 static const int FUNCTION_SLIDER_DEACTIVATE_ALL = 0x59;
 static const int FUNCTION_SLIDER_GLOBAL_SETTINGS = 0x5A;
+
+// Flags for SLIDER_BLOBAL_SETTINGS
+static const int SUBFUNCTION_SLIDER_SET_DEFAULT_COLOR_THRESHOLD = 0x01;
 
 // Function with variable data size
 const int FUNCTION_SLIDER_SET_CAPTION = 0x78;

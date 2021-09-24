@@ -68,7 +68,7 @@ typedef enum {
     LOW = 0, HIGH
 } IOLevel;
 
-void MI0283QT2_IO_initalize(void);
+void SSD1289_IO_initalize(void);
 
 void ADS7846_IO_initalize(void);
 void ADS7846_clearAndEnableInterrupt(void);

@@ -22,7 +22,7 @@ TIM_HandleTypeDef TIM4Handle;
 /**
  * Init the HY32D CS, Control/Data, WR, RD, and port D data pins
  */
-void MI0283QT2_IO_initalize(void) {
+void SSD1289_IO_initalize(void) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     /* Enable the GPIO Clocks */
