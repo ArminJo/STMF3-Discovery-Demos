@@ -100,10 +100,12 @@ void loopDrawPage(void) {
 }
 
 void stopDrawPage(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 // free buttons
     for (unsigned int i = 0; i < NUMBER_OF_DRAW_COLORS; ++i) {
         TouchButtonsDrawColor[i].deinit();
     }
     TouchButtonClear.deinit();
+#endif
 }
 

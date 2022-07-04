@@ -18,12 +18,14 @@
 #ifndef TOUCHBUTTON_H_
 #define TOUCHBUTTON_H_
 
-// should be globally set
-//#define REMOTE_DISPLAY_SUPPORTED
-
 #include "Colors.h"
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#include "BDButton.h"
+#  if defined(AVR)
 typedef uint8_t BDButtonHandle_t;
+#  else
+typedef uint16_t BDButtonHandle_t;
+#  endif
 class BDButton;
 #endif
 
@@ -73,7 +75,7 @@ public:
 
     TouchButton(void);
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     ~TouchButton(void);
     static TouchButton * getLocalButtonFromBDButtonHandle(BDButtonHandle_t aButtonHandleToSearchFor);
     static void reinitAllLocalButtonsForRemote(void);
@@ -138,7 +140,7 @@ public:
     uint8_t getCaptionLength(char * aCaptionPointer) const;
 #endif
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     BDButton * mBDButtonPtr;
 #endif
     uint16_t mButtonColor;

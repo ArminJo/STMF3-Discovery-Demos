@@ -22,6 +22,8 @@
  */
 
 #include "Pages.h"
+#include "FrequencyGeneratorPage.hpp" // include sources for pages
+
 #include "myStrings.h" // for StringHomeChar
 
 #include "TouchButton.h"
@@ -55,9 +57,9 @@ BDButton TouchButtonInfo;
 BDButton TouchButtonIR;
 BDButton TouchButtonMainSettings;
 BDButton TouchButtonMainHome; // for other pages to get back
-BDButton * const TouchButtonsMainMenu[] = { &TouchButtonDSO, &TouchButtonBob, &TouchButtonDemo, &TouchButtonAccelerometer,
-        &TouchButtonDraw, &TouchButtonDatalogger, &TouchButtonDac, &TouchButtonFrequencyGenerator, &TouchButtonTest,
-        &TouchButtonInfo, &TouchButtonMainSettings, &TouchButtonIR, &TouchButtonMainHome }; // TouchButtonMainHome must be last element of array
+BDButton *const TouchButtonsMainMenu[] = { &TouchButtonDSO, &TouchButtonMainSettings, &TouchButtonDemo, &TouchButtonIR,
+        &TouchButtonAccelerometer, &TouchButtonDraw, &TouchButtonDac, &TouchButtonDatalogger, &TouchButtonBob,
+        &TouchButtonFrequencyGenerator, &TouchButtonInfo, &TouchButtonTest, &TouchButtonMainHome }; // TouchButtonMainHome must be last element of array
 
 uint32_t MillisLastLoop;
 unsigned int sMillisSinceLastInfoOutput;
@@ -65,7 +67,7 @@ unsigned int sMillisSinceLastInfoOutput;
 void drawMainMenuPage(void);
 
 /* Private functions ---------------------------------------------------------*/
-void doMainMenuButtons(BDButton * aTheTouchedButton, int16_t aValue) {
+void doMainMenuButtons(BDButton *aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     if (aTheTouchedButton->mButtonHandle == TouchButtonDSO.mButtonHandle) {
         startDSOPage();
@@ -167,7 +169,7 @@ void doMainMenuButtons(BDButton * aTheTouchedButton, int16_t aValue) {
  */
 
 //FIL File1, File2; /* File objects */
-void doTestButton(BDButton * aTheTouchedButton, int16_t aValue) {
+void doTestButton(BDButton *aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     BlueDisplay1.clearDisplay(COLOR_WHITE);
     BlueDisplay1.drawLine(10, 10, 20, 16, COLOR_BLACK);
@@ -198,7 +200,7 @@ void doTestButton(BDButton * aTheTouchedButton, int16_t aValue) {
 /**
  * clear display handler
  */
-void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue) {
+void doClearScreen(BDButton *aTheTouchedButton, int16_t aValue) {
     BlueDisplay1.clearDisplay(aValue);
 }
 
@@ -214,19 +216,6 @@ void drawMainMenuPage(void) {
     // draw all buttons except last
     for (unsigned int i = 0; i < (sizeof(TouchButtonsMainMenu) / sizeof(TouchButtonsMainMenu[0]) - 1); ++i) {
         (*TouchButtonsMainMenu[i]).drawButton();
-    }
-}
-
-// HOME button - lower right corner
-void initMainHomeButton(bool doDraw) {
-    initMainHomeButtonWithPosition(BUTTON_WIDTH_5_POS_5, 0, doDraw);
-}
-
-// HOME button
-void initMainHomeButtonWithPosition(const uint16_t aPositionX, const uint16_t aPositionY, bool doDraw) {
-    TouchButtonMainHome.setPosition(aPositionX, aPositionY);
-    if (doDraw) {
-        TouchButtonMainHome.drawButton();
     }
 }
 
@@ -301,9 +290,11 @@ void stopMainMenuPage(void) {
     registerRedrawCallback(NULL);
     registerTouchDownCallback(NULL);
     registerTouchMoveCallback(NULL);
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsMainMenu) / sizeof(TouchButtonsMainMenu[0]); ++i) {
         (*TouchButtonsMainMenu[i]).deinit();
     }
+#endif
 }
 

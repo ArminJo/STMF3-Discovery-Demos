@@ -2,16 +2,32 @@
  *  @file AccuCapacity.cpp
  *
  *  @date 23.02.2012
- *  @author Armin Joachimsmeyer
- *  armin.joachimsmeyer@gmail.com
- *  @brief measures the capacity of 1,2V rechargeable batteries while charging or discharging
- *  and shows the voltage and internal resistance graph on LCD screen.
  *
+ *  @brief measures the capacity of 1,2V rechargeable batteries while charging or discharging and shows the voltage and internal resistance graph on LCD screen.
+ *
+ *  Copyright (C) 2012-2022  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "Pages.h"
 #include "myStrings.h" // for StringDoubleHorizontalArrow
 #include "Chart.h"
+
 #include <string.h>
 
 /*
@@ -31,8 +47,8 @@ const char *const chartStringsExtern[] = { "Max", "Min", "Both" };
 #define STOP_VOLTAGE_TIMES_TEN 10  // 1.0 Volt
 #define START_Y_OFFSET 1.0
 #define CHARGE_VOLTAGE_MILLIVOLT_DEFAULT 2490
-#define SAMPLE_PERIOD_START 60 // in seconds
-#define SAMPLE_PERIOD_MINIMUM 10 // in seconds
+#define SAMPLE_PERIOD_START 30 // in seconds
+#define SAMPLE_PERIOD_HIGH_RESOLUTION 10 // in seconds
 // Flag to signal end of measurement from ISR to main loop
 volatile bool doEndTone = false;
 // Flag to signal refresh from Timer Callback (ISR context) to main loop
@@ -172,7 +188,7 @@ DataloggerDisplayControlStruct AccuCapDisplayControl[NUMBER_OF_PROBES];
 // Modes
 #define MODE_DISCHARGING 0x00
 #define MODE_CHARGING 0x01
-#define MODE_EXTERN 0x02 // For measurement of external voltage
+#define MODE_EXTERNAL_VOLTAGE 0x02 // For measurement of external voltage and current
 /*
  * Structure defining a capacity measurement
  */
@@ -201,7 +217,6 @@ struct DataloggerMeasurementControlStruct {
 
     uint16_t SamplePeriodSeconds;
     uint16_t SampleCount; // number of samples just taken for measurement
-    uint32_t SampleSumRawReadings; // sum of raw adc readings
 
     uint16_t SwitchOffVoltageMillivolt; // if Reading < StopThreshold then stop - used for discharging
 
@@ -275,9 +290,10 @@ unsigned long MillisLastLoopCapacity = 0;
 
 /**
  * Activate or deactivate the load / source according to Mode
+ * For MODE_EXTERNAL_VOLTAGE every switch is disabled anyway
  */
 void setSinkSource(unsigned int aProbeIndex, bool aDoActivate) {
-// default is extern
+// default is extern with both false
     bool tCharge = false;
     bool tDischarge = false;
     if (aDoActivate) {
@@ -417,7 +433,7 @@ void initAccuCapacity(void) {
         BatteryControl[i].ProbeIndex = i;
         // y axis
         BatteryControl[i].ExternalAttenuatorFactor = 1.0;
-        VoltageCharts[i]->initYLabelFloat(START_Y_OFFSET, CHART_MIN_Y_INCREMENT_VOLT, sADCToVoltFactor, 3, 1);
+        VoltageCharts[i]->initYLabelFloat(START_Y_OFFSET, CHART_MIN_Y_INCREMENT_VOLT, 1.0 / 1000.0, 3, 1);
         VoltageCharts[i]->setYTitleText("Volt");
         AccuCapDisplayControl[i].VoltYScaleFactor = 0;            // 0=identity
 
@@ -438,7 +454,6 @@ void initAccuCapacity(void) {
         BatteryControl[i].IsStarted = false;
         BatteryControl[i].Mode = MODE_DISCHARGING;
         BatteryControl[i].BatteryInfo.CapacityAccumulator = 0;
-        BatteryControl[i].SampleSumRawReadings = 0;
         BatteryControl[i].SamplePeriodSeconds = SAMPLE_PERIOD_START;
         BatteryControl[i].LoadResistorMilliohm = 5000;
         BatteryControl[i].SwitchOffVoltageMillivolt = 1100;
@@ -459,10 +474,8 @@ void initAccuCapacity(void) {
 
 void startAccuCapacity(void) {
     initGUIAccuCapacity();
-    // New calibration of chart since VCC may have changed
+    // New calibration since VCC may have changed
     ADC_setRawToVoltFactor();
-    VoltageCharts[0]->setYDataFactor(sADCToVoltFactor);
-    VoltageCharts[1]->setYDataFactor(sADCToVoltFactor);
 
     drawAccuCapacityMainPage();
     registerRedrawCallback(&redrawAccuCapacityPages);
@@ -480,6 +493,7 @@ void startAccuCapacity(void) {
 void stopAccuCapacity(void) {
     // Stop display refresh
     changeDelayCallback(&callbackDisplayRefreshDelay, DISABLE_TIMER_DELAY_VALUE);
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 // free buttons
     for (unsigned int i = 0; i < sizeof(ButtonsChart) / sizeof(ButtonsChart[0]); ++i) {
         ButtonsChart[i]->deinit();
@@ -498,11 +512,13 @@ void stopAccuCapacity(void) {
     TouchButtonAutorepeatSamplePeriodPlus.deinit();
     TouchButtonAutorepeatSamplePeriodMinus.deinit();
 
+    registerTouchDownCallback(&simpleTouchDownHandler);
+#endif
+
     registerLongTouchDownCallback(NULL, 0);
     registerSwipeEndCallback(NULL);
     registerTouchUpCallback(NULL);
     // restore old touch down handler
-    registerTouchDownCallback(&simpleTouchDownHandler);
 }
 
 void loopAccuCapacity(void) {
@@ -522,7 +538,7 @@ void loopAccuCapacity(void) {
     }
     if (doEndTone == true) {
         doEndTone = false;
-        EndTone();
+        playEndTone();
     }
     checkAndHandleEvents();
 }
@@ -655,7 +671,7 @@ void doSetExternalAttenuatorFactor(BDButton *aTheTouchedButton, int16_t aValue) 
 void doSetReadingChargeVoltage(BDButton *aTheTouchedButton, int16_t aValue) {
     unsigned int tAccuReading = 0;
     unsigned int tChargeVoltageMillivolt = BatteryControl[IndexOfDisplayedProbe].ChargeVoltageMillivolt;
-    if (BatteryControl[IndexOfDisplayedProbe].Mode == MODE_EXTERN) {
+    if (BatteryControl[IndexOfDisplayedProbe].Mode == MODE_EXTERNAL_VOLTAGE) {
         float tNumber = getNumberFromNumberPad(NUMBERPAD_DEFAULT_X, 0, ProbeColors[IndexOfDisplayedProbe]);
         // check for cancel
         if (!isnan(tNumber)) {
@@ -681,10 +697,14 @@ void doSetReadingChargeVoltage(BDButton *aTheTouchedButton, int16_t aValue) {
 
 void doSetSamplePeriod(BDButton *aTheTouchedButton, int16_t aValue) {
     unsigned int tFeedbackType = FEEDBACK_TONE_OK;
-    unsigned int tSeconds = BatteryControl[IndexOfDisplayedProbe].SamplePeriodSeconds;
-    tSeconds += aValue * 10;
+    int tSeconds = BatteryControl[IndexOfDisplayedProbe].SamplePeriodSeconds;
+    if ((aValue > 0 && tSeconds < SAMPLE_PERIOD_HIGH_RESOLUTION) || (aValue < 0 && tSeconds <= SAMPLE_PERIOD_HIGH_RESOLUTION)) {
+        tSeconds += aValue;
+    } else {
+        tSeconds += aValue * 10;
+    }
     if (tSeconds <= 0) {
-        tSeconds = SAMPLE_PERIOD_MINIMUM;
+        tSeconds = 1;
         tFeedbackType = FEEDBACK_TONE_ERROR;
     }
     BatteryControl[IndexOfDisplayedProbe].SamplePeriodSeconds = tSeconds;
@@ -736,7 +756,7 @@ void doSwitchChartData(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
     if (AccuCapDisplayControl[aProbeIndex].ActualDataChart > CHART_DATA_BOTH) {
         AccuCapDisplayControl[aProbeIndex].ActualDataChart = CHART_DATA_VOLTAGE;
     } else if (AccuCapDisplayControl[aProbeIndex].ActualDataChart == CHART_DATA_RESISTANCE
-            && BatteryControl[aProbeIndex].Mode != MODE_EXTERN) {
+            && BatteryControl[aProbeIndex].Mode != MODE_EXTERNAL_VOLTAGE) {
         // no resistance for external mode (U min instead)
         // y axis for resistance only shown at CHART_RESISTANCE
         ResistanceCharts[IndexOfDisplayedProbe]->drawYAxis(true);
@@ -745,7 +765,7 @@ void doSwitchChartData(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
         VoltageCharts[IndexOfDisplayedProbe]->drawYAxis(true);
         ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_VOLTAGE);
     }
-    if (BatteryControl[aProbeIndex].Mode == MODE_EXTERN) {
+    if (BatteryControl[aProbeIndex].Mode == MODE_EXTERNAL_VOLTAGE) {
         aTheTouchedButton->setCaption(chartStringsExtern[AccuCapDisplayControl[aProbeIndex].ActualDataChart]);
     } else {
         aTheTouchedButton->setCaption(chartStrings[AccuCapDisplayControl[aProbeIndex].ActualDataChart]);
@@ -781,7 +801,7 @@ void startStopMeasurement(DataloggerMeasurementControlStruct *aProbe, bool aDoSt
 void doChargeMode(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
     unsigned int tNewState = BatteryControl[aProbeIndex].Mode;
     tNewState++;
-    if (tNewState > MODE_EXTERN) {
+    if (tNewState > MODE_EXTERNAL_VOLTAGE) {
         tNewState = MODE_DISCHARGING;
     }
     BatteryControl[aProbeIndex].Mode = tNewState;
@@ -801,8 +821,10 @@ void doClearDataBuffer(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
     ResistanceCharts[IndexOfDisplayedProbe]->setXScaleFactor(1, false);
 
     BatteryControl[aProbeIndex].BatteryInfo.CapacityAccumulator = 0;
+    BatteryControl[aProbeIndex].BatteryInfo.CapacityMilliampereHour = 0;
+    BatteryControl[aProbeIndex].BatteryInfo.Milliampere = 0;
+    BatteryControl[aProbeIndex].BatteryInfo.ESRMilliohm = 0;
     BatteryControl[aProbeIndex].SampleCount = 0;
-    BatteryControl[aProbeIndex].SampleSumRawReadings = 0;
 // Clear data buffer
     memset(&BatteryControl[aProbeIndex].VoltageNoLoadDatabuffer[0], 0, RAM_DATABUFFER_MAX_LENGTH);
     memset(&BatteryControl[aProbeIndex].ESRMilliohmDatabuffer[0], 0,
@@ -815,7 +837,7 @@ void doClearDataBuffer(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
 
 const char* getModeString(int aProbeIndex) {
     const char *tModeString;
-    if (BatteryControl[aProbeIndex].Mode == MODE_EXTERN) {
+    if (BatteryControl[aProbeIndex].Mode == MODE_EXTERNAL_VOLTAGE) {
         tModeString = "Extern";
     } else
         tModeString = &StringDischarging[0];
@@ -1142,7 +1164,7 @@ void getBatteryValues(DataloggerMeasurementControlStruct *aProbe) {
          * Compute ESR = internal Equivalent Series Resistance
          */
 
-        if (aProbe->Mode != MODE_EXTERN) {
+        if (aProbe->Mode != MODE_EXTERNAL_VOLTAGE) {
 
             // disconnect from sink/source and wait
             setSinkSource(aProbe->ProbeIndex, false);
@@ -1233,7 +1255,7 @@ void setYAutorange(int16_t aProbeIndex, uint16_t aVoltageMillivolt) {
     VoltageCharts[IndexOfDisplayedProbe]->setYLabelStartValueFloat(tYLabelStartVoltage);
     VoltageCharts[IndexOfDisplayedProbe]->drawYAxis(true);
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ChartShowMode == SHOW_MODE_GUI) {
-        // show Symbol for vertical swipe
+        // show symbol for vertical swipe
         BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
     }
 }
@@ -1289,7 +1311,7 @@ void printBatteryValues(void) {
             snprintf(sStringBuffer, sizeof sStringBuffer, "Nr.%d - %u:%02u", BatteryControl[i].ProbeNumber, tMinutes, tSeconds);
             BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[i], COLOR_BACKGROUND_DEFAULT);
 
-            if (BatteryControl[i].Mode != MODE_EXTERN) {
+            if (BatteryControl[i].Mode != MODE_EXTERNAL_VOLTAGE) {
                 tPosY += 2 + TEXT_SIZE_11_HEIGHT;
                 if (BatteryControl[i].Mode == MODE_DISCHARGING) {
                     snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4.2fV  ",
@@ -1307,7 +1329,7 @@ void printBatteryValues(void) {
             /*
              * basic info on 2 lines on top of screen
              */
-            if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERN) {
+            if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERNAL_VOLTAGE) {
                 snprintf(sStringBuffer, sizeof sStringBuffer, "Probe %d %umAh ESR %4.2f\x81",
                         BatteryControl[IndexOfDisplayedProbe].ProbeNumber,
                         BatteryControl[IndexOfDisplayedProbe].BatteryInfo.CapacityMilliampereHour,
@@ -1369,7 +1391,7 @@ void printBatteryValues(void) {
             BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe],
             COLOR_BACKGROUND_DEFAULT);
 
-            if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERN) {
+            if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERNAL_VOLTAGE) {
                 tPosY += 1 + TEXT_SIZE_11_HEIGHT;
                 if (BatteryControl[IndexOfDisplayedProbe].Mode == MODE_DISCHARGING) {
                     snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4.2fV  ",
@@ -1421,7 +1443,7 @@ void drawAccuCapacitySettingsPage(void) {
             BatteryControl[IndexOfDisplayedProbe].ExternalAttenuatorFactor);
     TouchButtonSetExternalAttenuatorFactor.setCaption(StringExternalAttenuatorFactor, true);
 
-    if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERN) {
+    if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERNAL_VOLTAGE) {
         if (BatteryControl[IndexOfDisplayedProbe].Mode == MODE_CHARGING) {
             snprintf(&StringStopNominalCapacity[STRING_STOP_CAPACITY_NUMBER_INDEX], 5, "%4d",
                     BatteryControl[IndexOfDisplayedProbe].StopMilliampereHour);
@@ -1541,9 +1563,9 @@ void drawData(bool doClearBefore) {
         if (doClearBefore) {
             VoltageCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_VOLTAGE);
         }
-        // MAX line
+        // Voltage buffer
         VoltageCharts[IndexOfDisplayedProbe]->drawChartData(
-                (int16_t*) (BatteryControl[IndexOfDisplayedProbe].VoltageNoLoadDatabuffer
+                (int16_t*) (&BatteryControl[IndexOfDisplayedProbe].VoltageNoLoadDatabuffer[0]
                         + AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex
                                 * VoltageCharts[IndexOfDisplayedProbe]->getXGridSpacing()),
                 (int16_t*) &BatteryControl[IndexOfDisplayedProbe].VoltageNoLoadDatabuffer[BatteryControl[IndexOfDisplayedProbe].SampleCount],
@@ -1552,12 +1574,12 @@ void drawData(bool doClearBefore) {
     }
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ActualDataChart == CHART_DATA_BOTH
             || AccuCapDisplayControl[IndexOfDisplayedProbe].ActualDataChart == CHART_DATA_RESISTANCE) {
-        // MIN voltage line for mode external
-        if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERN) {
+        // No draw for mode external
+        if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERNAL_VOLTAGE) {
             if (doClearBefore) {
                 ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_RESISTANCE);
             }
-            // Milli-OHM line
+            // Milli-OHM buffer
             ResistanceCharts[IndexOfDisplayedProbe]->drawChartData(
                     (int16_t*) (&BatteryControl[IndexOfDisplayedProbe].ESRMilliohmDatabuffer[0]
                             + AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex

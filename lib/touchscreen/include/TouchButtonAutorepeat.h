@@ -50,7 +50,7 @@ public:
      */
     TouchButtonAutorepeat();
 #ifdef USE_BUTTON_POOL
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     static void reinitAllLocalAutorepeatButtonsForRemote(void);
 #endif
 #endif

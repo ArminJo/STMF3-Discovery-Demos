@@ -10,6 +10,25 @@
 
 // file:///E:/WORKSPACE_STM32/TouchScreenApps/html/index.html
 /* Includes ------------------------------------------------------------------*/
+/*
+ * Enabling program features dependent on display configuration
+ */
+//#define LOCAL_DISPLAY_EXISTS    // Activate, if a local display is attached and should be drawn simultaneously
+//#define USE_HY32D               // Activate, if local display is a HY32D / SSD1289 type. Otherwise a MI0283QT2 type is assumed.
+
+/*
+ * Settings to configure the BlueDisplay library and to reduce its size
+ */
+//#define BLUETOOTH_BAUD_RATE BAUD_115200  // Activate this, if you have reprogrammed the HC05 module for 115200, otherwise 9600 is used as baud rate
+//#define DO_NOT_NEED_BASIC_TOUCH_EVENTS // Disables basic touch events like down, move and up. Saves 620 bytes program memory and 36 bytes RAM
+#define USE_SIMPLE_SERIAL // Do not use the Serial object. Saves up to 1250 bytes program memory and 185 bytes RAM, if Serial is not used otherwise
+//#define BD_DRAW_TO_LOCAL_DISPLAY_TOO // Supports simultaneously drawing on a locally attached display. Not (yet) implemented for all commands!
+#include "BlueDisplay.hpp"
+
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO) && !defined(LOCAL_DISPLAY_EXISTS)
+#error BD_DRAW_TO_LOCAL_DISPLAY_TOO is defined but no local display seems to be attached since LOCAL_DISPLAY_EXISTS is not defined.
+#endif
+
 #include "Pages.h"
 #include "stm32f3DiscoveryLedsButtons.h"
 #include "stm32f3DiscoPeripherals.h"

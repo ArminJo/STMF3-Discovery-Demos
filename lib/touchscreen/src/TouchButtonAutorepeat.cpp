@@ -17,7 +17,7 @@
 #include "TouchButtonAutorepeat.h"
 #include "EventHandler.h"
 #include "timing.h"
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 #include "BlueDisplayProtocol.h"
 #include "BlueSerial.h"
 #include <string.h> // for strlen
@@ -178,7 +178,7 @@ TouchButtonAutorepeat * TouchButtonAutorepeat::allocAutorepeatButton() {
     return tButtonPointer;
 }
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 /*
  * is called once after reconnect, to build up a remote copy of all local buttons
  */

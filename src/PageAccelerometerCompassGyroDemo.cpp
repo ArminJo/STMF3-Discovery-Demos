@@ -259,12 +259,14 @@ void stopAccelerometerCompassPage(void) {
 
     USBD_Stop(&USBDDeviceHandle);
 
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     TouchButtonSetZero.deinit();
     TouchButtonClearScreen.deinit();
     TouchButtonAutorepeatAccScalePlus.deinit();
     TouchButtonAutorepeatAccScaleMinus.deinit();
     TouchSliderPitch.deinit();
     TouchSliderRoll.deinit();
+#endif
 }
 
 void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallbackInfo) {

@@ -10,6 +10,7 @@
  */
 
 #include "Pages.h" // must be first because of #include <stm32f3xx.h> for arm_math.h
+#include "TouchDSOGui.hpp" // include sources
 #include "TouchDSO.h"
 #ifndef LOCAL_DISPLAY_EXISTS
 #include "EventHandler.h"
@@ -149,7 +150,7 @@ void stopDSOPage(void) {
     registerSwipeEndCallback(NULL);
     registerTouchUpCallback(NULL);
 
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsDSO) / sizeof(TouchButtonsDSO[0]); ++i) {
         (*TouchButtonsDSO[i]).deinit();
@@ -160,7 +161,9 @@ void stopDSOPage(void) {
     TouchSliderVoltagePicker.deinit();
     TouchSliderTriggerLevel.deinit();
     TouchSliderBacklight.deinit();
+#endif
 
+#ifdef LOCAL_DISPLAY_EXISTS
     // restore normal behavior
     BlueDisplay1.setButtonsGlobalFlags(FLAG_BUTTON_GLOBAL_USE_DOWN_EVENTS_FOR_BUTTONS);
 

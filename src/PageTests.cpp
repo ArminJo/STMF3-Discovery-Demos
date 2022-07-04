@@ -84,6 +84,9 @@ void Mandel(uint16_t size_x, uint16_t size_y, uint16_t offset_x, uint16_t offset
             }
             BlueDisplay1.drawPixel(x, y, RGB(i * 8, i * 18, i * 13));
         }
+#ifdef HAL_WWDG_MODULE_ENABLED
+        Watchdog_reload();
+#endif
     }
 }
 
@@ -306,8 +309,10 @@ void loopTestsPage(void) {
  * cleanup on leaving this page
  */
 void stopTestsPage(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsTestPage) / sizeof(TouchButtonsTestPage[0]); ++i) {
         TouchButtonsTestPage[i]->deinit();
     }
+#endif
 }

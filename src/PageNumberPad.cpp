@@ -195,10 +195,12 @@ float getNumberFromNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButto
     while (!numberpadInputHasFinished) {
         checkAndHandleEvents();
     }
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     // free numberpad buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsNumberPad) / sizeof(TouchButtonsNumberPad[0]); ++i) {
         TouchButtonsNumberPad[i]->deinit();
     }
+#endif
     // to avoid end touch handling of releasing OK or Cancel button of numberpad
     sDisableTouchUpOnce = true;
     setTouchUpCallbackEnabled(true);

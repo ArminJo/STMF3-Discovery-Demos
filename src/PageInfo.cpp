@@ -445,10 +445,12 @@ void loopInfoPage(void) {
  * cleanup on leaving this page
  */
 void stopInfoPage(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsInfoPage) / sizeof(TouchButtonsInfoPage[0]); ++i) {
         TouchButtonsInfoPage[i]->deinit();
     }
+#endif
 }
 
 #endif

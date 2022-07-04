@@ -228,7 +228,7 @@ void startDACPage(void) {
     TouchButtonStartStop.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4, COLOR_RED, "Stop", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
     true, &doDACStop);
-    initMainHomeButtonWithPosition(BUTTON_WIDTH_3_POS_3, 0, false);
+    TouchButtonMainHome.setPosition(BUTTON_WIDTH_3_POS_3, 0);
 
     //2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
@@ -292,6 +292,9 @@ void loopDACPage(void) {
 }
 
 void stopDACPage(void) {
+    TouchButtonMainHome.setPosition(BUTTON_WIDTH_5_POS_5, 0);
+
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     TouchButtonStartStop.deinit();
     TouchButtonSetWaveform.deinit();
     TouchButtonAutorepeatFrequencyPlus.deinit();
@@ -299,5 +302,6 @@ void stopDACPage(void) {
     TouchSliderDACFrequency.deinit();
     TouchSliderAmplitude.deinit();
     TouchSliderOffset.deinit();
+#endif
 }
 

@@ -15,16 +15,19 @@
 #ifndef TOUCHSLIDER_H_
 #define TOUCHSLIDER_H_
 
-// should be globally set
-//#define REMOTE_DISPLAY_SUPPORTED
 #if defined(USE_HY32D)
 #include "SSD1289.h"
 #else
 #include "MI0283QT2.h"
 #endif
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#include "BDSlider.h"
+#  if defined(AVR)
 typedef uint8_t BDSliderHandle_t;
+#  else
+typedef uint16_t BDSliderHandle_t;
+#  endif
 class BDSlider;
 #endif
 
@@ -102,9 +105,9 @@ public:
      */
     TouchSlider(void);
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     ~TouchSlider(void);
-    static TouchSlider * getLocalSliderFromBDSliderHandle(BDSliderHandle_t aSliderHandleToSearchFor);
+    static TouchSlider* getLocalSliderFromBDSliderHandle(BDSliderHandle_t aSliderHandleToSearchFor);
     static void reinitAllLocalSlidersForRemote(void);
 #endif
 
@@ -121,12 +124,12 @@ public:
      * Member functions
      */
     void initSlider(uint16_t aPositionX, uint16_t aPositionY, uintForPgmSpaceSaving aBarWidth, uint16_t aBarLength,
-            uint16_t aThresholdValue, uint16_t aInitalValue, const char * aCaption, int8_t aTouchBorder, uint8_t aOptions,
-            void (*aOnChangeHandler)(TouchSlider *, uint16_t), const char * (*aValueHandler)(uint16_t));
+            uint16_t aThresholdValue, uint16_t aInitalValue, const char *aCaption, int8_t aTouchBorder, uint8_t aOptions,
+            void (*aOnChangeHandler)(TouchSlider*, uint16_t), const char* (*aValueHandler)(uint16_t));
     // Used for BDSlider
     void initSlider(uint16_t aPositionX, uint16_t aPositionY, uint8_t aBarWidth, uint16_t aBarLength, uint16_t aThresholdValue,
             int16_t aInitalValue, uint16_t aSliderColor, uint16_t aBarColor, uint8_t aOptions,
-            void (*aOnChangeHandler)(TouchSlider *, uint16_t));
+            void (*aOnChangeHandler)(TouchSlider*, uint16_t));
 
     void initSliderColors(uint16_t aSliderColor, uint16_t aBarColor, uint16_t aBarThresholdColor, uint16_t aBarBackgroundColor,
             uint16_t aCaptionColor, uint16_t aValueColor, uint16_t aValueCaptionBackgroundColor);
@@ -139,6 +142,7 @@ public:
     void activate(void);
     void deactivate(void);
 
+    void setPosition(int16_t aPositionX, int16_t aPositionY);
     uint16_t getPositionXRight(void) const;
     uint16_t getPositionYBottom(void) const;
 
@@ -157,19 +161,19 @@ public:
     void setValueAndDrawBar(int16_t aCurrentValue);
     int16_t getCurrentValue(void) const;
 
-    void setCaption(const char* aCaption);
+    void setCaption(const char *aCaption);
     void printCaption(void);
     int printValue(void);
-    int printValue(const char * aValueString);
+    int printValue(const char *aValueString);
     void setXOffsetValue(int16_t aXOffsetValue);
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
-    BDSlider * mBDSliderPtr;
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+    BDSlider *mBDSliderPtr;
 #endif
 
 private:
     // Start of list of touch slider
-    static TouchSlider * sSliderListStart;
+    static TouchSlider *sSliderListStart;
     /*
      * Defaults
      */
@@ -193,7 +197,7 @@ private:
     uint16_t mBarLength; //aMaxValue serves also as height
     uint16_t mThresholdValue; // Value for color change
     uintForRamSpaceSaving mBarWidth; // Size of border and bar
-    const char* mCaption; // No caption if NULL
+    const char *mCaption; // No caption if NULL
     uint8_t mTouchBorder; // extension of touch region
     uint8_t mFlags;
 
@@ -215,7 +219,7 @@ private:
 
     // misc
     void (*mOnChangeHandler)(TouchSlider*, uint16_t);
-    TouchSlider* mNextObject;
+    TouchSlider *mNextObject;
     const char* (*mValueHandler)(uint16_t); // provides the string to print
 
     int8_t checkParameterValues();

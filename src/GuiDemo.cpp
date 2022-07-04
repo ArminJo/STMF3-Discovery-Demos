@@ -211,7 +211,7 @@ void loopGuiDemo(void) {
 
 void stopGuiDemo(void) {
     delete[] frame;
-
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsGuiDemo) / sizeof(TouchButtonsGuiDemo[0]); ++i) {
         TouchButtonsGuiDemo[i]->deinit();
@@ -219,6 +219,7 @@ void stopGuiDemo(void) {
     TouchSliderGolSpeed.deinit();
     TouchSliderActionWithoutBorder.deinit();
     TouchSliderAction.deinit();
+#endif
 #ifdef LOCAL_DISPLAY_EXISTS
     deinitBacklightElements();
 #endif

@@ -65,7 +65,9 @@ void startBobsDemo(void) {
 }
 
 void stopBobsDemo(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     TouchButtonNextLevel.deinit();
+#endif
 }
 
 #pragma GCC diagnostic push

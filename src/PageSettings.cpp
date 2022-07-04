@@ -110,8 +110,6 @@ void drawSettingsPage(void) {
 #endif
     TouchButtonTogglePrintMode.drawButton();
     TouchButtonToggleTouchXYDisplay.drawButton();
-
-    initMainHomeButton(true);
 }
 
 void startSettingsPage(void) {
@@ -153,12 +151,14 @@ void loopSettingsPage(void) {
 
 void stopSettingsPage(void) {
 #ifdef LOCAL_DISPLAY_EXISTS
-    TouchButtonTPCalibration.deinit();
     deinitBacklightElements();
 #endif
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+    TouchButtonTPCalibration.deinit();
     TouchButtonTogglePrintMode.deinit();
     TouchButtonToggleTouchXYDisplay.deinit();
     deinitClockSettingElements();
+#endif
 }
 
 /**
@@ -199,9 +199,11 @@ void initClockSettingElements(void) {
 }
 
 void deinitClockSettingElements(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
     TouchButtonSetDate.deinit();
     TouchButtonAutorepeatDate_Plus.deinit();
     TouchButtonAutorepeatDate_Minus.deinit();
+#endif
 }
 
 void drawClockSettingElements(void) {

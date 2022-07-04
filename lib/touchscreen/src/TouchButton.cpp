@@ -31,7 +31,7 @@
 #include "EventHandler.h"
 #include "AssertErrorAndMisc.h"
 #include "stm32fx0xPeripherals.h"// for FeedbackToneOK
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 #include "BlueDisplayProtocol.h"
 #include "BlueSerial.h"
 #include "BlueDisplay.h"
@@ -107,7 +107,7 @@ void TouchButton::setDefaultCaptionColor(uint16_t aDefaultCaptionColor) {
     sDefaultCaptionColor = aDefaultCaptionColor;
 }
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 TouchButton * TouchButton::getLocalButtonFromBDButtonHandle(BDButtonHandle_t aButtonHandleToSearchFor) {
     TouchButton * tButtonPointer = sButtonListStart;
 // walk through list
@@ -315,7 +315,7 @@ bool TouchButton::checkButton(uint16_t aTouchPositionX, uint16_t aTouchPositionY
             setValueAndDraw(!mValue);
         }
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
         if ((mFlags & FLAG_USE_BDBUTTON_FOR_CALLBACK)
                 && (&TouchButtonAutorepeat::autorepeatTouchHandler != (void (*)(TouchButtonAutorepeat *, int16_t)) mOnTouchHandler)) {
             mOnTouchHandler((TouchButton *) this->mBDButtonPtr, mValue);

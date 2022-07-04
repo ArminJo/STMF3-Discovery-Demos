@@ -13,8 +13,8 @@
 
 //#define DEBUG_MINIMAL_VERSION // ???since debugging is not possible if Flash is almost fully occupied ???
 // Landscape format
-const unsigned int REMOTE_DISPLAY_HEIGHT = 240;
-const unsigned int REMOTE_DISPLAY_WIDTH = 320;
+#define REMOTE_DISPLAY_HEIGHT   240
+#define REMOTE_DISPLAY_WIDTH    320
 
 #include "BlueDisplay.h"
 #include "main.h" // for StringBuffer
@@ -84,7 +84,7 @@ extern TouchSlider TouchSliderHorizontal2;
 
 void doMainMenuHomeButton(BDButton * aTheTouchedButton, int16_t aValue);
 void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue);
-#endif
+#endif // LOCAL_DISPLAY_EXISTS
 
 // for loop timings
 extern uint32_t MillisLastLoop;
@@ -98,8 +98,6 @@ void startMainMenuPage(void);
 void loopMainMenuPage(void);
 void stopMainMenuPage(void);
 void backToMainMenu(void);
-void initMainHomeButtonWithPosition(const uint16_t aPositionX, const uint16_t aPositionY, bool doDraw);
-void initMainHomeButton(bool doDraw);
 
 #define COLOR_PAGE_INFO COLOR_RED
 
@@ -114,7 +112,7 @@ void initBacklightElements(void);
 void deinitBacklightElements(void);
 void drawBacklightElements(void);
 void doBacklightSlider(BDSlider * aTheTouchedSlider, uint16_t aBrightness);
-#endif
+#endif // LOCAL_DISPLAY_EXISTS
 
 void initClockSettingElements(void);
 void deinitClockSettingElements(void);

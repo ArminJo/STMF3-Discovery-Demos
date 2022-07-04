@@ -179,7 +179,6 @@ extern "C" void TIM1_BRK_TIM15_IRQHandler(void) {
 
 void drawIRPage(void) {
     BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
-    initMainHomeButton(true);
     // skip last button until needed
     for (unsigned int i = 0; i < NUMBER_OF_IR_BUTTONS - 1; ++i) {
         TouchButtonsIRSend[i].drawButton();
@@ -391,6 +390,7 @@ void loopIRPage(void) {
  * cleanup on leaving this page
  */
 void stopIRPage(void) {
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 // free buttons
     for (unsigned int i = 0; i < NUMBER_OF_IR_BUTTONS; ++i) {
         TouchButtonsIRSend[i].deinit();
@@ -402,6 +402,7 @@ void stopIRPage(void) {
     TouchSliderVelocity.deinit();
     TouchSliderPitch.deinit();
     TouchSliderYaw.deinit();
+#endif
 
     IR_Timer_Stop();
 //	SYSCFG_I2CFastModePlusConfig(SYSCFG_I2CFastModePlus_PB9, DISABLE);

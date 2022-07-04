@@ -28,7 +28,7 @@
 		<link>
 			<name>system/CommonTables</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/Elektro/STM32Cube_FW_F3/Drivers/CMSIS/DSP_Lib/Source/CommonTables</locationURI>
+			<location>E:/Elektro/STM32Cube_FW_F3/Drivers/CMSIS/DSP_Lib/Source/CommonTables</location>
 		</link>
 		<link>
 			<name>system/STM32F3-Discovery</name>
@@ -43,7 +43,7 @@
 		<link>
 			<name>system/TransformFunctions</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/Elektro/STM32Cube_FW_F3/Drivers/CMSIS/DSP_Lib/Source/TransformFunctions</locationURI>
+			<location>E:/Elektro/STM32Cube_FW_F3/Drivers/CMSIS/DSP_Lib/Source/TransformFunctions</location>
 		</link>
 		<link>
 			<name>system/Components/l3gd20</name>

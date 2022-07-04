@@ -34,7 +34,7 @@
 #define failParamMessage(wrongParam,message) void()
 #endif
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 #include "BlueDisplayProtocol.h"
 #include "BlueSerial.h"
 #endif
@@ -60,7 +60,7 @@ uint16_t TouchSlider::sDefaultValueCaptionBackgroundColor = SLIDER_DEFAULT_CAPTI
 
 uint8_t TouchSlider::sDefaultTouchBorder = SLIDER_DEFAULT_TOUCH_BORDER;
 
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
 TouchSlider * TouchSlider::getLocalSliderFromBDSliderHandle(BDSliderHandle_t aSliderHandleToSearchFor) {
     TouchSlider * tSliderPointer = sSliderListStart;
 // walk through list
@@ -610,7 +610,7 @@ bool TouchSlider::checkSlider(uint16_t aTouchPositionX, uint16_t aTouchPositionY
     if (tActualTouchValue != mActualTouchValue) {
         mActualTouchValue = tActualTouchValue;
         if (mOnChangeHandler != NULL) {
-#ifdef REMOTE_DISPLAY_SUPPORTED
+#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
             if (mFlags & FLAG_USE_BDSLIDER_FOR_CALLBACK) {
                 mOnChangeHandler((TouchSlider *) this->mBDSliderPtr, tActualTouchValue);
                 // Synchronize remote slider
@@ -680,6 +680,15 @@ void TouchSlider::setValueAndDrawBar(int16_t aCurrentValue) {
 
 void TouchSlider::setXOffsetValue(int16_t aXOffsetValue) {
     mXOffsetValue = aXOffsetValue;
+}
+
+/**
+ * @param aPositionX - Determines upper left corner
+ * @param aPositionY - Determines upper left corner
+ */
+void TouchSlider::setPosition(int16_t aPositionX, int16_t aPositionY) {
+    mPositionX = aPositionX;
+    mPositionY = aPositionY;
 }
 
 uint16_t TouchSlider::getPositionXRight(void) const {

@@ -23,8 +23,8 @@
  */
 
 // Landscape format
-static const unsigned int LOCAL_DISPLAY_HEIGHT = 240;
-static const unsigned int LOCAL_DISPLAY_WIDTH  = 320;
+#define LOCAL_DISPLAY_HEIGHT    240
+#define LOCAL_DISPLAY_WIDTH     320
 
 /*
  * Backlight values in percent
@@ -66,7 +66,7 @@ private:
 
 // The instance provided by the class itself
 extern SSD1289 LocalDisplay;
-#endif
+#endif // __cplusplus
 
 #ifdef __cplusplus
 extern "C" {

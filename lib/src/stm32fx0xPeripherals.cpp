@@ -12,6 +12,8 @@
 #include "BlueDisplay.h" // for WWDG_IRQHandler
 
 #include "timing.h"
+#include "pitches.h" // for playEndTone
+
 #include <stdio.h>
 /** @addtogroup Peripherals_Library
  * @{
@@ -1028,7 +1030,8 @@ void RTC_setMagicNumber(void) {
 /**
  *
  * @return true if magic number valid
- */bool RTC_checkMagicNumber(void) {
+ */
+bool RTC_checkMagicNumber(void) {
     HAL_PWR_EnableBkUpAccess();
 // Read magic number
     uint32_t tMagic = HAL_RTCEx_BKUPRead(&RTCHandle, RTC_BKP_DR1);
@@ -1343,12 +1346,12 @@ void FeedbackTone(unsigned int aFeedbackType) {
     }
 }
 
-void EndTone(void) {
-    tone(880, 1000);
+void playEndTone(void) {
+    tone(NOTE_A5, 1000);
     delayMillis(1000);
-    tone(660, 1000);
+    tone(NOTE_E5, 1000);
     delayMillis(1000);
-    tone(440, 1000);
+    tone(NOTE_A4, 1000);
 }
 
 #define MICROSD_CS_PIN                         GPIO_PIN_5
