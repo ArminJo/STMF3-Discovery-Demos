@@ -19,8 +19,8 @@
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
@@ -47,6 +47,9 @@ typedef uint16_t color16_t;
 #define COLOR16(r,g,b) ((color16_t)(((r&0xF8)<<8)|((g&0xFC)<<3)|((b&0xF8)>>3))) //5 red | 6 green | 5 blue
 
 #define COLOR16_WHITE     ((color16_t)0xFFFF)
+#define COLOR16_DARK_GREY ((color16_t)0x7DEF)
+#define COLOR16_GREY      ((color16_t)0x39E7)
+#define COLOR16_LIGHT_GREY ((color16_t)0x18E3)
 // 01 because 0 is used as flag (e.g. in touch button for default color)
 #define COLOR16_BLACK     ((color16_t)0X0001)
 #define COLOR16_RED       ((color16_t)0xF800)
@@ -60,7 +63,7 @@ typedef uint16_t color16_t;
 
 // deprecated
 typedef uint16_t Color_t __attribute__ ((deprecated ("Renamed to color16_t")));
-#define COLOR_WHITE     ((color16_t)0xFFFF)
+
 // 01 because 0 is used as flag (e.g. in touch button for default color)
 #define COLOR_BLACK     ((color16_t)0X0001)
 #define COLOR_RED       ((color16_t)0xF800)
@@ -69,7 +72,7 @@ typedef uint16_t Color_t __attribute__ ((deprecated ("Renamed to color16_t")));
 #define COLOR_DARK_BLUE ((color16_t)0x0014)
 #define COLOR_YELLOW    ((color16_t)0XFFE0)
 #define COLOR_ORANGE    ((color16_t)0XFE00)
-#define COLOR_PURPLE   ((color16_t)0xF81F)
+#define COLOR_PURPLE    ((color16_t)0xF81F)
 #define COLOR_CYAN      ((color16_t)0x07FF)
 #define COLOR_NO_BACKGROUND   ((color16_t)0XFFFE)
 #define BLUEMASK 0x1F
@@ -77,7 +80,6 @@ typedef uint16_t Color_t __attribute__ ((deprecated ("Renamed to color16_t")));
 #define GET_GREEN(rgb)  ((rgb & 0x07E0) >> 3)
 #define GET_BLUE(rgb)   ((rgb & 0x001F) << 3)
 #define RGB(r,g,b)      ((color16_t)(((r&0xF8)<<8)|((g&0xFC)<<3)|((b&0xF8)>>3))) //5 red | 6 green | 5 blue
-#define COLOR16(r,g,b)  ((color16_t)(((r&0xF8)<<8)|((g&0xFC)<<3)|((b&0xF8)>>3))) //5 red | 6 green | 5 blue
 // end deprecated
 
 /*

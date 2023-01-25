@@ -22,11 +22,7 @@ extern FATFS Fatfs[1];
  * Miscellaneous buffers
  */
 // for printf etc.
-#ifdef AVR
-#define SIZEOF_STRINGBUFFER 50
-#else
 #define SIZEOF_STRINGBUFFER 240
-#endif
 extern char sStringBuffer[SIZEOF_STRINGBUFFER];
 
 #endif /* MAIN_H_ */

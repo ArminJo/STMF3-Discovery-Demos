@@ -577,7 +577,7 @@ bool Chart::drawChartDataFloat(const float *aDataPointer, const float *aDataEndP
 
         uint16_t tDisplayValue = tYDisplayFactor * (tInputValue - tYOffset);
         // clip to bottom line
-        if (tDisplayValue < 0) {
+        if (tYOffset > tInputValue) {
             tDisplayValue = 0;
             tRetValue = false;
         }
@@ -993,7 +993,7 @@ void showChartDemo(void) {
      */
     ChartExample.disableXLabel();
     ChartExample.disableYLabel();
-    ChartExample.initChartColors(COLOR_RED, COLOR_RED, CHART_DEFAULT_GRID_COLOR, COLOR_RED, COLOR_WHITE);
+    ChartExample.initChartColors(COLOR16_RED, COLOR16_RED, CHART_DEFAULT_GRID_COLOR, COLOR16_RED, COLOR16_WHITE);
     ChartExample.initChart(5, BlueDisplay1.getDisplayHeight() - 20, CHART_1_LENGTH, 90, 2, true, 20, 20);
     ChartExample.drawAxesAndGrid();
 
@@ -1021,7 +1021,7 @@ void showChartDemo(void) {
     }
     tPtr2--;
     *tPtr2 = 30;
-    ChartExample.initChartColors(COLOR_RED, COLOR_BLUE, COLOR_GREEN, COLOR_BLACK, COLOR_WHITE);
+    ChartExample.initChartColors(COLOR16_RED, COLOR16_BLUE, COLOR16_GREEN, COLOR16_BLACK, COLOR16_WHITE);
     ChartExample.drawChartData(tChartBufferPtr, CHART_2_LENGTH, CHART_MODE_LINE);
 
     /*

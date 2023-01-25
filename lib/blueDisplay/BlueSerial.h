@@ -1,13 +1,7 @@
 /*
  * BlueSerial.h
  *
- *   SUMMARY
- *  Blue Display is an Open Source Android remote Display for Arduino etc.
- *  It receives basic draw requests from Arduino etc. over Bluetooth and renders it.
- *  It also implements basic GUI elements as buttons and sliders.
- *  GUI callback, touch and sensor events are sent back to Arduino.
- *
- *  Copyright (C) 2014  Armin Joachimsmeyer
+ *  Copyright (C) 2014-2023  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of BlueDisplay.
@@ -26,8 +20,8 @@
  *
  */
 
-#ifndef BLUESERIAL_H_
-#define BLUESERIAL_H_
+#ifndef _BLUESERIAL_H
+#define _BLUESERIAL_H
 
 #ifdef STM32F10X
 #include <stm32f1xx.h>
@@ -143,4 +137,4 @@ void sendUSARTBufferNoSizeCheck(uint8_t * aParameterBufferPointer, size_t aParam
         uint8_t * aDataBufferPointer, size_t aDataBufferLength);
 void checkAndHandleMessageReceived(void);
 
-#endif /* BLUESERIAL_H_ */
+#endif // _BLUESERIAL_H

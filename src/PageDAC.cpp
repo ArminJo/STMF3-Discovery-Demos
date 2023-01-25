@@ -1,11 +1,24 @@
 /*
  * PageDAC.cpp
  *
- * @date 16.01.2013
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.0.0
+ *
+ *  Copyright (C) 2013-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "Pages.h"
@@ -15,7 +28,7 @@
 #define DAC_DHR12R2_ADDRESS      0x40007414
 #define DAC_DHR8R1_ADDRESS       0x40007410
 
-#define COLOR_BACKGROUND_FREQ COLOR_WHITE
+#define COLOR_BACKGROUND_FREQ COLOR16_WHITE
 
 #define SET_DATE_STRING_INDEX 4 // index of variable part in StringSetDateCaption
 #define VERTICAL_SLIDER_MAX_VALUE 180
@@ -24,8 +37,8 @@
 #define DAC_START_AMPLITUDE 2048
 #define DAC_START_FREQ_SLIDER_VALUE (8 * 20) // 8 = log 2(256)
 /* Private variables ---------------------------------------------------------*/
-const uint16_t Sine12bit[32] = { 2047, 2447, 2831, 3185, 3498, 3750, 3939, 4056, 4095, 4056, 3939, 3750, 3495, 3185,
-        2831, 2447, 2047, 1647, 1263, 909, 599, 344, 155, 38, 0, 38, 155, 344, 599, 909, 1263, 1647 };
+const uint16_t Sine12bit[32] = { 2047, 2447, 2831, 3185, 3498, 3750, 3939, 4056, 4095, 4056, 3939, 3750, 3495, 3185, 2831, 2447,
+        2047, 1647, 1263, 909, 599, 344, 155, 38, 0, 38, 155, 344, 599, 909, 1263, 1647 };
 
 BDButton TouchButtonStartStop;
 BDButton TouchButtonSetWaveform;
@@ -36,7 +49,7 @@ static BDButton TouchButtonAutorepeatFrequencyMinus;
 const char StringTriangle[] = "Triangle";
 const char StringNoise[] = "Noise";
 const char StringSine[] = "Sine";
-const char * const WaveformStrings[] = { StringTriangle, StringNoise, StringSine };
+const char *const WaveformStrings[] = { StringTriangle, StringNoise, StringSine };
 
 static uint16_t sAmplitude;
 static uint32_t sFrequency;
@@ -67,7 +80,7 @@ uint32_t actualTimerAutoreload = 0x100;
 
 /* Private functions ---------------------------------------------------------*/
 
-static void doChangeDACWaveform(BDButton * aTheTouchedButton, int16_t aValue) {
+static void doChangeDACWaveform(BDButton *aTheTouchedButton, int16_t aValue) {
     sActualWaveform++;
     if (sActualWaveform == WAVEFORM_NOISE) {
         DAC_ModeNoise();
@@ -121,17 +134,17 @@ static void ComputeFrequencyAndSetTimer(uint16_t aReloadValue, bool aSetTimer) {
     }
     BlueDisplay1.drawText(FREQUENCY_SLIDER_START_X + MAX_SLIDER_VALUE - 8 * TEXT_SIZE_11_WIDTH,
     BUTTON_HEIGHT_4_LINE_2 + (3 * DAC_SLIDER_SIZE) + 4 + getTextAscend(TEXT_SIZE_11), sStringBuffer,
-    TEXT_SIZE_11, COLOR_BLUE, COLOR_BACKGROUND_FREQ);
+    TEXT_SIZE_11, COLOR16_BLUE, COLOR_BACKGROUND_FREQ);
 }
 
-void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
+void doChangeDACFrequency(BDButton *aTheTouchedButton, int16_t aValue) {
 
     uint32_t tTimerReloadValue = sTimerReloadValue + aValue;
     if (tTimerReloadValue < DAC_TIMER_MIN_RELOAD_VALUE) {
         FeedbackTone(FEEDBACK_TONE_ERROR);
         return;
     }
-    FeedbackToneOK();
+    playLocalFeedbackTone();
     ComputeFrequencyAndSetTimer(tTimerReloadValue, true);
     int tNewSliderValue = sLastFrequencySliderValue;
     // check if slider value must be updated
@@ -159,7 +172,7 @@ void doChangeDACFrequency(BDButton * aTheTouchedButton, int16_t aValue) {
     }
 }
 
-void doDACVolumeSlider(BDSlider * aTheTouchedSlider, uint16_t aAmplitude) {
+void doDACVolumeSlider(BDSlider *aTheTouchedSlider, uint16_t aAmplitude) {
     DAC_TriangleAmplitude(aAmplitude / 16);
     sLastAmplitudeSliderValue = (aAmplitude / 16) * 16;
 
@@ -173,7 +186,7 @@ void doDACVolumeSlider(BDSlider * aTheTouchedSlider, uint16_t aAmplitude) {
     aTheTouchedSlider->printValue(sStringBuffer);
 }
 
-void doDACOffsetSlider(BDSlider * aTheTouchedSlider, uint16_t aOffset) {
+void doDACOffsetSlider(BDSlider *aTheTouchedSlider, uint16_t aOffset) {
     sLastOffsetSliderValue = aOffset;
 //	if (sActualWaveform == WAVEFORM_TRIANGLE) {
     sOffset = aOffset * (4096 / VERTICAL_SLIDER_MAX_VALUE);
@@ -185,20 +198,17 @@ void doDACOffsetSlider(BDSlider * aTheTouchedSlider, uint16_t aOffset) {
 //	}
 }
 
-void doDACFrequencySlider(BDSlider * aTheTouchedSlider, uint16_t aFrequency) {
+void doDACFrequencySlider(BDSlider *aTheTouchedSlider, uint16_t aFrequency) {
     sLastFrequencySliderValue = aFrequency;
     ComputeFrequencyAndSetTimer(ComputeReloadValue(aFrequency), true);
 }
 
-void doDACStop(BDButton * aTheTouchedButton, int16_t aValue) {
+void doDACStop(BDButton *aTheTouchedButton, int16_t aValue) {
     if (aValue) {
         DAC_Stop();
-        aTheTouchedButton->setCaption("Start");
     } else {
-        aTheTouchedButton->setCaption("Stop");
         DAC_Start();
     }
-    aTheTouchedButton->setValueAndDraw(!aValue);
 }
 
 void drawDACPage(void) {
@@ -225,55 +235,54 @@ void initDACPage(void) {
 void startDACPage(void) {
     //1. row
     int tPosY = 0;
-    TouchButtonStartStop.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Stop", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
-    true, &doDACStop);
+    TouchButtonStartStop.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Start", TEXT_SIZE_22,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, true, &doDACStop);
+    TouchButtonStartStop.setCaptionForValueTrue("Stop");
+
     TouchButtonMainHome.setPosition(BUTTON_WIDTH_3_POS_3, 0);
 
     //2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
     // Frequency slider
     TouchSliderDACFrequency.init(FREQUENCY_SLIDER_START_X, tPosY, DAC_SLIDER_SIZE, MAX_SLIDER_VALUE, MAX_SLIDER_VALUE,
-            sLastFrequencySliderValue, COLOR_BLUE, COLOR_GREEN, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_IS_HORIZONTAL,
+            sLastFrequencySliderValue, COLOR16_BLUE, COLOR16_GREEN, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_IS_HORIZONTAL,
             &doDACFrequencySlider);
-    TouchSliderDACFrequency.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR_RED,
+    TouchSliderDACFrequency.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR16_RED,
     COLOR_BACKGROUND_DEFAULT);
     TouchSliderDACFrequency.setCaption("Frequency");
     TouchSliderDACFrequency.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_LEFT, 4,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
     // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonSetWaveform.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4,
-    COLOR_RED, StringTriangle, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doChangeDACWaveform);
+    TouchButtonSetWaveform.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, StringTriangle,
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doChangeDACWaveform);
 
     TouchButtonAutorepeatFrequencyMinus.init( FREQUENCY_SLIDER_START_X + 6, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4,
-    COLOR_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
-            &doChangeDACFrequency);
-    TouchButtonAutorepeatFrequencyPlus.init(230, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4, COLOR_RED, "+", TEXT_SIZE_22,
+    COLOR16_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1, &doChangeDACFrequency);
+    TouchButtonAutorepeatFrequencyPlus.init(230, tPosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_4, COLOR16_RED, "+", TEXT_SIZE_22,
             FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeDACFrequency);
     TouchButtonAutorepeatFrequencyMinus.setButtonAutorepeatTiming(600, 100, 10, 20);
     TouchButtonAutorepeatFrequencyPlus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
 //Amplitude slider
     TouchSliderAmplitude.init(5, 20, DAC_SLIDER_SIZE, VERTICAL_SLIDER_MAX_VALUE, VERTICAL_SLIDER_MAX_VALUE,
-            sLastAmplitudeSliderValue, COLOR_BLUE, COLOR_GREEN, FLAG_SLIDER_SHOW_BORDER, &doDACVolumeSlider);
-    TouchSliderAmplitude.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_LEFT, 4, COLOR_RED,
+            sLastAmplitudeSliderValue, COLOR16_BLUE, COLOR16_GREEN, FLAG_SLIDER_SHOW_BORDER, &doDACVolumeSlider);
+    TouchSliderAmplitude.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_LEFT, 4, COLOR16_RED,
     COLOR_BACKGROUND_DEFAULT);
     TouchSliderAmplitude.setCaption("Amplitude");
     TouchSliderAmplitude.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4 + TEXT_SIZE_11,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
 //Offset slider
     TouchSliderOffset.init(BlueDisplay1.getDisplayWidth() - (3 * DAC_SLIDER_SIZE) - 1, 20, DAC_SLIDER_SIZE,
-    VERTICAL_SLIDER_MAX_VALUE, VERTICAL_SLIDER_MAX_VALUE / 2, sLastOffsetSliderValue, COLOR_BLUE,
-    COLOR_GREEN, FLAG_SLIDER_SHOW_BORDER, &doDACOffsetSlider);
-    TouchSliderOffset.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_RIGHT, 4, COLOR_RED,
+    VERTICAL_SLIDER_MAX_VALUE, VERTICAL_SLIDER_MAX_VALUE / 2, sLastOffsetSliderValue, COLOR16_BLUE,
+    COLOR16_GREEN, FLAG_SLIDER_SHOW_BORDER, &doDACOffsetSlider);
+    TouchSliderOffset.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_RIGHT, 4, COLOR16_RED,
     COLOR_BACKGROUND_DEFAULT);
     TouchSliderOffset.setCaption("Offset");
     TouchSliderOffset.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4 + TEXT_SIZE_11,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
     // for local slider
     TouchSliderOffset.setXOffsetValue(-(2 * TEXT_SIZE_11_WIDTH));
 
@@ -284,7 +293,7 @@ void startDACPage(void) {
     ComputeFrequencyAndSetTimer(ComputeReloadValue(sLastFrequencySliderValue), true);
     DAC_Start();
     // to avoid counting touch move/up for Amplitude slider.
-    sDisableUntilTouchUpIsDone = true;
+    sDisableMoveEventsUntilTouchUpIsDone = true;
 }
 
 void loopDACPage(void) {
@@ -294,7 +303,7 @@ void loopDACPage(void) {
 void stopDACPage(void) {
     TouchButtonMainHome.setPosition(BUTTON_WIDTH_5_POS_5, 0);
 
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonStartStop.deinit();
     TouchButtonSetWaveform.deinit();
     TouchButtonAutorepeatFrequencyPlus.deinit();

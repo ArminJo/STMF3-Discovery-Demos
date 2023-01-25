@@ -1,13 +1,7 @@
 /*
- * BlueSerial.cpp
+ * BlueSerial.hpp
  *
- *   SUMMARY
- *  Blue Display is an Open Source Android remote Display for Arduino etc.
- *  It receives basic draw requests from Arduino etc. over Bluetooth and renders it.
- *  It also implements basic GUI elements as buttons and sliders.
- *  GUI callback, touch and sensor events are sent back to Arduino.
- *
- *  Copyright (C) 2014  Armin Joachimsmeyer
+ *  Copyright (C) 2014-2023  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of BlueDisplay.
@@ -25,6 +19,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/gpl.html>.
  *
  */
+
+#ifndef _BLUESERIAL_HPP
+#define _BLUESERIAL_HPP
 
 #include "BlueSerial.h"
 #include "BlueDisplay.h"
@@ -781,4 +778,4 @@ extern "C" void DMA1_Channel2_IRQHandler(void) {
         //DMA_ClearITPendingBit(DMA1_IT_HT2);
     }
 }
-
+#endif // _BLUESERIAL_HPP

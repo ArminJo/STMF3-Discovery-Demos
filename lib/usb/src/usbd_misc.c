@@ -10,8 +10,8 @@
  */
 
 #include "usbd_misc.h"
-#include "tinyPrint.h"
 #include "main.h" // for StringBuffer
+#include "LocalGUI/LocalTinyPrint.h"
 
 #include "timing.h"
 #include "usbd_hid.h"

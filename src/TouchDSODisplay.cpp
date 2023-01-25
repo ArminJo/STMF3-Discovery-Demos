@@ -378,7 +378,7 @@ void drawFFT(void) {
     // display with Xscale = 2
     ChartFFT.initChart(4 * TEXT_SIZE_11_WIDTH, REMOTE_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT, FFT_SIZE, 32 * 5, 2,
     true, 64, 32);
-    ChartFFT.initChartColors(COLOR_FFT_DATA, COLOR_RED, RGB(0xC0, 0xC0, 0xC0), COLOR_RED, COLOR_BACKGROUND_DSO);
+    ChartFFT.initChartColors(COLOR_FFT_DATA, COLOR16_RED, RGB(0xC0, 0xC0, 0xC0), COLOR16_RED, COLOR_BACKGROUND_DSO);
     // compute Label for x Frequency axis
     char tFreqUnitString[4] = { " Hz" };
     float tTimebaseExactValue = getDataBufferTimebaseExactValueMicros(MeasurementControl.TimebaseEffectiveIndex);
@@ -413,11 +413,11 @@ void drawFFT(void) {
         tFreqDeltaHalf = 62500;
     }
     snprintf(sStringBuffer, sizeof(sStringBuffer), "%0.2f%s", tFreqAtMaxBin, tFreqUnitString);
-    BlueDisplay1.drawText(140, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_22, COLOR_RED,
+    BlueDisplay1.drawText(140, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_22, COLOR16_RED,
     COLOR_BACKGROUND_DSO);
     tFreqDeltaHalf /= tTimebaseExactValue; // = tFreqAtBin32 / 64;
     snprintf(sStringBuffer, sizeof(sStringBuffer), "[\xB1%0.2f%s]", tFreqDeltaHalf, tFreqUnitString);
-    BlueDisplay1.drawText(140, 6 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR_RED,
+    BlueDisplay1.drawText(140, 6 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR16_RED,
     COLOR_BACKGROUND_DSO);
 }
 
@@ -575,22 +575,22 @@ void printInfo(bool aRecomputeValues) {
                     getFloatFromRawValue(MeasurementControl.RawValueMin), tPrecision,
                     getFloatFromRawValue(MeasurementControl.RawValueMax), tPrecision, getFloatFromRawValue(tValueDiff));
         }
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC, sStringBuffer, FONT_SIZE_INFO_LONG - 1, COLOR_BLACK,
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC, sStringBuffer, FONT_SIZE_INFO_LONG - 1, COLOR16_BLACK,
         COLOR_INFO_BACKGROUND);
 
         // Second line
         // XScale + Timebase + MicrosPerPeriod + Hertz + Channel
-        const char * tChannelString = ADCInputMUXChannelStrings[MeasurementControl.ADCInputMUXChannelIndex];
+        const char * tChannelString = ADCInputMUXChannelStrings[MeasurementControl.ADMUXChannel];
 #ifdef LOCAL_DISPLAY_EXISTS
         if (MeasurementControl.ADS7846ChannelsAsDatasource) {
-            tChannelString = ADS7846ChannelStrings[MeasurementControl.ADCInputMUXChannelIndex];
+            tChannelString = ADS7846ChannelStrings[MeasurementControl.ADMUXChannel];
         }
 #endif
         getScaleFactorAsString(&sStringBuffer[40], DisplayControl.XScale);
         snprintf(sStringBuffer, sizeof sStringBuffer, "%s %4u%cs %s %s", &sStringBuffer[40], tUnitsPerGrid, tTimebaseUnitChar,
                 tBufferForPeriodAndFrequency, tChannelString);
         BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + FONT_SIZE_INFO_LONG, sStringBuffer, FONT_SIZE_INFO_LONG,
-        COLOR_BLACK, COLOR_INFO_BACKGROUND);
+        COLOR16_BLACK, COLOR_INFO_BACKGROUND);
 
         // Third line
         // Trigger: Slope + Mode + Level + FFT max frequency - Empty space after string is needed for voltage picker value
@@ -628,7 +628,7 @@ void printInfo(bool aRecomputeValues) {
         snprintf(sStringBuffer, sizeof sStringBuffer, "Trigg: %c %c %5.*fV %s", tSlopeChar, tTriggerAutoChar, tPrecision - 1,
                 getFloatFromRawValue(MeasurementControl.RawTriggerLevel), tBufferForPeriodAndFrequency);
         BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + (2 * FONT_SIZE_INFO_LONG), sStringBuffer,
-        FONT_SIZE_INFO_LONG, COLOR_BLACK, COLOR_INFO_BACKGROUND);
+        FONT_SIZE_INFO_LONG, COLOR16_BLACK, COLOR_INFO_BACKGROUND);
 
         // Debug infos
 //		char tTriggerTimeoutChar = 0x20; // space
@@ -644,7 +644,7 @@ void printInfo(bool aRecomputeValues) {
 //		snprintf(StringBuffer, sizeof StringBuffer, "Min%#X Average%#X Max%#X", MeasurementControl.ValueMin,
 //				MeasurementControl.ValueAverage, MeasurementControl.ValueMax);
 //
-//		BlueDisplay1.drawText(INFO_LEFT_MARGIN, INFO_UPPER_MARGIN + (3 * TEXT_SIZE_11_HEIGHT), StringBuffer, 1, COLOR_BLUE, COLOR_INFO_BACKGROUND);
+//		BlueDisplay1.drawText(INFO_LEFT_MARGIN, INFO_UPPER_MARGIN + (3 * TEXT_SIZE_11_HEIGHT), StringBuffer, 1, COLOR16_BLUE, COLOR_INFO_BACKGROUND);
         // Debug end
 
     } else {
@@ -665,7 +665,7 @@ void printInfo(bool aRecomputeValues) {
         }
 #endif
 
-        BlueDisplay1.drawText(0, FONT_SIZE_INFO_SHORT_ASC, sStringBuffer, FONT_SIZE_INFO_SHORT, COLOR_BLACK,
+        BlueDisplay1.drawText(0, FONT_SIZE_INFO_SHORT_ASC, sStringBuffer, FONT_SIZE_INFO_SHORT, COLOR16_BLACK,
         COLOR_INFO_BACKGROUND);
     }
 }
@@ -693,7 +693,7 @@ void printTriggerInfo(void) {
         tFontsize = FONT_SIZE_INFO_LONG;
     }
 
-    BlueDisplay1.drawText(tXPos, tYPos, sStringBuffer, tFontsize, COLOR_BLACK, COLOR_INFO_BACKGROUND);
+    BlueDisplay1.drawText(tXPos, tYPos, sStringBuffer, tFontsize, COLOR16_BLACK, COLOR_INFO_BACKGROUND);
 }
 
 /*******************************

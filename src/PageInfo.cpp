@@ -3,27 +3,34 @@
  * for STM32F3_DISCO it consists of multiple pages,
  * for others it consists only of the system info page
  *
- * @date 16.03.2013
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.5.0
+ *
+ *  Copyright (C) 2013-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "Pages.h"
-#include "EventHandler.h"
+#include "LocalDisplay/SSD1289.h" // for readPixel()
 
-#include <string.h>
 #include <locale.h>
-#include <stdlib.h> // for malloc
 
 #ifdef USE_STM32F3_DISCO
-#include "l3gdc20_lsm303dlhc_utils.h"
-
 extern "C" {
-#include "stm32f3_discovery.h"
 #include "diskio.h"
-#include "ff.h"
 #include "usbd_misc.h"
 }
 #endif
@@ -37,45 +44,43 @@ void printSystemInfo() {
     /*
      * first draw GUI
      */
-    clearDisplayAndDisableButtonsAndSliders(COLOR_WHITE);
+    clearDisplayAndDisableButtonsAndSliders(COLOR16_WHITE);
     TouchButtonBack.drawButton();
 
-    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE, true);
+    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR16_WHITE, true);
     BlueDisplay1.setWriteStringPosition(0, 0);
 
     /*
      * then print constant values
      */
-    extern char * sLowestStackPointer; // from syscalls.c
+    extern char *sLowestStackPointer; // from syscalls.c
     extern char estack asm("_estack");
     // Bss, Heap, Ram
     extern char BssStart asm("_sbss");
     extern char BssEnd asm("_ebss");
-#ifdef STMM32F30X
+
     extern char HeapStart asm("_sccmram");
-#else
-    extern char HeapStart asm("_ebss");
-#endif
+
     extern char DataStart asm("_sdata");
     extern char DataEnd asm("_edata");
 
     unsigned int tControlRegisterContent = __get_CONTROL();
-    printf("Control=%#X xPSR=%#lX\n", tControlRegisterContent, __get_xPSR());
+    printf("Control=0x%X xPSR=0x%lX\n", tControlRegisterContent, __get_xPSR());
 
     // DATA
-    printf("DATA=%#X e=%#X l=%d\n", (uintptr_t) &DataStart, ((uintptr_t) &DataEnd) & 0xFFFF, &DataEnd - &DataStart);
+    printf("DATA=0x%X e=0x%X l=%d\n", (uintptr_t) &DataStart, ((uintptr_t) &DataEnd) & 0xFFFF, &DataEnd - &DataStart);
 
     // BSS
-    printf("BSS=%#X e=%#X l=%d\n", (uintptr_t) &BssStart, ((uintptr_t) &BssEnd) & 0xFFFF, &BssEnd - &BssStart);
+    printf("BSS=0x%X e=0x%X l=%d\n", (uintptr_t) &BssStart, ((uintptr_t) &BssEnd) & 0xFFFF, &BssEnd - &BssStart);
 
     // HEAP
-    char * tHeapEnd = (char *) malloc(16); // + 8 Bytes for each malloc
-    printf("HEAP=%#X e=%#X l=%d\n", (uintptr_t) &HeapStart, ((uintptr_t) tHeapEnd) & 0xFFFF, (tHeapEnd - &HeapStart));
+    char *tHeapEnd = (char*) malloc(16); // + 8 Bytes for each malloc
+    printf("HEAP=0x%X e=0x%X l=%d\n", (uintptr_t) &HeapStart, ((uintptr_t) tHeapEnd) & 0xFFFF, (tHeapEnd - &HeapStart));
     free(tHeapEnd);
 
     // STACK show lowest stackpointer
-    if ((char *) __get_MSP() < sLowestStackPointer) {
-        sLowestStackPointer = (char *) __get_MSP();
+    if ((char*) __get_MSP() < sLowestStackPointer) {
+        sLowestStackPointer = (char*) __get_MSP();
     }
     printf("STACK=%#X low=%#X / %ld\n", (uintptr_t) &estack, ((uintptr_t) sLowestStackPointer) & 0xFFFF,
             (uint32_t) (&estack - sLowestStackPointer));
@@ -84,7 +89,7 @@ void printSystemInfo() {
     printf("SYSCLK=%ldMHz HCLK=%ldMHz\n", HAL_RCC_GetSysClockFreq() / 1000000, HAL_RCC_GetHCLKFreq() / 1000000);
 
     // ADC's + RTC
-    const char* tRTCClockSource = "HSE";
+    const char *tRTCClockSource = "HSE";
     if ( __HAL_RCC_GET_RTC_SOURCE() == RCC_RTCCLKSOURCE_LSE) {
         tRTCClockSource = "LSE";
     }
@@ -125,18 +130,9 @@ void printSystemInfo() {
     printf("Compiled at: %s %s\n", __DATE__, __TIME__);
 
     // Locale
-    struct lconv * tLconfPtr = localeconv();
+    struct lconv *tLconfPtr = localeconv();
     // decimal point is set to comma by main.c
     printf("Locale=%s decimalpoint=%s thousands=%s\n", setlocale(LC_ALL, NULL), tLconfPtr->decimal_point, tLconfPtr->thousands_sep);
-
-#ifdef USE_BUTTON_POOL
-    // Button Pool Info
-    printf("BUTTONS: poolsize=%d + %d\n", NUMBER_OF_BUTTONS_IN_POOL,
-            NUMBER_OF_AUTOREPEAT_BUTTONS_IN_POOL);
-
-    TouchButton::infoButtonPool(sStringBuffer);
-    printf("%s\n", sStringBuffer);
-#endif
 
 #ifdef LOCAL_DISPLAY_EXISTS
     // Lock info
@@ -181,7 +177,7 @@ void loopSystemInfoPage(void) {
     snprintf(sStringBuffer, sizeof sStringBuffer, "%2d.%02d\xB0" "C %2d.%02d %2d.%02d", tTemp / 100, tTemp % 100,
             tTemperatureFiltered / 100, tTemperatureFiltered % 100, tTemperatureFiltered2 / 100, tTemperatureFiltered2 % 100);
     BlueDisplay1.drawText(2, REMOTE_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, sStringBuffer,
-    TEXT_SIZE_11,    COLOR_PAGE_INFO, COLOR_WHITE);
+    TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR16_WHITE);
 
     ADC_setRawToVoltFactor();
 #ifdef STM32F30X
@@ -195,7 +191,7 @@ void loopSystemInfoPage(void) {
     snprintf(sStringBuffer, sizeof sStringBuffer, "VCC=%5.3fV 3V=%#X|%d", sVDDA, sReading3Volt, sReading3Volt);
 #endif
     BlueDisplay1.drawText(2, REMOTE_DISPLAY_HEIGHT - TEXT_SIZE_11_HEIGHT + TEXT_SIZE_11_ASCEND, sStringBuffer,
-    TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR_WHITE);
+    TEXT_SIZE_11, COLOR_PAGE_INFO, COLOR16_WHITE);
 
     delayMillisWithCheckAndHandleEvents(500);
 }
@@ -218,7 +214,7 @@ BDButton TouchButtonInfoColors;
 BDButton TouchButtonSettingsGamma1;
 BDButton TouchButtonSettingsGamma2;
 
-void pickColorPeriodicCallbackHandler(struct TouchEvent * const aActualPositionPtr);
+void pickColorPeriodicCallbackHandler(struct TouchEvent *const aActualPositionPtr);
 
 #endif
 
@@ -231,7 +227,7 @@ BDButton TouchButtonInfoUSB;
 BDButton TouchButtonSystemInfo; // another button for showing systemInfoPage
 
 #define INFO_BUTTONS_NUMBER_TO_DISPLAY 6 // Number of buttons on main info page, without back button
-BDButton * const TouchButtonsInfoPage[] = { &TouchButtonInfoFont1, &TouchButtonInfoFont2, &TouchButtonInfoColors,
+BDButton *const TouchButtonsInfoPage[] = { &TouchButtonInfoFont1, &TouchButtonInfoFont2, &TouchButtonInfoColors,
         &TouchButtonInfoMMC, &TouchButtonSystemInfo, &TouchButtonInfoUSB, &TouchButtonBack, &TouchButtonSettingsGamma1,
         &TouchButtonSettingsGamma2 };
 
@@ -239,12 +235,16 @@ BDButton * const TouchButtonsInfoPage[] = { &TouchButtonInfoFont1, &TouchButtonI
 
 void drawInfoPage(void);
 
-void doInfoButtons(BDButton * aTheTouchedButton, int16_t aValue) {
+void doInfoButtons(BDButton *aTheTouchedButton, int16_t aValue) {
     BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
     BDButton::deactivateAllButtons();
     TouchButtonBack.drawButton();
     sBackButtonPressed = false;
+
     if (aTheTouchedButton->mButtonHandle == TouchButtonInfoFont1.mButtonHandle) {
+        /*
+         * Replace page content with printable ascii chars of current font  and return
+         */
         uint16_t tXPos;
         uint16_t tYPos = 6 * TEXT_SIZE_11_HEIGHT;
         // printable ascii chars
@@ -252,11 +252,12 @@ void doInfoButtons(BDButton * aTheTouchedButton, int16_t aValue) {
         for (int i = 6; i != 0; i--) {
             tXPos = 0;
             for (uint8_t j = 16; j != 0; j--) {
-                tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_22, COLOR_BLACK, COLOR_YELLOW) + 4;
+                tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_22, COLOR16_BLACK, COLOR16_YELLOW) + 4;
                 tChar++;
             }
             tYPos += TEXT_SIZE_22_HEIGHT + 4;
         }
+
     } else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoFont2.mButtonHandle) {
         uint16_t tXPos;
         uint16_t tYPos = TEXT_SIZE_22_HEIGHT + 4;
@@ -265,87 +266,94 @@ void doInfoButtons(BDButton * aTheTouchedButton, int16_t aValue) {
         for (int i = 8; i != 0; i--) {
             tXPos = 0;
             for (uint8_t j = 16; j != 0; j--) {
-                tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_22, COLOR_BLACK, COLOR_YELLOW) + 4;
+                tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_22, COLOR16_BLACK, COLOR16_YELLOW) + 4;
                 tChar++;
             }
             tYPos += TEXT_SIZE_22_HEIGHT + 2;
         }
-    }
 
-    else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoColors.mButtonHandle) {
+    } else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoColors.mButtonHandle) {
+        /*
+         * Display color spectrum (very slow if remote display is connected) and show color of point which is touched
+         */
         BlueDisplay1.generateColorSpectrum();
         TouchButtonSettingsGamma1.activate();
         TouchButtonSettingsGamma2.activate();
         registerTouchDownCallback(&pickColorPeriodicCallbackHandler);
         registerTouchMoveCallback(&pickColorPeriodicCallbackHandler);
 
+        /*
+         * Show color of point which is touched (by event callback handler) as long as back button is not pressed
+         */
         while (!sBackButtonPressed) {
             checkAndHandleEvents();
         }
         // reset handler
         registerTouchDownCallback(&simpleTouchDownHandler);
         registerTouchMoveCallback(&simpleTouchMoveHandlerForSlider);
-    }
 
-    else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoMMC.mButtonHandle) {
+    } else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoMMC.mButtonHandle) {
+        /*
+         * MMC / micro SD card info
+         */
         int tRes = getCardInfo(sStringBuffer, sizeof(sStringBuffer));
         if (tRes == 0 || tRes > RES_PARERR) {
-            BlueDisplay1.drawMLText(0, 10, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_BACKGROUND_DEFAULT);
+            BlueDisplay1.drawMLText(0, 10, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
         } else {
             testAttachMMC();
         }
         if (tRes > RES_PARERR) {
             tRes = getFSInfo(sStringBuffer, sizeof(sStringBuffer));
             if (tRes == 0 || tRes > FR_INVALID_PARAMETER) {
-                BlueDisplay1.drawMLText(0, 20 + 4 * TEXT_SIZE_11_HEIGHT, sStringBuffer, TEXT_SIZE_11, COLOR_RED,
+                BlueDisplay1.drawMLText(0, 20 + 4 * TEXT_SIZE_11_HEIGHT, sStringBuffer, TEXT_SIZE_11, COLOR16_RED,
                 COLOR_BACKGROUND_DEFAULT);
             }
         }
         // was overwritten by MLText
         TouchButtonBack.drawButton();
-    }
-    /*
-     * USB info
-     */
-    else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoUSB.mButtonHandle) {
+
+    } else if (aTheTouchedButton->mButtonHandle == TouchButtonInfoUSB.mButtonHandle) {
+        /*
+         * USB info
+         */
         getUSB_StaticInfos(sStringBuffer, sizeof sStringBuffer);
         // 3 lines
         BlueDisplay1.drawMLText(10, BUTTON_HEIGHT_4_LINE_2 + TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11,
-        COLOR_RED, COLOR_BACKGROUND_DEFAULT);
+        COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
 //        USB_ChangeToCDC();
 //        do {
 //            uint8_t * tRecData = CDC_Loopback();
 //            if (tRecData != NULL) {
 //                myPrint((const char*) tRecData, CDC_RX_BUFFER_SIZE);
 //            }
-//            BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 - TEXT_SIZE_11_DECEND, getUSBDeviceState(), TEXT_SIZE_11, COLOR_RED,
+//            BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 - TEXT_SIZE_11_DECEND, getUSBDeviceState(), TEXT_SIZE_11, COLOR16_RED,
 //            COLOR_BACKGROUND_DEFAULT);
 //            delayMillisWithCheckAndHandleEvents(500);
 //        } while (!sBackButtonPressed);
-    }
-    /*
-     * System info
-     */
-    else if (aTheTouchedButton->mButtonHandle == TouchButtonSystemInfo.mButtonHandle) {
+
+    } else if (aTheTouchedButton->mButtonHandle == TouchButtonSystemInfo.mButtonHandle) {
+        /*
+         * System info
+         */
         startSystemInfoPage();
+        /*
+         * Refresh info content as long as back button is not pressed
+         */
         do {
             loopSystemInfoPage();
         } while (!sBackButtonPressed);
         stopSystemInfoPage();
     }
-    // for all cases
-    sBackButtonPressed = false;
 }
 
-// TODO implement readPixel
-void pickColorPeriodicCallbackHandler(struct TouchEvent * const aActualPositionPtr) {
+void pickColorPeriodicCallbackHandler(struct TouchEvent *const aActualPositionPtr) {
     // first check button
-    if (!TouchButton::checkAllButtons(aActualPositionPtr->TouchPosition.PosX, aActualPositionPtr->TouchPosition.PosY)) {
-        uint16_t tColor = readPixel(aActualPositionPtr->TouchPosition.PosX, aActualPositionPtr->TouchPosition.PosY);
-        snprintf(sStringBuffer, sizeof sStringBuffer, "%3d %3d R=0x%2x G=0x%2x B=0x%2x", aActualPositionPtr->TouchPosition.PosX,
+    if (!TouchButton::checkAllButtons(aActualPositionPtr->TouchPosition.PosX, aActualPositionPtr->TouchPosition.PosY, false)) {
+        uint16_t tColor = LocalDisplay.readPixel(aActualPositionPtr->TouchPosition.PosX, aActualPositionPtr->TouchPosition.PosY);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "X=%3d Y=%3d R=0x%02X G=0x%02X B=0x%02X", aActualPositionPtr->TouchPosition.PosX,
                 aActualPositionPtr->TouchPosition.PosY, (tColor >> 11) << 3, ((tColor >> 5) & 0x3F) << 2, (tColor & 0x1F) << 3);
         BlueDisplay1.drawText(2, BlueDisplay1.getDisplayHeight() - TEXT_SIZE_11_DECEND, sStringBuffer, TEXT_SIZE_11,
-        COLOR_WHITE, COLOR_BLACK);
+        COLOR16_WHITE, COLOR16_BLACK);
 // show color
         BlueDisplay1.fillRect(BlueDisplay1.getDisplayWidth() - 30, BlueDisplay1.getDisplayHeight() - 30,
                 BlueDisplay1.getDisplayWidth() - 1, BlueDisplay1.getDisplayHeight() - 1, tColor);
@@ -358,17 +366,16 @@ void pickColorPeriodicCallbackHandler(struct TouchEvent * const aActualPositionP
  * @param aTheTouchedButton
  * @param aValue
  */
-void doSetGamma(BDButton * aTheTouchedButton, int16_t aValue) {
+void doSetGamma(BDButton *aTheTouchedButton, int16_t aValue) {
     setGamma(aValue);
 }
 #endif
 
 /**
- * switch back to info menu
+ * switch back from sub page to info menu
  */
-void doInfoBackButton(BDButton * aTheTouchedButton, int16_t aValue) {
+void doInfoBackButton(BDButton *aTheTouchedButton, int16_t aValue) {
     drawInfoPage();
-    sBackButtonPressed = true;
 }
 
 void drawInfoPage(void) {
@@ -394,41 +401,41 @@ void startInfoPage(void) {
     int tPosY = 0;
 //1. row
 #ifdef LOCAL_DISPLAY_EXISTS
-    TouchButtonInfoFont1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "Font 1",
+    TouchButtonInfoFont1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_GREEN, "Font 1",
     TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonInfoFont2.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Font 2", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR16_GREEN, "Font 2", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 #endif
 
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -1, &doInfoBackButton);
+    BUTTON_HEIGHT_4, COLOR16_RED, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, -1, &doInfoBackButton);
 
 // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonInfoMMC.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "MMC Infos",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    TouchButtonInfoMMC.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_GREEN, "MMC\nInfos",
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonSystemInfo.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "System info", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR16_GREEN, "System\ninfo", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
     TouchButtonInfoColors.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, "Colors", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    BUTTON_HEIGHT_4, COLOR16_GREEN, "Colors", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
 // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonInfoUSB.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN, "USB Infos",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
+    TouchButtonInfoUSB.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_GREEN, "USB\nInfos",
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doInfoButtons);
 
 // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
 
 #ifdef LOCAL_DISPLAY_EXISTS
 // button for sub pages
-    TouchButtonSettingsGamma1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GREEN,
+    TouchButtonSettingsGamma1.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_GREEN,
     NULL, 0, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetGamma);
     TouchButtonSettingsGamma2.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_GREEN, NULL, 0, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetGamma);
+    BUTTON_HEIGHT_4, COLOR16_GREEN, NULL, 0, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetGamma);
 #endif
 
 #pragma GCC diagnostic pop
@@ -445,7 +452,7 @@ void loopInfoPage(void) {
  * cleanup on leaving this page
  */
 void stopInfoPage(void) {
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsInfoPage) / sizeof(TouchButtonsInfoPage[0]); ++i) {
         TouchButtonsInfoPage[i]->deinit();

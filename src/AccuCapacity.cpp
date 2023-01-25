@@ -1,11 +1,10 @@
 /**
- *  @file AccuCapacity.cpp
+ *  AccuCapacity.cpp
  *
- *  @date 23.02.2012
+ *  measures the capacity of 1,2V rechargeable batteries while charging or discharging and shows the voltage and internal resistance graph on LCD screen.
  *
- *  @brief measures the capacity of 1,2V rechargeable batteries while charging or discharging and shows the voltage and internal resistance graph on LCD screen.
  *
- *  Copyright (C) 2012-2022  Armin Joachimsmeyer
+ *  Copyright (C) 2012-2023  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
@@ -57,16 +56,16 @@ volatile bool doDisplayRefresh = false;
 /**
  * Color scheme
  */
-#define COLOR_GUI_CONTROL COLOR_RED
-#define COLOR_GUI_VALUES COLOR_GREEN
-#define COLOR_GUI_DISPLAY_CONTROL COLOR_YELLOW
+#define COLOR_GUI_CONTROL COLOR16_RED
+#define COLOR_GUI_VALUES COLOR16_GREEN
+#define COLOR_GUI_DISPLAY_CONTROL COLOR16_YELLOW
 // 3 different pages
 #define PAGE_MAIN 0
 #define PAGE_CHART 1
 #define PAGE_SETTINGS 2
 int ActualPage = PAGE_MAIN;
 
-uint16_t const ProbeColors[NUMBER_OF_PROBES] = { COLOR_RED, COLOR_BLUE };
+uint16_t const ProbeColors[NUMBER_OF_PROBES] = { COLOR16_RED, COLOR16_BLUE };
 
 // Position for printActualData
 #define BASIC_INFO_X 80
@@ -343,7 +342,7 @@ bool CheckStopCondition(DataloggerMeasurementControlStruct *aProbe) {
 
 void TouchUpHandlerAccuCapacity(struct TouchEvent *const aTouchPosition) {
     // first check for buttons
-    if (!TouchButton::checkAllButtons(aTouchPosition->TouchPosition.PosX, aTouchPosition->TouchPosition.PosY)) {
+    if (!TouchButton::checkAllButtons(aTouchPosition->TouchPosition.PosX, aTouchPosition->TouchPosition.PosY, false)) {
         if (ActualPage == PAGE_CHART) {
             //touch press but no gui element matched?
             // switch chart overlay;
@@ -428,7 +427,7 @@ void initAccuCapacity(void) {
         VoltageCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, true,
         CHART_GRID_X_SIZE,
         CHART_GRID_Y_SIZE);
-        VoltageCharts[i]->setDataColor(COLOR_BLUE);
+        VoltageCharts[i]->setDataColor(COLOR16_BLUE);
 
         BatteryControl[i].ProbeIndex = i;
         // y axis
@@ -440,7 +439,7 @@ void initAccuCapacity(void) {
         ResistanceCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, true,
         CHART_GRID_X_SIZE,
         CHART_GRID_Y_SIZE);
-        ResistanceCharts[i]->setDataColor(COLOR_RED);
+        ResistanceCharts[i]->setDataColor(COLOR16_RED);
 
         // y axis
         ResistanceCharts[i]->initYLabelInt(0, CHART_MIN_Y_INCREMENT_RESISTANCE, 1, 3);
@@ -493,7 +492,7 @@ void startAccuCapacity(void) {
 void stopAccuCapacity(void) {
     // Stop display refresh
     changeDelayCallback(&callbackDisplayRefreshDelay, DISABLE_TIMER_DELAY_VALUE);
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 // free buttons
     for (unsigned int i = 0; i < sizeof(ButtonsChart) / sizeof(ButtonsChart[0]); ++i) {
         ButtonsChart[i]->deinit();
@@ -730,7 +729,7 @@ void doShowMainScreen(BDButton *aTheTouchedButton, int16_t aValue) {
  * toggles between short and long value display
  */
 void doSwitchChartOverlay(void) {
-    FeedbackToneOK();
+    playLocalFeedbackTone();
 // change display / overlay mode
     AccuCapDisplayControl[IndexOfDisplayedProbe].ChartShowMode++;
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ChartShowMode > SHOW_MODE_VALUES) {
@@ -1098,7 +1097,7 @@ void printSamplePeriod(void) {
     int tMinutes = tSeconds / 60;
     tSeconds %= 60;
     snprintf(sStringBuffer, sizeof sStringBuffer, "Sample period %u:%02u", tMinutes, tSeconds);
-    BlueDisplay1.drawText(BUTTON_WIDTH_2_POS_2, BUTTON_HEIGHT_4_LINE_3, sStringBuffer, TEXT_SIZE_11, COLOR_BLACK,
+    BlueDisplay1.drawText(BUTTON_WIDTH_2_POS_2, BUTTON_HEIGHT_4_LINE_3, sStringBuffer, TEXT_SIZE_11, COLOR16_BLACK,
     COLOR_BACKGROUND_DEFAULT);
 }
 
@@ -1256,7 +1255,7 @@ void setYAutorange(int16_t aProbeIndex, uint16_t aVoltageMillivolt) {
     VoltageCharts[IndexOfDisplayedProbe]->drawYAxis(true);
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ChartShowMode == SHOW_MODE_GUI) {
         // show symbol for vertical swipe
-        BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+        BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
     }
 }
 
@@ -1604,13 +1603,13 @@ void activateOrShowChartGui(void) {
         // show Symbols for horizontal swipe
         BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3,
         BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_22_HEIGHT - BUTTON_DEFAULT_SPACING, StringDoubleHorizontalArrow,
-        TEXT_SIZE_22, COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+        TEXT_SIZE_22, COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
         BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3, BUTTON_HEIGHT_4_LINE_4, StringDoubleHorizontalArrow, TEXT_SIZE_22,
-        COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+        COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
         // show Symbols for vertical swipe
-        BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+        BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
         BlueDisplay1.drawChar(BUTTON_WIDTH_5 + BUTTON_DEFAULT_SPACING, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22,
-        COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+        COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
     } else {
         // activate only next button

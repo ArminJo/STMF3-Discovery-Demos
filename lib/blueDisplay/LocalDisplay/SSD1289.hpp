@@ -1,32 +1,41 @@
 /**
- * @file SSD1289.cpp
+ * SSD1289.hpp
  *
- * @date 05.12.2012
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.5.0
+ * Firmware to control a HY32D 320 x 240, 3.2" Display with a SSD1289 controller
  *
- *      based on SSD1289.cpp with license
- *      https://github.com/watterott/mSD-Shield/blob/master/src/license.txt
+
+ *  Copyright (C) 2012-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
+ *
+ *  BlueDisplay is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+ *
  */
 
+#include "LocalGUI/ThickLine.h" // for drawLineOverlap()
 #include "SSD1289.h"
 #include "BlueDisplay.h"
-#include "thickline.h"
 #include "main.h" // for StringBuffer
 #include "STM32TouchScreenDriver.h"
 #include "timing.h"
 #include "stm32fx0xPeripherals.h"
 
-#include <stdio.h> // for sprintf
 #include <string.h>  // for strcat
 #include <stdlib.h>  // for malloc
 
-extern "C" {
-#include "ff.h"
-#include "BlueSerial.h"
-}
+#include "LocalDisplayInterface.hpp"
 
 /** @addtogroup Graphic_Library
  * @{
@@ -34,6 +43,9 @@ extern "C" {
 /** @addtogroup SSD1289_basic
  * @{
  */
+
+SSD1289 LocalDisplay; // The instance of this class
+
 #define LCD_GRAM_WRITE_REGISTER    0x22
 
 bool isInitializedSSD1289 = false;
@@ -41,34 +53,30 @@ volatile uint32_t sDrawLock = 0;
 /*
  * For automatic LCD dimming
  */
-int LCDBacklightValue = BACKLIGHT_START_VALUE;
-int LCDLastBacklightValue; //! for state of backlight before dimming
-int LCDDimDelay; //actual dim delay
+uint8_t sCurrentBacklightPercent = BACKLIGHT_START_BRIGHTNESS_VALUE;
+uint8_t sLastBacklightPercent; //! for state of backlight before dimming
+int sLCDDimDelay; //actual dim delay
 
 //-------------------- Private functions --------------------
-void drawStart(void);
-inline void draw(uint16_t color);
-inline void drawStop(void);
 void writeCommand(int aRegisterAddress, int aRegisterValue);
 bool initalizeDisplay(void);
-uint16_t * fillDisplayLineBuffer(uint16_t * aBufferPtr, uint16_t yLineNumber);
 void setBrightness(int power); //0-100
 
 //-------------------- Constructor --------------------
 
-SSD1289::SSD1289(void) {
-    return;
+SSD1289::SSD1289() { // @suppress("Class members should be properly initialized")
 }
 
-// One instance of SSD1289 called LocalDisplay
-SSD1289 LocalDisplay;
+SSD1289::~SSD1289() {
+}
+
 //-------------------- Public --------------------
 void SSD1289::init(void) {
 //init pins
     SSD1289_IO_initalize();
 // init PWM for background LED
     PWM_BL_initalize();
-    setBrightness(BACKLIGHT_START_VALUE);
+    setBrightness(BACKLIGHT_START_BRIGHTNESS_VALUE);
 
 // deactivate read output control
     HY32D_RD_GPIO_PORT->BSRR = HY32D_RD_PIN;
@@ -78,22 +86,22 @@ void SSD1289::init(void) {
     }
 }
 
-void setArea(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint16_t aYEnd) {
+void SSD1289::setArea(uint16_t aPositionX, uint16_t aPositionY, uint16_t aXEnd, uint16_t aYEnd) {
     if ((aXEnd >= LOCAL_DISPLAY_WIDTH) || (aYEnd >= LOCAL_DISPLAY_HEIGHT)) {
-        assertFailedParamMessage((uint8_t *) __FILE__, __LINE__, aXEnd, aYEnd, "");
+        assertFailedParamMessage((uint8_t*) __FILE__, __LINE__, aXEnd, aYEnd, "");
     }
 
-    writeCommand(0x44, aYStart + (aYEnd << 8)); //set ystart, yend
-    writeCommand(0x45, aXStart); //set xStart
+    writeCommand(0x44, aPositionY + (aYEnd << 8)); //set ystart, yend
+    writeCommand(0x45, aPositionX); //set xStart
     writeCommand(0x46, aXEnd); //set xEnd
 // also set cursor to right start position
-    writeCommand(0x4E, aYStart);
-    writeCommand(0x4F, aXStart);
+    writeCommand(0x4E, aPositionY);
+    writeCommand(0x4F, aPositionX);
 }
 
-void setCursor(uint16_t aXStart, uint16_t aYStart) {
-    writeCommand(0x4E, aYStart);
-    writeCommand(0x4F, aXStart);
+void SSD1289::setCursor(uint16_t aPositionX, uint16_t aPositionY) {
+    writeCommand(0x4E, aPositionY);
+    writeCommand(0x4F, aPositionX);
 }
 
 void SSD1289::clearDisplay(uint16_t aColor) {
@@ -115,7 +123,7 @@ void SSD1289::clearDisplay(uint16_t aColor) {
 /**
  * set register address to LCD_GRAM_READ/WRITE_REGISTER
  */
-void drawStart(void) {
+void SSD1289::drawStart(void) {
 // CS enable (low)
     HY32D_CS_GPIO_PORT->BSRR = (uint32_t) HY32D_CS_PIN << 16;
 // Control enable (low)
@@ -129,48 +137,48 @@ void drawStart(void) {
     HY32D_DATA_CONTROL_GPIO_PORT->BSRR = HY32D_DATA_CONTROL_PIN;
 }
 
-inline void draw(uint16_t color) {
+void SSD1289::draw(color16_t aColor) {
 // set value
-    HY32D_DATA_GPIO_PORT->ODR = color;
+    HY32D_DATA_GPIO_PORT->ODR = aColor;
 // Latch data write
     HY32D_WR_GPIO_PORT->BSRR = (uint32_t) HY32D_WR_PIN << 16;
     HY32D_WR_GPIO_PORT->BSRR = HY32D_WR_PIN;
 }
 
-void drawStop(void) {
+void SSD1289::drawStop() {
     HY32D_CS_GPIO_PORT->BSRR = HY32D_CS_PIN;
 }
 
-void SSD1289::drawPixel(uint16_t aXPos, uint16_t aYPos, uint16_t aColor) {
-    if ((aXPos >= LOCAL_DISPLAY_WIDTH) || (aYPos >= LOCAL_DISPLAY_HEIGHT)) {
+void SSD1289::drawPixel(uint16_t aPositionX, uint16_t aPositionY, uint16_t aColor) {
+    if ((aPositionX >= LOCAL_DISPLAY_WIDTH) || (aPositionY >= LOCAL_DISPLAY_HEIGHT)) {
         return;
     }
 
 // setCursor
-    writeCommand(0x4E, aYPos);
-    writeCommand(0x4F, aXPos);
+    writeCommand(0x4E, aPositionY);
+    writeCommand(0x4F, aPositionX);
 
     drawStart();
     draw(aColor);
     drawStop();
 }
 
-void SSD1289::drawLine(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint16_t aYEnd, uint16_t aColor) {
-    drawLineOverlap(aXStart, aYStart, aXEnd, aYEnd, LINE_OVERLAP_NONE, aColor);
+void SSD1289::drawLine(uint16_t aPositionX, uint16_t aPositionY, uint16_t aXEnd, uint16_t aYEnd, uint16_t aColor) {
+    drawLineOverlap(aPositionX, aPositionY, aXEnd, aYEnd, LINE_OVERLAP_NONE, aColor);
 }
 
-void SSD1289::fillRect(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint16_t aYEnd, uint16_t aColor) {
+void SSD1289::fillRect(uint16_t aPositionX, uint16_t aPositionY, uint16_t aXEnd, uint16_t aYEnd, uint16_t aColor) {
     uint32_t size;
     uint16_t tmp, i;
 
-    if (aXStart > aXEnd) {
-        tmp = aXStart;
-        aXStart = aXEnd;
+    if (aPositionX > aXEnd) {
+        tmp = aPositionX;
+        aPositionX = aXEnd;
         aXEnd = tmp;
     }
-    if (aYStart > aYEnd) {
-        tmp = aYStart;
-        aYStart = aYEnd;
+    if (aPositionY > aYEnd) {
+        tmp = aPositionY;
+        aPositionY = aYEnd;
         aYEnd = tmp;
     }
 
@@ -181,10 +189,10 @@ void SSD1289::fillRect(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint1
         aYEnd = LOCAL_DISPLAY_HEIGHT - 1;
     }
 
-    setArea(aXStart, aYStart, aXEnd, aYEnd);
+    setArea(aPositionX, aPositionY, aXEnd, aYEnd);
 
     drawStart();
-    size = (uint32_t) (1 + (aXEnd - aXStart)) * (uint32_t) (1 + (aYEnd - aYStart));
+    size = (uint32_t) (1 + (aXEnd - aPositionX)) * (uint32_t) (1 + (aYEnd - aPositionY));
     tmp = size / 8;
     if (tmp != 0) {
         for (i = tmp; i != 0; i--) {
@@ -208,8 +216,8 @@ void SSD1289::fillRect(uint16_t aXStart, uint16_t aYStart, uint16_t aXEnd, uint1
     drawStop();
 }
 
-void SSD1289::fillRectRel(uint16_t aXStart, uint16_t aYStart, uint16_t aWidth, uint16_t aHeight, color16_t aColor) {
-    LocalDisplay.fillRect(aXStart, aYStart, aXStart + aWidth - 1, aYStart + aHeight - 1, aColor);
+void SSD1289::fillRectRel(uint16_t aPositionX, uint16_t aPositionY, uint16_t aWidth, uint16_t aHeight, color16_t aColor) {
+    LocalDisplay.fillRect(aPositionX, aPositionY, aPositionX + aWidth - 1, aPositionY + aHeight - 1, aColor);
 }
 
 void SSD1289::drawCircle(uint16_t aXCenter, uint16_t aYCenter, uint16_t aRadius, uint16_t aColor) {
@@ -264,14 +272,14 @@ void SSD1289::fillCircle(uint16_t aXCenter, uint16_t aYCenter, uint16_t aRadius,
     }
 }
 
-uint16_t readPixel(uint16_t aXPos, uint16_t aYPos) {
-    if ((aXPos >= LOCAL_DISPLAY_WIDTH) || (aYPos >= LOCAL_DISPLAY_HEIGHT)) {
+uint16_t SSD1289::readPixel(uint16_t aPositionX, uint16_t aPositionY) {
+    if ((aPositionX >= LOCAL_DISPLAY_WIDTH) || (aPositionY >= LOCAL_DISPLAY_HEIGHT)) {
         return 0;
     }
 
 // setCursor
-    writeCommand(0x4E, aYPos);
-    writeCommand(0x4F, aXPos);
+    writeCommand(0x4E, aPositionY);
+    writeCommand(0x4F, aPositionX);
 
     drawStart();
     uint16_t tValue = 0;
@@ -304,18 +312,18 @@ void SSD1289::drawRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint1
  * first pixel is omitted because it is drawn by preceding line
  * uses setArea instead if drawPixel to speed up drawing
  */
-void SSD1289::drawLineFastOneX(uint16_t aXStart, uint16_t aYStart, uint16_t aYEnd, uint16_t aColor) {
+void SSD1289::drawLineFastOneX(uint16_t aPositionX, uint16_t aPositionY, uint16_t aYEnd, uint16_t aColor) {
     uint8_t i;
     bool up = true;
 //calculate direction
-    int16_t deltaY = aYEnd - aYStart;
+    int16_t deltaY = aYEnd - aPositionY;
     if (deltaY < 0) {
         deltaY = -deltaY;
         up = false;
     }
     if (deltaY <= 1) {
         // constant y or one pixel offset => no line needed
-        LocalDisplay.drawPixel(aXStart + 1, aYEnd, aColor);
+        LocalDisplay.drawPixel(aPositionX + 1, aYEnd, aColor);
     } else {
         // draw line here
         // deltaY1 is == deltaYHalf for even numbers and deltaYHalf -1 for odd Numbers
@@ -325,14 +333,14 @@ void SSD1289::drawLineFastOneX(uint16_t aXStart, uint16_t aYStart, uint16_t aYEn
             // for odd numbers, first part of line is 1 pixel shorter than second
             if (deltaY1 > 0) {
                 // first pixel was drawn by preceding line :-)
-                setArea(aXStart, aYStart + 1, aXStart, aYStart + deltaY1);
+                setArea(aPositionX, aPositionY + 1, aPositionX, aPositionY + deltaY1);
                 drawStart();
                 for (i = deltaY1; i != 0; i--) {
                     draw(aColor);
                 }
                 drawStop();
             }
-            setArea(aXStart + 1, aYStart + deltaY1 + 1, aXStart + 1, aYEnd);
+            setArea(aPositionX + 1, aPositionY + deltaY1 + 1, aPositionX + 1, aYEnd);
             drawStart();
             for (i = deltaYHalf + 1; i != 0; i--) {
                 draw(aColor);
@@ -341,14 +349,14 @@ void SSD1289::drawLineFastOneX(uint16_t aXStart, uint16_t aYStart, uint16_t aYEn
         } else {
             // for odd numbers, second part of line is 1 pixel shorter than first
             if (deltaYHalf > 0) {
-                setArea(aXStart, aYStart - deltaYHalf, aXStart, aYStart - 1);
+                setArea(aPositionX, aPositionY - deltaYHalf, aPositionX, aPositionY - 1);
                 drawStart();
                 for (i = deltaYHalf; i != 0; i--) {
                     draw(aColor);
                 }
                 drawStop();
             }
-            setArea(aXStart + 1, aYEnd, aXStart + 1, (aYStart - deltaYHalf) - 1);
+            setArea(aPositionX + 1, aYEnd, aPositionX + 1, (aPositionY - deltaYHalf) - 1);
             drawStart();
             for (i = deltaY1 + 1; i != 0; i--) {
                 draw(aColor);
@@ -359,265 +367,23 @@ void SSD1289::drawLineFastOneX(uint16_t aXStart, uint16_t aYStart, uint16_t aYEn
 }
 
 /**
- * @param bg_color start x for next character / x + (FONT_WIDTH * size)
- * @return
- */
-uint16_t SSD1289::drawChar(uint16_t x, uint16_t y, char c, uint8_t size, uint16_t color, uint16_t bg_color) {
-    /*
-     * check if a draw in routine which uses setArea() is already executed
-     */
-    uint32_t tLock;
-    do {
-        tLock = __LDREXW(&sDrawLock);
-        tLock++;
-    } while (__STREXW(tLock, &sDrawLock));
-
-    if (tLock != 1) {
-        // here in ISR, but interrupted process was still in drawChar()
-        sLockCount++;
-        // first approach skip drawing and return input x value
-        return x;
-    }
-    uint16_t tRetValue;
-#if FONT_WIDTH <= 8
-    uint8_t data, mask;
-#elif FONT_WIDTH <= 16
-    uint16_t data, mask;
-#elif FONT_WIDTH <= 32
-    uint32_t data, mask;
-#endif
-    uint8_t i, j, width, height;
-    const uint8_t *ptr;
-// characters below 20 are not printable
-    if (c < 0x20) {
-        c = 0x20;
-    }
-    i = (uint8_t) c;
-#if FONT_WIDTH <= 8
-    ptr = &font[(i - FONT_START) * (8 * FONT_HEIGHT / 8)];
-#elif FONT_WIDTH <= 16
-    ptr = &font_PGM[(i-FONT_START)*(16*FONT_HEIGHT/8)];
-#elif FONT_WIDTH <= 32
-    ptr = &font_PGM[(i-FONT_START)*(32*FONT_HEIGHT/8)];
-#endif
-    width = FONT_WIDTH;
-    height = FONT_HEIGHT;
-
-    if (size <= 1) {
-        tRetValue = x + width;
-        if ((y + height) > LOCAL_DISPLAY_HEIGHT) {
-            tRetValue = LOCAL_DISPLAY_WIDTH + 1;
-        }
-        if (tRetValue <= LOCAL_DISPLAY_WIDTH) {
-            setArea(x, y, (x + width - 1), (y + height - 1));
-            drawStart();
-            for (; height != 0; height--) {
-#if FONT_WIDTH <= 8
-                data = *ptr;
-                ptr += 1;
-#elif FONT_WIDTH <= 16
-                data = read_word(ptr); ptr+=2;
-#elif FONT_WIDTH <= 32
-                data = read_dword(ptr); ptr+=4;
-#endif
-                for (mask = (1 << (width - 1)); mask != 0; mask >>= 1) {
-                    if (data & mask) {
-                        draw(color);
-                    } else {
-                        draw(bg_color);
-                    }
-                }
-            }
-            drawStop();
-        }
-    } else {
-        tRetValue = x + (width * size);
-        if ((y + (height * size)) > LOCAL_DISPLAY_HEIGHT) {
-            tRetValue = LOCAL_DISPLAY_WIDTH + 1;
-        }
-        if (tRetValue <= LOCAL_DISPLAY_WIDTH) {
-            setArea(x, y, (x + (width * size) - 1), (y + (height * size) - 1));
-            drawStart();
-            for (; height != 0; height--) {
-#if FONT_WIDTH <= 8
-                data = *ptr;
-                ptr += 1;
-#elif FONT_WIDTH <= 16
-                data = pgm_read_word(ptr); ptr+=2;
-#elif FONT_WIDTH <= 32
-                data = pgm_read_dword(ptr); ptr+=4;
-#endif
-                for (i = size; i != 0; i--) {
-                    for (mask = (1 << (width - 1)); mask != 0; mask >>= 1) {
-                        if (data & mask) {
-                            for (j = size; j != 0; j--) {
-                                draw(color);
-                            }
-                        } else {
-                            for (j = size; j != 0; j--) {
-                                draw(bg_color);
-                            }
-                        }
-                    }
-                }
-            }
-            drawStop();
-        }
-    }
-    sDrawLock = 0;
-    return tRetValue;
-}
-
-/**
- * draw aNumberOfCharacters from string and clip at display border
- * @return uint16_t start x for next character - next x Parameter
- */
-int drawNText(uint16_t x, uint16_t y, const char *s, int aNumberOfCharacters, uint8_t size, uint16_t color, uint16_t bg_color) {
-    while (*s != 0 && --aNumberOfCharacters > 0) {
-        x = LocalDisplay.drawChar(x, y, (char) *s++, size, color, bg_color);
-        if (x > LOCAL_DISPLAY_WIDTH) {
-            break;
-        }
-    }
-    return x;
-}
-
-/**
  *
- * @param x left position
- * @param y upper position
- * @param s String
- * @param size Font size
- * @param color
- * @param bg_color
- * @return uint16_t start x for next character - next x Parameter
- */
-uint16_t SSD1289::drawText(uint16_t aXStart, uint16_t aYStart, const char *aStringPtr, uint8_t aSize, uint16_t aColor,
-        uint16_t aBGColor) {
-    uint16_t tLength = 0;
-    const char *tStringPtr = aStringPtr;
-    uint16_t tXPos = aXStart;
-    while (*tStringPtr != 0) {
-        tXPos = drawChar(tXPos, aYStart, (char) *tStringPtr++, aSize, aColor, aBGColor);
-        tLength++;
-        if (tXPos > LOCAL_DISPLAY_WIDTH) {
-            break;
-        }
-    }
-    return tXPos;
-}
-
-uint16_t SSD1289::drawNCharacters(uint16_t aXStart, uint16_t aYStart, const char *aStringPtr, uint8_t aSize, uint16_t aColor,
-        uint16_t aBGColor, int aLength) {
-    uint16_t tLength = 0;
-    const char *tStringPtr = aStringPtr;
-    uint16_t tXPos = aXStart;
-    while (aLength-- != 0) {
-        tXPos = drawChar(tXPos, aYStart, (char) *tStringPtr++, aSize, aColor, aBGColor);
-        tLength++;
-        if (tXPos > LOCAL_DISPLAY_WIDTH) {
-            break;
-        }
-    }
-    return tXPos;
-}
-/**
- *
- * @param aXPos
- * @param aYPos
- * @param aStringPointer
- * @param aSize
+ * @param aPositionX
+ * @param aPositionY
+ * @param aString
+ * @param aFontScaleFactor
  * @param aColor
  * @param aBackgroundColor
  */
-void SSD1289::drawTextVertical(uint16_t aXPos, uint16_t aYPos, const char *aStringPointer, uint8_t aSize, uint16_t aColor,
-        uint16_t aBackgroundColor) {
-    while (*aStringPointer != 0) {
-        LocalDisplay.drawChar(aXPos, aYPos, (char) *aStringPointer++, aSize, aColor, aBackgroundColor);
-        aYPos += FONT_HEIGHT * aSize;
-        if (aYPos > LOCAL_DISPLAY_HEIGHT) {
+void SSD1289::drawTextVertical(uint16_t aPositionX, uint16_t aPositionY, const char *aString, uint8_t aFontScaleFactor,
+        uint16_t aColor, uint16_t aBackgroundColor) {
+    while (*aString != 0) {
+        LocalDisplay.drawChar(aPositionX, aPositionY, (char) *aString++, aFontScaleFactor, aColor, aBackgroundColor);
+        aPositionY += FONT_HEIGHT * aFontScaleFactor;
+        if (aPositionY > LOCAL_DISPLAY_HEIGHT) {
             break;
         }
     }
-}
-
-/**
- *
- * @param x0 left position
- * @param y0 upper position
- * @param aStringPtr
- * @param size Font size
- * @param color
- * @param bg_color if COLOR_NO_BACKGROUND, then do not clear rest of line
- * @return uint16_t start y for next line
- */
-uint16_t SSD1289::drawMLText(uint16_t aPosX, uint16_t aPosY, const char *aStringPtr, uint8_t aTextSize, uint16_t aColor,
-        uint16_t aBGColor) {
-    uint16_t x = aPosX, y = aPosY, wlen, llen;
-    char c;
-    const char *wstart;
-
-    if (aBGColor != COLOR_NO_BACKGROUND) {
-        LocalDisplay.fillRect(aPosX, aPosY, LOCAL_DISPLAY_WIDTH - 1, aPosY + (FONT_HEIGHT * aTextSize) - 1, aBGColor);
-    }
-
-    llen = (LOCAL_DISPLAY_WIDTH - aPosX) / (FONT_WIDTH * aTextSize); //line length in chars
-    wstart = aStringPtr;
-    while (*aStringPtr && (y < LOCAL_DISPLAY_HEIGHT - (FONT_HEIGHT * aTextSize))) {
-        c = *aStringPtr++;
-        if (c == '\n') {
-            //new line
-            x = aPosX;
-            y += (FONT_HEIGHT * aTextSize) + 1;
-            LocalDisplay.fillRect(x, y, LOCAL_DISPLAY_WIDTH - 1, y + (FONT_HEIGHT * aTextSize) - 1, aBGColor);
-            continue;
-        } else if (c == '\r') {
-            //skip
-            continue;
-        }
-
-        if (c == ' ') {
-            //start of a new word
-            wstart = aStringPtr;
-            if (x == aPosX) {
-                //do nothing
-                continue;
-            }
-        }
-
-        if (c) {
-            if ((x + (FONT_WIDTH * aTextSize)) > LOCAL_DISPLAY_WIDTH - 1) {
-                //start at new line
-                if (c == ' ') {
-                    //do not start with space
-                    x = aPosX;
-                    y += (FONT_HEIGHT * aTextSize) + 1;
-                    LocalDisplay.fillRect(x, y, LOCAL_DISPLAY_WIDTH - 1, y + (FONT_HEIGHT * aTextSize) - 1, aBGColor);
-                } else {
-                    wlen = (aStringPtr - wstart);
-                    if (wlen > llen) {
-                        //word too long just print on next line
-                        x = aPosX;
-                        y += (FONT_HEIGHT * aTextSize) + 1;
-                        LocalDisplay.fillRect(x, y, LOCAL_DISPLAY_WIDTH - 1, y + (FONT_HEIGHT * aTextSize) - 1, aBGColor);
-                        x = LocalDisplay.drawChar(x, y, c, aTextSize, aColor, aBGColor);
-                    } else {
-                        //clear actual word in line and start on next line
-                        LocalDisplay.fillRect(x - (wlen * FONT_WIDTH * aTextSize), y, LOCAL_DISPLAY_WIDTH - 1,
-                                (y + (FONT_HEIGHT * aTextSize)), aBGColor);
-                        x = aPosX;
-                        y += (FONT_HEIGHT * aTextSize) + 1;
-                        LocalDisplay.fillRect(x, y, LOCAL_DISPLAY_WIDTH - 1, y + (FONT_HEIGHT * aTextSize) - 1, aBGColor);
-                        aStringPtr = wstart;
-                    }
-                }
-            } else {
-                // continue on line
-                x = LocalDisplay.drawChar(x, y, c, aTextSize, aColor, aBGColor);
-            }
-        }
-    }
-    return y;
 }
 
 uint16_t drawInteger(uint16_t x, uint16_t y, int val, uint8_t base, uint8_t size, uint16_t color, uint16_t bg_color) {
@@ -637,9 +403,20 @@ uint16_t drawInteger(uint16_t x, uint16_t y, int val, uint8_t base, uint8_t size
     return LocalDisplay.drawText(x, y, tmp, size, color, bg_color);
 }
 
-void setBrightness(int aBacklightValue) {
-    PWM_BL_setOnRatio(aBacklightValue);
-    LCDLastBacklightValue = aBacklightValue;
+/**
+ * @param aBrightnessPercent value from 0 to 100
+ */
+void SSD1289::setBacklightBrightness(uint8_t aBrightnessPercent) {
+    if (aBrightnessPercent > BACKLIGHT_MAX_BRIGHTNESS_VALUE) {
+        aBrightnessPercent = BACKLIGHT_MAX_BRIGHTNESS_VALUE;
+    }
+    setBrightness(aBrightnessPercent);
+}
+
+void setBrightness(int aLCDBacklightPercent) {
+    PWM_BL_setOnRatio(aLCDBacklightPercent);
+    sCurrentBacklightPercent = aLCDBacklightPercent;
+    sLastBacklightPercent = aLCDBacklightPercent;
 }
 
 /**
@@ -647,26 +424,17 @@ void setBrightness(int aBacklightValue) {
  */
 void setDimDelayMillis(int32_t aTimeMillis) {
     changeDelayCallback(&callbackLCDDimming, aTimeMillis);
-    LCDDimDelay = aTimeMillis;
+    sLCDDimDelay = aTimeMillis;
 }
 
 /**
  * restore backlight to value before dimming
  */
 void resetBacklightTimeout(void) {
-    if (LCDLastBacklightValue != LCDBacklightValue) {
-        setBrightness(LCDBacklightValue);
+    if (sLastBacklightPercent != sCurrentBacklightPercent) {
+        setBrightness(sCurrentBacklightPercent);
     }
-    changeDelayCallback(&callbackLCDDimming, LCDDimDelay);
-}
-
-int8_t getBacklightValue(void) {
-    return LCDBacklightValue;
-}
-
-void setBacklightValue(int aBacklightValue) {
-    LCDBacklightValue = clipBrightnessValue(aBacklightValue);
-    setBrightness(LCDBacklightValue);
+    changeDelayCallback(&callbackLCDDimming, sLCDDimDelay);
 }
 
 /**
@@ -674,20 +442,10 @@ void setBacklightValue(int aBacklightValue) {
  * Dim LCD after period of touch inactivity
  */
 void callbackLCDDimming(void) {
-    if (LCDBacklightValue > BACKLIGHT_DIM_VALUE) {
-        LCDLastBacklightValue = LCDBacklightValue;
+    if (sCurrentBacklightPercent > BACKLIGHT_DIM_VALUE) {
+        sLastBacklightPercent = sCurrentBacklightPercent;
         setBrightness(BACKLIGHT_DIM_VALUE);
     }
-}
-
-int clipBrightnessValue(int aBrightnessValue) {
-    if (aBrightnessValue > BACKLIGHT_MAX_VALUE) {
-        aBrightnessValue = BACKLIGHT_MAX_VALUE;
-    }
-    if (aBrightnessValue < BACKLIGHT_MIN_VALUE) {
-        aBrightnessValue = BACKLIGHT_MIN_VALUE;
-    }
-    return aBrightnessValue;
 }
 
 void writeCommand(int aRegisterAddress, int aRegisterValue) {
@@ -881,7 +639,7 @@ void setGamma(int aIndex) {
 /**
  * reads a display line in BMP 16 Bit format. ie. only 5 bit for green
  */
-uint16_t * fillDisplayLineBuffer(uint16_t * aBufferPtr, uint16_t yLineNumber) {
+uint16_t* SSD1289::fillDisplayLineBuffer(uint16_t *aBufferPtr, uint16_t yLineNumber) {
 // set area is needed!
     setArea(0, yLineNumber, LOCAL_DISPLAY_WIDTH - 1, yLineNumber);
     drawStart();
@@ -930,9 +688,9 @@ extern "C" void storeScreenshot(void) {
         RTC_getDateStringForFile(sStringBuffer);
         strcat(sStringBuffer, ".bmp");
         tOpenResult = f_open(&tFile, sStringBuffer, FA_CREATE_ALWAYS | FA_WRITE);
-        uint16_t * tBufferPtr;
+        uint16_t *tBufferPtr;
         if (tOpenResult == FR_OK) {
-            uint16_t * tFourDisplayLinesBufferPointer = (uint16_t *) malloc(sizeof(uint16_t) * 4 * DISPLAY_DEFAULT_WIDTH);
+            uint16_t *tFourDisplayLinesBufferPointer = (uint16_t*) malloc(sizeof(uint16_t) * 4 * DISPLAY_DEFAULT_WIDTH);
             if (tFourDisplayLinesBufferPointer == NULL) {
                 failParamMessage(sizeof(uint16_t) * 4 * DISPLAY_DEFAULT_WIDTH, "malloc() fails");
             }
@@ -942,10 +700,10 @@ extern "C" void storeScreenshot(void) {
             for (int i = LOCAL_DISPLAY_HEIGHT - 1; i >= 0;) {
                 tBufferPtr = tFourDisplayLinesBufferPointer;
                 // write 4 lines at a time to speed up I/O
-                tBufferPtr = fillDisplayLineBuffer(tBufferPtr, i--);
-                tBufferPtr = fillDisplayLineBuffer(tBufferPtr, i--);
-                tBufferPtr = fillDisplayLineBuffer(tBufferPtr, i--);
-                fillDisplayLineBuffer(tBufferPtr, i--);
+                tBufferPtr = LocalDisplay.fillDisplayLineBuffer(tBufferPtr, i--);
+                tBufferPtr = LocalDisplay.fillDisplayLineBuffer(tBufferPtr, i--);
+                tBufferPtr = LocalDisplay.fillDisplayLineBuffer(tBufferPtr, i--);
+                LocalDisplay.fillDisplayLineBuffer(tBufferPtr, i--);
                 // write a display line
                 f_write(&tFile, tFourDisplayLinesBufferPointer, LOCAL_DISPLAY_WIDTH * 8, &tCount);
             }
@@ -955,23 +713,6 @@ extern "C" void storeScreenshot(void) {
         }
     }
     FeedbackTone(tFeedbackType);
-}
-
-/*
- * fast divide by 11 for SSD1289 driver arguments
- */
-uint16_t getLocalTextSize(uint16_t aTextSize) {
-    if (aTextSize <= 11) {
-        return 1;
-    }
-#ifdef PGMSPACE_MATTERS
-    return 2;
-#else
-    if (aTextSize == 22) {
-        return 2;
-    }
-    return aTextSize / 11;
-#endif
 }
 
 /** @} */

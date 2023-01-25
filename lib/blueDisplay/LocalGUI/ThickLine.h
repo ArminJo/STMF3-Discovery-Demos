@@ -1,5 +1,5 @@
 /*
- * thickLine.h
+ * ThickLine.h
  *
  * @date 25.03.2013
  * @author  Armin Joachimsmeyer
@@ -8,8 +8,8 @@
  * @version 1.5.0
  */
 
-#ifndef THICKLINE_H_
-#define THICKLINE_H_
+#ifndef _THICKLINE_H
+#define _THICKLINE_H
 
 #include <stdint.h>
 
@@ -40,4 +40,4 @@ void drawThickLineSimple(unsigned int aXStart, unsigned int aYStart, unsigned in
 }
 #endif
 
-#endif /* THICKLINE_H_ */
+#endif // _THICKLINE_H

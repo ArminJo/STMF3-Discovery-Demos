@@ -17,7 +17,7 @@
 
 #define RADIUS_BALL 5
 #define INCREMENT 2
-#define COLOR_BALL COLOR_GREEN
+#define COLOR_BALL COLOR16_GREEN
 unsigned int LastX;
 unsigned int LastY;
 int32_t AccumulatedValueX;
@@ -41,7 +41,7 @@ unsigned int sHomeMidY = HOME_MID_Y;
 void initBobsDemo(void) {
 
     TouchButtonNextLevel.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_CYAN, "Next", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doNextLevel);
+    BUTTON_HEIGHT_4, COLOR16_CYAN, "Next", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doNextLevel);
 }
 
 void startBobsDemo(void) {
@@ -57,7 +57,7 @@ void startBobsDemo(void) {
     // male Home
     BlueDisplay1.drawChar(HOME_X - (TEXT_SIZE_22_WIDTH / 2), HOME_Y - (TEXT_SIZE_22_HEIGHT / 2) + TEXT_SIZE_22_ASCEND,
             0xD3,
-            HOME_FONT_SIZE, COLOR_RED, COLOR_BACKGROUND_DEFAULT);
+            HOME_FONT_SIZE, COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
     GameActive = true;
     // wait for end of touch vibration
     delayMillis(300);
@@ -65,7 +65,7 @@ void startBobsDemo(void) {
 }
 
 void stopBobsDemo(void) {
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonNextLevel.deinit();
 #endif
 }
@@ -80,12 +80,12 @@ void doNextLevel(BDButton * aTheTouchedButton, int16_t aValue) {
     startBobsDemo();
     //male Umrandung
     // left
-    BlueDisplay1.fillRectRel(sHomeMidX - 20, sHomeMidY - 20, 20 - (TEXT_SIZE_22_WIDTH / 2), 30, COLOR_BLUE);
+    BlueDisplay1.fillRectRel(sHomeMidX - 20, sHomeMidY - 20, 20 - (TEXT_SIZE_22_WIDTH / 2), 30, COLOR16_BLUE);
     // right
     BlueDisplay1.fillRectRel(sHomeMidX + (TEXT_SIZE_22_WIDTH / 2), sHomeMidY - 20, 20 - (TEXT_SIZE_22_WIDTH / 2), 30,
-    COLOR_BLUE);
+    COLOR16_BLUE);
     // top
-    BlueDisplay1.fillRectRel(sHomeMidX - (TEXT_SIZE_22_WIDTH / 2), sHomeMidY - 20, TEXT_SIZE_22_WIDTH, 8, COLOR_BLUE);
+    BlueDisplay1.fillRectRel(sHomeMidX - (TEXT_SIZE_22_WIDTH / 2), sHomeMidY - 20, TEXT_SIZE_22_WIDTH, 8, COLOR16_BLUE);
 }
 
 void loopBobsDemo(void) {
@@ -144,7 +144,7 @@ void loopBobsDemo(void) {
             BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
             TouchButtonMainHome.drawButton();
 //			TouchButtonClearScreen.drawButton();
-            BlueDisplay1.drawText(0, 100, "Level complete", TEXT_SIZE_22, COLOR_BLACK, COLOR_BACKGROUND_DEFAULT);
+            BlueDisplay1.drawText(0, 100, "Level complete", TEXT_SIZE_22, COLOR16_BLACK, COLOR_BACKGROUND_DEFAULT);
             TouchButtonNextLevel.drawButton();
             GameActive = false;
         } else {
@@ -170,7 +170,7 @@ void loopBobsDemo(void) {
                     && LastY - RADIUS_BALL <= (sHomeMidY + (TEXT_SIZE_22_HEIGHT / 2))) {
                 BlueDisplay1.drawChar(HOME_X - (TEXT_SIZE_22_WIDTH / 2),
                 HOME_Y - (TEXT_SIZE_22_HEIGHT / 2) + TEXT_SIZE_22_ASCEND, 0xD3,
-                HOME_FONT_SIZE, COLOR_RED, COLOR_BACKGROUND_DEFAULT);
+                HOME_FONT_SIZE, COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
             }
             BlueDisplay1.fillCircle(tNewX, tNewY, RADIUS_BALL, COLOR_BALL);
 

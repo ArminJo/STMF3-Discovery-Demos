@@ -1,25 +1,27 @@
 /*
  * PageSettins.cpp
  *
- * @date 16.01.2013
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.0.0
+ *
+ *  Copyright (C) 2013-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "Pages.h"
-
-#ifdef LOCAL_DISPLAY_EXISTS
-#include "ADS7846.h"
-#  if defined(USE_HY32D)
-#include "SSD1289.h"
-#  else
-#include "MI0283QT2.h"
-#  endif
-#endif
-
-#include "tinyPrint.h"
 
 #include <string.h>
 
@@ -30,8 +32,6 @@ extern "C" {
 //#include "stm32f30x_rtc.h"
 }
 
-const char StringUSBPrint[] = "USB Print";
-
 // date strings
 const char StringClock[] = "clock";
 const char StringYear[] = "year";
@@ -41,8 +41,7 @@ const char StringHour[] = "hour";
 const char StringMinute[] = "minute";
 const char String_min[] = "min";
 const char StringSecond[] = "second";
-const char * const DateStrings[] = { StringClock, StringSecond, StringMinute, StringHour, StringDay, StringMonth,
-        StringYear };
+const char *const DateStrings[] = { StringClock, StringSecond, StringMinute, StringHour, StringDay, StringMonth, StringYear };
 
 /* Public variables ---------------------------------------------------------*/
 unsigned long LastMillis = 0;
@@ -52,7 +51,7 @@ unsigned long LoopMillis = 0;
 
 #define MENU_TOP 15
 #define MENU_LEFT 30
-#define COLOR_BACKGROUND_FREQ COLOR_WHITE
+#define COLOR_BACKGROUND_FREQ COLOR16_WHITE
 
 #define PRINT_MODE_USB_DISABLED 0 //false
 #define PRINT_MODE_USB_ENABLED 1 //true
@@ -60,12 +59,12 @@ static uint8_t sPrintMode = PRINT_MODE_USB_DISABLED;
 
 #define SET_DATE_STRING_INDEX 4 // index of variable part in StringSetDateCaption
 /* Private variables ---------------------------------------------------------*/
-char StringSetDateCaption[] = "Set clock  "; // spaces needed for string "minute"
+char StringSetDateCaption[] = "Set\nclock  "; // spaces needed for string "minute"
 
 #ifdef LOCAL_DISPLAY_EXISTS
 static BDSlider TouchSliderBacklight;
 BDButton TouchButtonTPCalibration;
-void doTPCalibration(BDButton * aTheTouchedButton, int16_t aValue);
+void doTPCalibration(BDButton *aTheTouchedButton, int16_t aValue);
 BDButton TouchButtonAutorepeatBacklight_Plus;
 BDButton TouchButtonAutorepeatBacklight_Minus;
 #endif
@@ -75,13 +74,11 @@ BDButton TouchButtonSetDate;
 
 // for misc testing purposes
 
-void doTogglePrintEnable(BDButton * aTheTouchedButton, int16_t aValue);
-void doToggleTouchXYDisplay(BDButton * aTheTouchedButton, int16_t aValue);
+void doTogglePrintEnable(BDButton *aTheTouchedButton, int16_t aValue);
+void doToggleTouchXYDisplay(BDButton *aTheTouchedButton, int16_t aValue);
 
 BDButton TouchButtonAutorepeatDate_Plus;
 BDButton TouchButtonAutorepeatDate_Minus;
-
-char StringTPCal[] = "TP-Calibr.";
 
 /*********************************************
  * Print stuff
@@ -91,7 +88,7 @@ char StringTPCal[] = "TP-Calibr.";
  * @param aTheTouchedButton
  * @param aValue 0,1,2=USB Mode
  */
-void doTogglePrintEnable(BDButton * aTheTouchedButton, int16_t aValue) {
+void doTogglePrintEnable(BDButton *aTheTouchedButton, int16_t aValue) {
     sPrintMode = !sPrintMode;
     if (sPrintMode) {
         //USB_ChangeToCDC();
@@ -110,6 +107,7 @@ void drawSettingsPage(void) {
 #endif
     TouchButtonTogglePrintMode.drawButton();
     TouchButtonToggleTouchXYDisplay.drawButton();
+    TouchButtonMainHome.drawButton();
 }
 
 void startSettingsPage(void) {
@@ -121,21 +119,18 @@ void startSettingsPage(void) {
     //1. row
     int tPosY = 0;
 #ifdef LOCAL_DISPLAY_EXISTS
-    TouchButtonToggleTouchXYDisplay.init(BUTTON_WIDTH_3_POS_2, tPosY,
-    BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Touch X Y", TEXT_SIZE_11,
-            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, getDisplayXYValuesFlag(),
+    TouchButtonToggleTouchXYDisplay.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Touch\nX Y",
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, getDisplayXYValuesFlag(),
             &doToggleTouchXYDisplay);
 #endif
     //2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonTogglePrintMode.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, 0, StringUSBPrint, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
-            0, &doTogglePrintEnable);
+    TouchButtonTogglePrintMode.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "USB\nPrint", TEXT_SIZE_22,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, 0, &doTogglePrintEnable);
 
 #ifdef LOCAL_DISPLAY_EXISTS
-    TouchButtonTPCalibration.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4,
-    COLOR_RED, StringTPCal, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTPCalibration);
+    TouchButtonTPCalibration.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "TP-Calibr.",
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTPCalibration);
 #endif
 
     ADC_setRawToVoltFactor();
@@ -144,8 +139,7 @@ void startSettingsPage(void) {
 }
 
 void loopSettingsPage(void) {
-    showRTCTimeEverySecond(2, BlueDisplay1.getDisplayHeight() - TEXT_SIZE_11_DECEND - 1, COLOR_RED,
-    COLOR_BACKGROUND_DEFAULT);
+    showRTCTimeEverySecond(2, BlueDisplay1.getDisplayHeight() - TEXT_SIZE_11_DECEND - 1, COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
     checkAndHandleEvents();
 }
 
@@ -153,7 +147,7 @@ void stopSettingsPage(void) {
 #ifdef LOCAL_DISPLAY_EXISTS
     deinitBacklightElements();
 #endif
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonTPCalibration.deinit();
     TouchButtonTogglePrintMode.deinit();
     TouchButtonToggleTouchXYDisplay.deinit();
@@ -166,32 +160,28 @@ void stopSettingsPage(void) {
  * @param aTheTouchedButton
  * @param aValue assume as boolean here
  */
-void doToggleTouchXYDisplay(BDButton * aTheTouchedButton, int16_t aValue) {
-    setDisplayXYValuesFlag(!aValue);
-    aTheTouchedButton->setValueAndDraw(!aValue);
+void doToggleTouchXYDisplay(BDButton *aTheTouchedButton, int16_t aValue) {
+    setDisplayXYValuesFlag(aValue);
 }
 
 /*************************************************************
  * RTC and clock setting stuff
  *************************************************************/
 uint8_t sSetDateMode;
-void doSetDateMode(BDButton * aTheTouchedButton, int16_t aValue);
-void doSetDate(BDButton * aTheTouchedButton, int16_t aValue);
+void doSetDateMode(BDButton *aTheTouchedButton, int16_t aValue);
+void doSetDate(BDButton *aTheTouchedButton, int16_t aValue);
 
 void initClockSettingElements(void) {
     strncpy(&StringSetDateCaption[SET_DATE_STRING_INDEX], DateStrings[0], sizeof StringSecond);
 
-    TouchButtonSetDate.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3,
-    BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR_RED, StringSetDateCaption, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
+    TouchButtonSetDate.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3, BUTTON_WIDTH_3,
+    BUTTON_HEIGHT_4, COLOR16_RED, StringSetDateCaption, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
     // for RTC setting
     TouchButtonAutorepeatDate_Plus.init(BUTTON_WIDTH_6_POS_4, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_5, COLOR_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
-            &doSetDate);
+    BUTTON_HEIGHT_5, COLOR16_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1, &doSetDate);
 
     TouchButtonAutorepeatDate_Minus.init(BUTTON_WIDTH_6_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_5, COLOR_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1,
-            &doSetDate);
+    BUTTON_HEIGHT_5, COLOR16_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doSetDate);
 
     TouchButtonAutorepeatDate_Plus.setButtonAutorepeatTiming(500, 300, 5, 100);
     TouchButtonAutorepeatDate_Minus.setButtonAutorepeatTiming(500, 300, 5, 100);
@@ -199,7 +189,7 @@ void initClockSettingElements(void) {
 }
 
 void deinitClockSettingElements(void) {
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonSetDate.deinit();
     TouchButtonAutorepeatDate_Plus.deinit();
     TouchButtonAutorepeatDate_Minus.deinit();
@@ -211,7 +201,7 @@ void drawClockSettingElements(void) {
     sSetDateMode = 0;
 }
 
-void doSetDateMode(BDButton * aTheTouchedButton, int16_t aValue) {
+void doSetDateMode(BDButton *aTheTouchedButton, int16_t aValue) {
     sSetDateMode++;
     if (sSetDateMode == 1) {
         TouchButtonAutorepeatDate_Plus.drawButton();
@@ -228,7 +218,7 @@ void doSetDateMode(BDButton * aTheTouchedButton, int16_t aValue) {
 }
 
 uint8_t sDateTimeMaxValues[] = { 59, 59, 23, 31, 12, 99 };
-void checkAndSetDateTimeElement(uint8_t * aElementPointer, uint8_t SetDateMode, int16_t aValue) {
+void checkAndSetDateTimeElement(uint8_t *aElementPointer, uint8_t SetDateMode, int16_t aValue) {
     SetDateMode--;
     uint8_t tNewValue = *aElementPointer + aValue;
     uint8_t tMaxValue = sDateTimeMaxValues[SetDateMode];
@@ -255,10 +245,10 @@ void checkAndSetDateTimeElement(uint8_t * aElementPointer, uint8_t SetDateMode, 
     *aElementPointer = tNewValue;
 }
 
-void doSetDate(BDButton * aTheTouchedButton, int16_t aValue) {
+void doSetDate(BDButton *aTheTouchedButton, int16_t aValue) {
     assertParamMessage((sSetDateMode != 0), sSetDateMode, "Impossible mode");
     HAL_PWR_EnableBkUpAccess();
-    uint8_t * tElementPointer;
+    uint8_t *tElementPointer;
     if (sSetDateMode < 4) {
         //set time
         RTC_TimeTypeDef RTC_TimeStructure;
@@ -288,12 +278,12 @@ void doSetDate(BDButton * aTheTouchedButton, int16_t aValue) {
         HAL_RTC_SetDate(&RTCHandle, &RTC_DateStructure, FORMAT_BIN);
     }
     RTC_PWRDisableBkUpAccess();
-    showRTCTime(2, BlueDisplay1.getDisplayHeight() - TEXT_SIZE_11_DECEND - 1, COLOR_RED, COLOR_BACKGROUND_DEFAULT,
+    showRTCTime(2, BlueDisplay1.getDisplayHeight() - TEXT_SIZE_11_DECEND - 1, COLOR16_RED, COLOR_BACKGROUND_DEFAULT,
     true);
 }
 
 #ifdef LOCAL_DISPLAY_EXISTS
-void doTPCalibration(BDButton * aTheTouchedButton, int16_t aValue) {
+void doTPCalibration(BDButton *aTheTouchedButton, int16_t aValue) {
     //Calibration Button pressed -> calibrate touch panel
     TouchPanel.doCalibration(false);
     drawSettingsPage();
@@ -301,7 +291,7 @@ void doTPCalibration(BDButton * aTheTouchedButton, int16_t aValue) {
 /*************************************************************
  * Backlight stuff
  *************************************************************/
-void doChangeBacklight(BDButton * aTheTouchedButton, int16_t aValue);
+void doChangeBacklight(BDButton *aTheTouchedButton, int16_t aValue);
 
 /**
  * create backlight slider and autorepeat buttons
@@ -311,23 +301,23 @@ void initBacklightElements(void) {
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
     TouchButtonAutorepeatBacklight_Plus.init(BACKLIGHT_CONTROL_X, BACKLIGHT_CONTROL_Y, BUTTON_WIDTH_10,
-    BUTTON_HEIGHT_6, COLOR_RED, "+", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
+    BUTTON_HEIGHT_6, COLOR16_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
             &doChangeBacklight);
     /*
      * Backlight slider
      */
     TouchSliderBacklight.init(BACKLIGHT_CONTROL_X, BACKLIGHT_CONTROL_Y + BUTTON_HEIGHT_6 + 4,
-    SLIDER_DEFAULT_BAR_WIDTH, BACKLIGHT_MAX_VALUE, BACKLIGHT_MAX_VALUE, getBacklightValue(), COLOR_BLUE,
-    COLOR_GREEN, FLAG_SLIDER_SHOW_BORDER| FLAG_SLIDER_SHOW_VALUE, &doBacklightSlider);
-    TouchSliderBacklight.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR_RED,
+    SLIDER_DEFAULT_BAR_WIDTH, BACKLIGHT_MAX_BRIGHTNESS_VALUE, BACKLIGHT_MAX_BRIGHTNESS_VALUE, sCurrentBacklightPercent, COLOR16_BLUE,
+    COLOR16_GREEN, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_SHOW_VALUE, &doBacklightSlider);
+    TouchSliderBacklight.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR16_RED,
     COLOR_BACKGROUND_DEFAULT);
     TouchSliderBacklight.setCaption("Backlight");
     TouchSliderBacklight.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4 + TEXT_SIZE_11,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
     TouchButtonAutorepeatBacklight_Minus.init(BACKLIGHT_CONTROL_X, TouchSliderBacklight.getPositionYBottom() + 30,
-    BUTTON_WIDTH_10, BUTTON_HEIGHT_6, COLOR_RED, "-", TEXT_SIZE_11,
-            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeBacklight);
+    BUTTON_WIDTH_10, BUTTON_HEIGHT_6, COLOR16_RED, "-", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT,
+            -1, &doChangeBacklight);
 
     TouchButtonAutorepeatBacklight_Plus.setButtonAutorepeatTiming(600, 100, 10, 20);
     TouchButtonAutorepeatBacklight_Minus.setButtonAutorepeatTiming(600, 100, 10, 20);
@@ -347,14 +337,13 @@ void drawBacklightElements(void) {
     TouchButtonAutorepeatBacklight_Minus.drawButton();
 }
 
-void doBacklightSlider(BDSlider * aTheTouchedSlider, uint16_t aValue) {
-    setBacklightValue(aValue);
+void doBacklightSlider(BDSlider *aTheTouchedSlider, uint16_t aBrightnessPercent) {
+    LocalDisplay.setBacklightBrightness(aBrightnessPercent);
 }
 
-void doChangeBacklight(BDButton * aTheTouchedButton, int16_t aValue) {
-    FeedbackToneOK();
-    setBacklightValue(getBacklightValue() + aValue);
-    TouchSliderBacklight.setValueAndDrawBar(getBacklightValue());
+void doChangeBacklight(BDButton *aTheTouchedButton, int16_t aValue) {
+    LocalDisplay.setBacklightBrightness(sCurrentBacklightPercent + aValue);
+    TouchSliderBacklight.setValueAndDrawBar(sCurrentBacklightPercent);
 }
 #endif
 

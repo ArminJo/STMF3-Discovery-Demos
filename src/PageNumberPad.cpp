@@ -116,7 +116,7 @@ void drawNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButtonColor) {
 
 void drawNumberPadValue(char *aNumberPadBuffer) {
     BlueDisplay1.drawText(sXStart, sYStart + TEXT_SIZE_22_ASCEND, aNumberPadBuffer, TEXT_SIZE_22, COLOR_PAGE_INFO,
-    COLOR_WHITE);
+    COLOR16_WHITE);
 }
 
 /**
@@ -195,7 +195,7 @@ float getNumberFromNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButto
     while (!numberpadInputHasFinished) {
         checkAndHandleEvents();
     }
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     // free numberpad buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsNumberPad) / sizeof(TouchButtonsNumberPad[0]); ++i) {
         TouchButtonsNumberPad[i]->deinit();
@@ -204,6 +204,7 @@ float getNumberFromNumberPad(uint16_t aXStart, uint16_t aYStart, uint16_t aButto
     // to avoid end touch handling of releasing OK or Cancel button of numberpad
     sDisableTouchUpOnce = true;
     setTouchUpCallbackEnabled(true);
+    BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
     if (numberpadInputHasCanceled) {
         return NAN;
     } else {

@@ -245,7 +245,7 @@ void initAcquisition(void) {
     MeasurementControl.AttenuatorType = ATTENUATOR_TYPE_ACTIVE_ATTENUATOR;
     MeasurementControl.FirstChannelIndexWithoutAttenuator = NUMBER_OF_CHANNEL_WITH_ACTIVE_ATTENUATOR;
 
-    MeasurementControl.ADCInputMUXChannelIndex = tStartChannel;
+    MeasurementControl.ADMUXChannel = tStartChannel;
 
     // AC mode on uses DisplayRangeIndex
     MeasurementControl.isACMode = true;
@@ -266,7 +266,7 @@ void initAcquisition(void) {
     /*
      * Values must be set before initGui()
      */
-    MeasurementControl.ADCInputMUXChannelIndex = tStartChannel;
+    MeasurementControl.ADMUXChannel = tStartChannel;
 
     // AC mode off (needs DisplayRangeIndex if true)
     MeasurementControl.isACMode = false;
@@ -300,7 +300,7 @@ void resetAcquisition(void) {
     autoACZeroCalibration(); // sets MeasurementControl.DSOReadingACZero
     initRawToDisplayFactorsAndMaxPeakToPeakValues();
     // needs AttenuatorType and sADCToVoltFactor - sets Channel + Range + actualDSORawToVoltFactor values
-    setChannel(MeasurementControl.ADCInputMUXChannelIndex);
+    setChannel(MeasurementControl.ADMUXChannel);
 
     // Timebase
     MeasurementControl.TimebaseNewIndex = MeasurementControl.TimebaseEffectiveIndex;
@@ -451,9 +451,9 @@ void readADS7846Channels(void) {
 
     uint16_t tValue;
     uint16_t *DataPointer = DataBufferControl.DataBufferNextInPointer;
-    tValue = TouchPanel.readChannel(ADS7846ChannelMapping[MeasurementControl.ADCInputMUXChannelIndex], true, false, 0x1);
+    tValue = TouchPanel.readChannel(ADS7846ChannelMapping[MeasurementControl.ADMUXChannel], true, false, 0x1);
     while (DataPointer <= DataBufferControl.DataBufferEndPointer) {
-        tValue = TouchPanel.readChannel(ADS7846ChannelMapping[MeasurementControl.ADCInputMUXChannelIndex], true,
+        tValue = TouchPanel.readChannel(ADS7846ChannelMapping[MeasurementControl.ADMUXChannel], true,
         false, 0x1);
         *DataPointer++ = tValue;
     }
@@ -1054,11 +1054,11 @@ bool setDisplayRange(int aNewRangeIndex) {
         DSO_setAttenuator(AttenuatorHardwareValue[aNewRangeIndex]);
         MeasurementControl.actualDSORawToVoltFactor = sADCToVoltFactor * RawAttenuationFactor[aNewRangeIndex];
     } else if (MeasurementControl.AttenuatorType == ATTENUATOR_TYPE_FIXED_ATTENUATOR
-            && MeasurementControl.ADCInputMUXChannelIndex < NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR) {
+            && MeasurementControl.ADMUXChannel < NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR) {
         MeasurementControl.actualDSORawToVoltFactor = sADCToVoltFactor
-                * FixedAttenuationFactor[MeasurementControl.ADCInputMUXChannelIndex];
+                * FixedAttenuationFactor[MeasurementControl.ADMUXChannel];
         // for display of grid and for precision use other index for print
-        MeasurementControl.DisplayRangeIndexForPrint = aNewRangeIndex + (3 * MeasurementControl.ADCInputMUXChannelIndex);
+        MeasurementControl.DisplayRangeIndexForPrint = aNewRangeIndex + (3 * MeasurementControl.ADMUXChannel);
     } else {
         MeasurementControl.actualDSORawToVoltFactor = sADCToVoltFactor;
     }
@@ -1202,7 +1202,7 @@ void changeTimeBase(void) {
 
     ADC_SetTimerPeriod(TimebaseTimerDividerValues[tOversampleIndex], TimebaseTimerPrescalerDividerValues[tOversampleIndex]);
     // so set matching sampling times for channel
-    ADC_SelectChannelAndSetSampleTime(&ADC1Handle, ADCInputMUXChannels[MeasurementControl.ADCInputMUXChannelIndex],
+    ADC_SelectChannelAndSetSampleTime(&ADC1Handle, ADCInputMUXChannels[MeasurementControl.ADMUXChannel],
             (tOversampleIndex < TIMEBASE_FAST_MODES));
 
     // stop and start is really needed :-(
@@ -1267,10 +1267,10 @@ void setChannel(uint8_t aChannelIndex) {
         MeasurementControl.ChannelHasAC_DCSwitch = true;
         MeasurementControl.ChannelIsACMode = MeasurementControl.isACMode;
     }
-    MeasurementControl.ADCInputMUXChannelIndex = aChannelIndex;
-    ADC_SelectChannelAndSetSampleTime(&ADC1Handle, ADCInputMUXChannels[MeasurementControl.ADCInputMUXChannelIndex],
+    MeasurementControl.ADMUXChannel = aChannelIndex;
+    ADC_SelectChannelAndSetSampleTime(&ADC1Handle, ADCInputMUXChannels[MeasurementControl.ADMUXChannel],
             MeasurementControl.TimebaseFastDMAMode);
-    setDisplayRange(tNewRange); // calls in turn DSO_setAttenuator() and needs ADCInputMUXChannelIndex
+    setDisplayRange(tNewRange); // calls in turn DSO_setAttenuator() and needs ADMUXChannel
 }
 
 /**

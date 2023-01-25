@@ -1,5 +1,26 @@
 /**
- Game Of Life (Display)
+ * GameOfLife.cpp
+ *
+ * Implements the Game Of Life on a (Display)
+ *
+ *
+ *  Copyright (C) 2012-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "BlueDisplay.h"
@@ -126,34 +147,34 @@ void init_gol(void) {
     generation = 0;
 
     //change color
-    drawcolor[DEAD_COLOR] = RGB( 255, 255, 255);
+    drawcolor[DEAD_COLOR] = COLOR16_WHITE;
 
     switch (drawcolor[ALIVE_COLOR]) {
     case RGB( 0,255, 0): //RGB(255,  0,  0)
         drawcolor[BG_COLOR] = RGB( 0, 180, 180);
-        drawcolor[ALIVE_COLOR] = RGB(255, 0, 0);
+        drawcolor[ALIVE_COLOR] = COLOR16_RED;
         drawcolor[DIE1_COLOR] = RGB( 130, 0, 0);
-        drawcolor[DIE2_COLOR] = RGB(180, 0, 0);
+        drawcolor[DIE2_COLOR] = COLOR16_RED;
         break;
 
     case RGB( 0, 0,255): //RGB(  0,255,  0)
         drawcolor[BG_COLOR] = RGB( 180, 0, 180);
-        drawcolor[ALIVE_COLOR] = RGB( 0,255, 0);
+        drawcolor[ALIVE_COLOR] = COLOR16_GREEN;
         drawcolor[DIE1_COLOR] = RGB( 0, 130, 0);
-        drawcolor[DIE2_COLOR] = RGB( 0,180, 0);
+        drawcolor[DIE2_COLOR] = COLOR16_GREEN;
         break;
 
     default: //RGB(  0,  0,255)
         drawcolor[BG_COLOR] = RGB(180, 180, 0);
-        drawcolor[ALIVE_COLOR] = RGB( 0, 0,255);
+        drawcolor[ALIVE_COLOR] = COLOR16_BLUE;
         drawcolor[DIE1_COLOR] = RGB( 0, 0, 130);
-        drawcolor[DIE2_COLOR] = RGB( 0, 0,180);
+        drawcolor[DIE2_COLOR] = COLOR16_BLUE;
         break;
     }
     if (!GolShowDying) {
         // change colors
-        drawcolor[DIE1_COLOR] = RGB( 255, 255, 255);
-        drawcolor[DIE2_COLOR] = RGB( 255, 255, 255);
+        drawcolor[DIE1_COLOR] = COLOR16_WHITE;
+        drawcolor[DIE2_COLOR] = COLOR16_WHITE;
     }
 
     //generate random start data

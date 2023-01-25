@@ -1,11 +1,5 @@
 /**
- * @file GuiDemo.cpp
- *
- * @date 31.01.2012
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.0.0
+ * GuiDemo.cpp
  *
  *      Demo of the libs:
  *      TouchButton
@@ -20,13 +14,26 @@
  *
  *      For STM32F3 Discovery
  *
+ *  Copyright (C) 2012-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #include "Pages.h"
-#ifdef LOCAL_DISPLAY_EXISTS
-#include "ADS7846.h"
-#endif
-
 #include "GameOfLife.h"
 #include "Chart.h"
 
@@ -38,14 +45,14 @@
  * LCD and touch panel stuff
  */
 
-#define COLOR_DEMO_BACKGROUND COLOR_WHITE
+#define COLOR_DEMO_BACKGROUND COLOR16_WHITE
 
 void createDemoButtonsAndSliders(void);
 
 // Global button handler
-void doGuiDemoButtons(BDButton * aTheTochedButton, int16_t aValue);
+void doGuiDemoButtons(BDButton *aTheTochedButton, int16_t aValue);
 
-void doGolSpeed(BDSlider * aTheTochedSlider, uint16_t aSliderValue);
+void doGolSpeed(BDSlider *aTheTochedSlider, uint16_t aSliderValue);
 
 BDButton TouchButtonContinue;
 
@@ -56,16 +63,15 @@ BDButton TouchButtonDemoSettings;
 void showGolSettings(void);
 
 BDButton TouchButtonGolDying;
-void doGolDying(BDButton * aTheTouchedButton, int16_t aValue);
+void doGolDying(BDButton *aTheTouchedButton, int16_t aValue);
 
 BDButton TouchButtonNew;
-void doNew(BDButton * aTheTouchedButton, int16_t aValue);
-void doContinue(BDButton * aTheTouchedButton, int16_t aValue);
+void doNew(BDButton *aTheTouchedButton, int16_t aValue);
+void doContinue(BDButton *aTheTouchedButton, int16_t aValue);
 void initNewGameOfLife(void);
 
 static BDSlider TouchSliderGolSpeed;
 
-const char StringGOL[] = "GameOfLife";
 // to slow down game of life
 unsigned long GolDelay = 0;
 bool GolShowDying = true;
@@ -114,14 +120,14 @@ BDButton TouchButtonCalibration;
  */
 BDButton TouchButtonADS7846Channels;
 void ADS7846DisplayChannels(void);
-void doADS7846Channels(BDButton * aTheTouchedButton, int16_t aValue);
+void doADS7846Channels(BDButton *aTheTouchedButton, int16_t aValue);
 #endif
 
 void initGuiDemo(void) {
 }
 
-BDButton * TouchButtonsGuiDemo[] = { &TouchButtonDemoSettings, &TouchButtonChartDemo, &TouchButtonGameOfLife,
-        &TouchButtonBack, &TouchButtonGolDying, &TouchButtonNew, &TouchButtonContinue
+BDButton *TouchButtonsGuiDemo[] = { &TouchButtonDemoSettings, &TouchButtonChartDemo, &TouchButtonGameOfLife, &TouchButtonBack,
+        &TouchButtonGolDying, &TouchButtonNew, &TouchButtonContinue
 #ifdef LOCAL_DISPLAY_EXISTS
         , &TouchButtonCalibration, &TouchButtonADS7846Channels
 #endif
@@ -154,7 +160,7 @@ void loopGuiDemo(void) {
             if (GolRunning) {
                 // switch back to settings page
                 showGolSettings();
-                FeedbackToneOK();
+                playLocalFeedbackTone();
             }
             break;
         }
@@ -211,7 +217,7 @@ void loopGuiDemo(void) {
 
 void stopGuiDemo(void) {
     delete[] frame;
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsGuiDemo) / sizeof(TouchButtonsGuiDemo[0]); ++i) {
         TouchButtonsGuiDemo[i]->deinit();
@@ -236,67 +242,65 @@ void createDemoButtonsAndSliders(void) {
      */
     //1. row
     int tPosY = 0;
-    TouchButtonChartDemo.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "Chart",
+    TouchButtonChartDemo.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR16_RED, "Chart",
     TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // Back text button for sub pages
-    TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "Back",
+    TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "Back",
     TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonGameOfLife.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, StringGOL,
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TouchButtonGameOfLife.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR16_RED, "Game\nof Life",
+    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
     // 3. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonDemoSettings.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "Settings",
+    TouchButtonDemoSettings.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR16_RED, "Settings",
     TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 
 #ifdef LOCAL_DISPLAY_EXISTS
     // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonADS7846Channels.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED, "ADS7846",
+    TouchButtonADS7846Channels.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR16_RED, "ADS7846",
     TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doADS7846Channels);
 
     // sub pages
-    TouchButtonCalibration.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_RED,
-            StringTPCalibration, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
+    TouchButtonCalibration.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR16_RED, StringTPCalibration,
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGuiDemoButtons);
 #endif
-    TouchButtonNew.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "New", TEXT_SIZE_22,
-            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doNew);
+    TouchButtonNew.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "New", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
+            &doNew);
 
-    TouchButtonContinue.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_RED, "Continue",
+    TouchButtonContinue.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "Continue",
     TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doContinue);
 
     /*
      * Slider
      */
-    TouchSliderGolSpeed.init(70, BUTTON_HEIGHT_4 + BUTTON_DEFAULT_SPACING_HALF, 10, 75, 75, 75, COLOR_BLUE,
-    COLOR_GREEN,
-            FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_IS_HORIZONTAL | TOUCHSLIDER_HORIZONTAL_VALUE_BELOW_TITLE
-                    | FLAG_SLIDER_VALUE_BY_CALLBACK, &doGolSpeed);
-    TouchSliderGolSpeed.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 2, COLOR_RED,
-    COLOR_BACKGROUND_DEFAULT);
+    TouchSliderGolSpeed.init(70, BUTTON_HEIGHT_4 + BUTTON_DEFAULT_SPACING_HALF, 10, 75, 75, 75, COLOR16_BLUE,
+    COLOR16_GREEN, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_IS_HORIZONTAL | FLAG_SLIDER_CAPTION_BELOW | FLAG_SLIDER_VALUE_BY_CALLBACK,
+            &doGolSpeed);
+    TouchSliderGolSpeed.setCaptionProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 2, COLOR16_RED,
+            COLOR_BACKGROUND_DEFAULT);
     TouchSliderGolSpeed.setCaption("Gol-Speed");
     TouchSliderGolSpeed.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4 + TEXT_SIZE_11,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
 // ON OFF button relative to slider
-    TouchButtonGolDying.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_RED, "Show dying", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, false,
-            &doGolDying);
+    TouchButtonGolDying.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Show dying",
+    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, false, &doGolDying);
 
 // self moving sliders
     TouchSliderActionWithoutBorder.init(180, BUTTON_HEIGHT_4_LINE_2 - 10, 20, ACTION_SLIDER_MAX, ACTION_SLIDER_MAX, 0,
-    COLOR_BLUE, COLOR_YELLOW, FLAG_SLIDER_SHOW_VALUE | FLAG_SLIDER_IS_ONLY_OUTPUT, NULL);
+    COLOR16_BLUE, COLOR16_YELLOW, FLAG_SLIDER_SHOW_VALUE | FLAG_SLIDER_IS_ONLY_OUTPUT, NULL);
     TouchSliderActionWithoutBorder.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4,
-    COLOR_BLUE, COLOR_BACKGROUND_DEFAULT);
+    COLOR16_BLUE, COLOR_BACKGROUND_DEFAULT);
 
     TouchSliderAction.init(180 + 2 * 20 + BUTTON_DEFAULT_SPACING, BUTTON_HEIGHT_4_LINE_2 - 10, 20, ACTION_SLIDER_MAX,
-    ACTION_SLIDER_MAX, 0, COLOR_BLUE, COLOR_YELLOW, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_SHOW_VALUE | FLAG_SLIDER_IS_ONLY_OUTPUT,
+    ACTION_SLIDER_MAX, 0, COLOR16_BLUE, COLOR16_YELLOW, FLAG_SLIDER_SHOW_BORDER | FLAG_SLIDER_SHOW_VALUE | FLAG_SLIDER_IS_ONLY_OUTPUT,
     NULL);
-    TouchSliderAction.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR_BLUE,
+    TouchSliderAction.setPrintValueProperties(TEXT_SIZE_11, FLAG_SLIDER_CAPTION_ALIGN_MIDDLE, 4, COLOR16_BLUE,
     COLOR_BACKGROUND_DEFAULT);
 
 #pragma GCC diagnostic pop
@@ -308,9 +312,9 @@ const char StringSlow[] = "slow   ";
 const char StringNormal[] = "normal ";
 const char StringFast[] = "fast   ";
 
-void doGolSpeed(BDSlider * aTheTouchedSlider, uint16_t aSliderValue) {
+void doGolSpeed(BDSlider *aTheTouchedSlider, uint16_t aSliderValue) {
     aSliderValue = aSliderValue / 25;
-    const char * tValueString = "";
+    const char *tValueString = "";
     switch (aSliderValue) {
     case 0:
         GolDelay = 8000;
@@ -333,7 +337,7 @@ void doGolSpeed(BDSlider * aTheTouchedSlider, uint16_t aSliderValue) {
     aTheTouchedSlider->setValueAndDrawBar(aSliderValue * 25);
 }
 
-void doGuiDemoButtons(BDButton * aTheTouchedButton, int16_t aValue) {
+void doGuiDemoButtons(BDButton *aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     BDSlider::deactivateAllSliders();
     if (aTheTouchedButton->mButtonHandle == TouchButtonChartDemo.mButtonHandle) {
@@ -369,7 +373,7 @@ void doGuiDemoButtons(BDButton * aTheTouchedButton, int16_t aValue) {
     }
 }
 
-void doGolDying(BDButton * aTheTouchedButton, int16_t aValue) {
+void doGolDying(BDButton *aTheTouchedButton, int16_t aValue) {
     GolShowDying = !aValue;
     TouchButtonGolDying.setValueAndDraw(!aValue);
 }
@@ -387,7 +391,7 @@ void showGolSettings(void) {
     TouchButtonContinue.drawButton();
 }
 
-void doNew(BDButton * aTheTouchedButton, int16_t aValue) {
+void doNew(BDButton *aTheTouchedButton, int16_t aValue) {
 // deactivate gui elements
     BDButton::deactivateAllButtons();
     BDSlider::deactivateAllSliders();
@@ -396,7 +400,7 @@ void doNew(BDButton * aTheTouchedButton, int16_t aValue) {
     GolRunning = true;
 }
 
-void doContinue(BDButton * aTheTouchedButton, int16_t aValue) {
+void doContinue(BDButton *aTheTouchedButton, int16_t aValue) {
 // deactivate gui elements
     BDButton::deactivateAllButtons();
     BDSlider::deactivateAllSliders();
@@ -455,7 +459,7 @@ void showFont(void) {
     for (uint8_t i = 14; i != 0; i--) {
         tXPos = 10;
         for (uint8_t j = 16; j != 0; j--) {
-            tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_11, COLOR_BLACK, COLOR_YELLOW) + 4;
+            tXPos = BlueDisplay1.drawChar(tXPos, tYPos, tChar, TEXT_SIZE_11, COLOR16_BLACK, COLOR16_YELLOW) + 4;
             tChar++;
         }
         tYPos += TEXT_SIZE_11_HEIGHT + 4;
@@ -473,14 +477,14 @@ void showCharts(void) {
 }
 
 #ifdef LOCAL_DISPLAY_EXISTS
-void doADS7846Channels(BDButton * aTheTouchedButton, int16_t aValue) {
+void doADS7846Channels(BDButton *aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
     mActualApplication = APPLICATION_ADS7846_CHANNELS;
     BlueDisplay1.clearDisplay(COLOR_DEMO_BACKGROUND);
     uint16_t tPosY = 30;
     // draw text
     for (uint8_t i = 0; i < 8; ++i) {
-        BlueDisplay1.drawText(90, tPosY, (char *) ADS7846ChannelStrings[i], TEXT_SIZE_22, COLOR_RED,
+        BlueDisplay1.drawText(90, tPosY, (char*) ADS7846ChannelStrings[i], TEXT_SIZE_22, COLOR16_RED,
         COLOR_DEMO_BACKGROUND);
         tPosY += TEXT_SIZE_22_HEIGHT;
     }
@@ -504,12 +508,12 @@ void ADS7846DisplayChannels(void) {
         }
         tTemp = TouchPanel.readChannel(ADS7846ChannelMapping[i], tUse12BitMode, tUseDiffMode, 2);
         snprintf(sStringBuffer, sizeof sStringBuffer, "%04u", tTemp);
-        BlueDisplay1.drawText(15, tPosY, sStringBuffer, TEXT_SIZE_22, COLOR_RED, COLOR_DEMO_BACKGROUND);
+        BlueDisplay1.drawText(15, tPosY, sStringBuffer, TEXT_SIZE_22, COLOR16_RED, COLOR_DEMO_BACKGROUND);
         tPosY += TEXT_SIZE_22_HEIGHT;
     }
     aButtonCheckInterval++;
     if (aButtonCheckInterval >= BUTTON_CHECK_INTERVAL) {
-        TouchPanel.rd_data();
+        TouchPanel.readData();
         if (TouchPanel.mPressure > MIN_REASONABLE_PRESSURE) {
             // TODO use Callback
             //TouchButtonBack->checkButton(TouchPanel.getXActual(), TouchPanel.getYActual(), true);

@@ -28,8 +28,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_desc.h"
 #include "usbd_hid.h"
-
-#include "tinyPrint.h"
+#include "LocalGUI/LocalTinyPrint.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/

@@ -418,9 +418,9 @@ extern "C" bool isTimeoutVerbose(uint8_t* aFile, uint32_t aLine, uint32_t aValue
             snprintf(sStringBuffer, sizeof sStringBuffer, "Timeout on line: %lu %#X %u\nfile: %s", aLine,
                     (unsigned int) aValue, (unsigned int) aValue, tFile);
 #ifdef LOCAL_DISPLAY_EXISTS
-            BlueDisplay1.drawMLText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+            BlueDisplay1.drawMLText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #else
-            BlueDisplay1.drawText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+            BlueDisplay1.drawText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #endif
             delayMillis(aMessageDisplayTimeMillis);
         }

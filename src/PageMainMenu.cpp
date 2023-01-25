@@ -26,7 +26,7 @@
 
 #include "myStrings.h" // for StringHomeChar
 
-#include "TouchButton.h"
+#include "LocalGUI/LocalTouchButton.h"
 #include "AccuCapacity.h"
 #include "GuiDemo.h"
 #include "stm32f3DiscoveryLedsButtons.h"
@@ -39,7 +39,7 @@ extern "C" {
 /* Private define ------------------------------------------------------------*/
 #define MENU_TOP 15
 #define MENU_LEFT 30
-#define MAIN_MENU_COLOR COLOR_RED
+#define MAIN_MENU_COLOR COLOR16_RED
 
 /* Public variables ---------------------------------------------------------*/
 
@@ -171,23 +171,23 @@ void doMainMenuButtons(BDButton *aTheTouchedButton, int16_t aValue) {
 //FIL File1, File2; /* File objects */
 void doTestButton(BDButton *aTheTouchedButton, int16_t aValue) {
     BDButton::deactivateAllButtons();
-    BlueDisplay1.clearDisplay(COLOR_WHITE);
-    BlueDisplay1.drawLine(10, 10, 20, 16, COLOR_BLACK);
-    BlueDisplay1.drawLine(10, 11, 20, 17, COLOR_BLACK);
-    BlueDisplay1.drawLine(9, 11, 19, 17, COLOR_BLACK);
+    BlueDisplay1.clearDisplay(COLOR16_WHITE);
+    BlueDisplay1.drawLine(10, 10, 20, 16, COLOR16_BLACK);
+    BlueDisplay1.drawLine(10, 11, 20, 17, COLOR16_BLACK);
+    BlueDisplay1.drawLine(9, 11, 19, 17, COLOR16_BLACK);
 
-    BlueDisplay1.drawLine(10, 80, 80, 17, COLOR_BLACK);
-    BlueDisplay1.drawLine(10, 79, 80, 16, COLOR_BLACK);
-    BlueDisplay1.drawLine(11, 80, 81, 17, COLOR_BLACK);
+    BlueDisplay1.drawLine(10, 80, 80, 17, COLOR16_BLACK);
+    BlueDisplay1.drawLine(10, 79, 80, 16, COLOR16_BLACK);
+    BlueDisplay1.drawLine(11, 80, 81, 17, COLOR16_BLACK);
 
-//	 BlueDisplay1.clearDisplay(COLOR_WHITE);
+//	 BlueDisplay1.clearDisplay(COLOR16_WHITE);
 //	BYTE b1 = f_open(&File1, "test.asc", FA_OPEN_EXISTING | FA_READ);
 //	snprintf(StringBuffer, sizeof StringBuffer, "Open Result of test.asc: %u\n", b1);
-//	BlueDisplay1.drawText(0, 0, StringBuffer, 1, COLOR_RED, COLOR_WHITE);
+//	BlueDisplay1.drawText(0, 0, StringBuffer, 1, COLOR16_RED, COLOR16_WHITE);
 //
 //	b1 = f_open(&File2, "test2.asc", FA_CREATE_ALWAYS | FA_WRITE);
 //	snprintf(StringBuffer, sizeof StringBuffer, "Open Result of test2.asc: %u\n", b1);
-//	BlueDisplay1.drawText(0, TEXT_SIZE_11_HEIGHT, StringBuffer, 1, COLOR_RED, COLOR_WHITE);
+//	BlueDisplay1.drawText(0, TEXT_SIZE_11_HEIGHT, StringBuffer, 1, COLOR16_RED, COLOR16_WHITE);
 //
 //	f_close(&File1);
 //	f_close(&File2);
@@ -207,12 +207,16 @@ void doClearScreen(BDButton *aTheTouchedButton, int16_t aValue) {
 /* Public functions ---------------------------------------------------------*/
 
 void drawMainMenuPage(void) {
+
     registerRedrawCallback(&drawMainMenuPage);
     registerTouchDownCallback(&simpleTouchDownHandler);
     // Overwrite old values with the one used at most sub pages
     registerTouchMoveCallback(&simpleTouchMoveHandlerForSlider);
 
     BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
+    BDButton::deactivateAllButtons();
+    BDSlider::deactivateAllSliders();
+
     // draw all buttons except last
     for (unsigned int i = 0; i < (sizeof(TouchButtonsMainMenu) / sizeof(TouchButtonsMainMenu[0]) - 1); ++i) {
         (*TouchButtonsMainMenu[i]).drawButton();
@@ -282,7 +286,7 @@ void startMainMenuPage(void) {
 }
 
 void loopMainMenuPage(void) {
-    showRTCTimeEverySecond(0, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, COLOR_RED, COLOR_BACKGROUND_DEFAULT);
+    showRTCTimeEverySecond(0, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND, COLOR16_RED, COLOR_BACKGROUND_DEFAULT);
     checkAndHandleEvents();
 }
 
@@ -290,7 +294,7 @@ void stopMainMenuPage(void) {
     registerRedrawCallback(NULL);
     registerTouchDownCallback(NULL);
     registerTouchMoveCallback(NULL);
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsMainMenu) / sizeof(TouchButtonsMainMenu[0]); ++i) {
         (*TouchButtonsMainMenu[i]).deinit();

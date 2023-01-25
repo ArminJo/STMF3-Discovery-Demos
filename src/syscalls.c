@@ -35,12 +35,12 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
-#include "tinyPrint.h"
 #include "timing.h"
 #include "usbd_cdc.h"
 #include "usbd_misc.h"
 
 #include "BlueDisplay.h"
+#include "LocalGUI/LocalTinyPrint.h"
 
 /* Variables */
 #undef errno
@@ -135,7 +135,7 @@ caddr_t _sbrk(int incr) {
     }
     if (heap_end + incr > &HeapEnd) {
         if (isLocalDisplayAvailable) {
-            drawTextC(0, TEXT_SIZE_11_ASCEND, "Heap CCRAM 8kB exhausted", TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+            drawTextC(0, TEXT_SIZE_11_ASCEND, "Heap CCRAM 8kB exhausted", TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
             delayMillis(1000);
         }
 //		write(1, "Heap and stack collision\n", 25);

@@ -19,8 +19,8 @@
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
@@ -30,19 +30,17 @@
 #ifndef _EVENTHANDLER_H
 #define _EVENTHANDLER_H
 
+#include "Colors.h"
+
 #if !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
 //#define DO_NOT_NEED_BASIC_TOUCH_EVENTS // Disables basic touch events like down, move and up. Saves 620 bytes program memory and 36 bytes RAM
 #endif
 
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
-#include "BlueDisplay.h" // for
-//#include "ADS7846.h"
-//extern ADS7846 TouchPanel;
-#else
+#if !defined(DISABLE_REMOTE_DISPLAY)
 #include "BlueDisplayProtocol.h"
 #endif
 
-extern bool sBDEventJustReceived; // is exclusively set to true by BD library
+extern bool sBDEventJustReceived; // is set to true by handleEvent() and can be reset by main loop.
 extern unsigned long sMillisOfLastReceivedBDEvent; // is updated with millis() at each received event. Can be used for timeout detection.
 
 #define TOUCH_STANDARD_CALLBACK_PERIOD_MILLIS 20 // Period between callbacks while touched (a swipe is app 100 ms)
@@ -51,7 +49,7 @@ extern unsigned long sMillisOfLastReceivedBDEvent; // is updated with millis() a
 #define TOUCH_SWIPE_THRESHOLD 10  // threshold for swipe detection to suppress long touch handler calling
 #define TOUCH_SWIPE_RESOLUTION_MILLIS 20
 
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 extern struct BluetoothEvent localTouchEvent;
 /*
  * helper variables
@@ -59,14 +57,14 @@ extern struct BluetoothEvent localTouchEvent;
 extern bool sNothingTouched;
 extern bool sSliderIsMoveTarget;
 extern bool sDisableTouchUpOnce; // set normally by application if long touch action was made
-extern bool sDisableUntilTouchUpIsDone; // Skip all touch move and touch up events until touch is released
+extern bool sDisableMoveEventsUntilTouchUpIsDone; // Skip all touch move and touch up events until touch is released
 
-void resetTouchFlags(void);
+void resetTouchFlags();
 #endif
 
 extern struct BluetoothEvent remoteEvent;
 #if defined(AVR)
-// Serves also as second buffer for regular events to avoid overwriting of touch down events if CPU is busy and interrupt in not enabled
+// Is used for touch down events. If remoteEvent is not empty, it is used as buffer for next regular event to avoid overwriting of remoteEvent
 extern struct BluetoothEvent remoteTouchDownEvent;
 #endif
 
@@ -77,7 +75,8 @@ extern struct TouchEvent sCurrentPosition;
 extern struct TouchEvent sUpPosition;
 #endif
 
-void delayMillisWithCheckAndHandleEvents(unsigned long aTimeMillis);
+void delayMillisWithCheckAndHandleEvents(unsigned long aDelayMillis);
+bool delayMillisAndCheckForEvent(unsigned long aDelayMillis);
 
 void checkAndHandleEvents(void);
 
@@ -113,9 +112,9 @@ void setTouchUpCallbackEnabled(bool aTouchUpCallbackEnabled);
 void (* getTouchUpCallback(void))(struct TouchEvent * );
 #endif
 
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
-void handleLocalTouchUp(void);
-void callbackLongTouchDownTimeout(void);
+#if defined(SUPPORT_LOCAL_DISPLAY)
+void handleLocalTouchUp();
+void callbackLongTouchDownTimeout();
 void simpleTouchDownHandler(struct TouchEvent *aActualPositionPtr);
 void simpleTouchHandlerOnlyForButtons(struct TouchEvent *aActualPositionPtr);
 void simpleTouchDownHandlerOnlyForSlider(struct TouchEvent *aActualPositionPtr);
@@ -126,7 +125,7 @@ void simpleTouchMoveHandlerForSlider(struct TouchEvent *aActualPositionPtr);
 void registerPeriodicTouchCallback(bool (*aPeriodicTouchCallback)(int, int), uint32_t aCallbackPeriodMillis);
 void setPeriodicTouchCallbackPeriod(uint32_t aCallbackPeriod);
 
-bool getDisplayXYValuesFlag(void);
+bool getDisplayXYValuesFlag();
 void setDisplayXYValuesFlag(bool aEnableDisplay);
 void printTPData(int x, int y,  color16_t aColor,  color16_t aBackColor);
 #endif

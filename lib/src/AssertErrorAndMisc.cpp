@@ -46,9 +46,9 @@ extern "C" void assert_failed(uint8_t* aFile, uint32_t aLine) {
         char * tFile = (strrchr(reinterpret_cast<char*>(aFile), '/') + 1);
         snprintf(sStringBuffer, sizeof sStringBuffer, "Wrong parameters value on line: %lu\nfile: %s", aLine, tFile);
 #ifdef LOCAL_DISPLAY_EXISTS
-        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #else
-        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #endif
         delayMillis(2000);
     } else {
@@ -86,9 +86,9 @@ extern "C" void assertFailedParamMessage(uint8_t* aFile, uint32_t aLine, uint32_
 #ifdef LOCAL_DISPLAY_EXISTS
         // reset lock (just in case...)
         sDrawLock = 0;
-        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawMLText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #else
-        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #endif
         delayMillis(2000);
     } else {
@@ -111,7 +111,7 @@ extern "C" void printError(uint8_t* aFile, uint32_t aLine) {
         // reset lock (just in case...)
         sDrawLock = 0;
 #endif
-        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
         delayMillis(2000);
     } else {
         /* Infinite loop */
@@ -128,9 +128,9 @@ extern "C" void printError(uint8_t* aFile, uint32_t aLine) {
 extern "C" void errorMessage(const char * aMessage) {
     if (isLocalDisplayAvailable) {
 #ifdef LOCAL_DISPLAY_EXISTS
-        BlueDisplay1.drawMLText(0, ASSERT_START_Y, aMessage, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawMLText(0, ASSERT_START_Y, aMessage, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #else
-        BlueDisplay1.drawText(0, ASSERT_START_Y, aMessage, TEXT_SIZE_11, COLOR_RED, COLOR_WHITE);
+        BlueDisplay1.drawText(0, ASSERT_START_Y, aMessage, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #endif
     }
 }
@@ -189,7 +189,7 @@ void printStackpointerAndStacktrace(int aStackEntriesToSkip, int aStartLine) {
 }
 
 void FaultHandler(struct ExceptionStackFrame * aStackPointer) {
-    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR_RED, COLOR_WHITE, true);
+    BlueDisplay1.setWriteStringSizeAndColorAndFlag(TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE, true);
     BlueDisplay1.setWriteStringPosition(0, 0);
     printf("PC=%lX LR [R14]=%lX\n", aStackPointer->pc, aStackPointer->lr);
     printf("R0=%lX R1=%lX\n", aStackPointer->r0, aStackPointer->r1);
@@ -247,9 +247,11 @@ void FaultHandler(struct ExceptionStackFrame * aStackPointer) {
 #ifdef HAL_WWDG_MODULE_ENABLED
         Watchdog_reload();
 #endif
+#if !defined(DISABLE_REMOTE_DISPLAY)
         // enable sending print data over UART
         if (__HAL_UART_GET_FLAG(&UART_BD_Handle, UART_FLAG_TC) != RESET) {
             UART_BD_IRQHANDLER();
         }
+#endif
     }
 }

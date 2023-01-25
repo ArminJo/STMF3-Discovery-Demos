@@ -40,18 +40,15 @@ BDButton TouchButtonStore;
 #endif
 
 #ifdef LOCAL_DISPLAY_EXISTS
-BDButton * const TouchButtonsDSO[] = {&TouchButtonBack, &TouchButtonStartStopDSOMeasurement, &TouchButtonTriggerMode,
-    &TouchButtonAutoRangeOnOff, &TouchButtonAutoOffsetMode, &TouchButtonChannelSelect, &TouchButtonDrawModeLinePixel,
-    &TouchButtonSettingsPage, &TouchButtonDSOMoreSettings, &TouchButtonSingleshot, &TouchButtonSlope,
-    &TouchButtonADS7846TestOnOff, &TouchButtonMinMaxMode, &TouchButtonChartHistoryOnOff,
+BDButton *const TouchButtonsDSO[] = { &TouchButtonBack, &TouchButtonStartStopDSOMeasurement, &TouchButtonTriggerMode,
+        &TouchButtonAutoRangeOnOff, &TouchButtonAutoOffsetMode, &TouchButtonChannelSelect, &TouchButtonDrawModeLinePixel,
+        &TouchButtonSettingsPage, &TouchButtonDSOMoreSettings, &TouchButtonSingleshot, &TouchButtonSlope,
+        &TouchButtonADS7846TestOnOff, &TouchButtonMinMaxMode, &TouchButtonChartHistoryOnOff,
 #ifdef LOCAL_FILESYSTEM_EXISTS
     &TouchButtonLoad, &TouchButtonStore,
 #endif
-    &TouchButtonFFT, &TouchButtonCalibrateVoltage, &TouchButtonAcDc, &TouchButtonShowPretriggerValuesOnOff};
+        &TouchButtonFFT, &TouchButtonCalibrateVoltage, &TouchButtonAcDc, &TouchButtonShowPretriggerValuesOnOff };
 #endif
-
-
-
 
 /***********************
  *   Loop control
@@ -71,7 +68,7 @@ static void doStoreLoadAcquisitionData(BDButton * aTheTouchedButton, int16_t aMo
 #endif
 void initDSOGUI(void);
 
-void doStartStopDSO(BDButton * aTheTouchedButton, int16_t aValue);
+void doStartStopDSO(BDButton *aTheTouchedButton, int16_t aValue);
 
 /*******************************************************************************************
  * Program code starts here
@@ -124,7 +121,7 @@ void startDSOPage(void) {
 // use touch down only for sliders
     registerTouchDownCallback(&simpleTouchDownHandlerOnlyForSlider);
     // to avoid counting touch move/up for slider.
-    sDisableUntilTouchUpIsDone = true;
+    sDisableMoveEventsUntilTouchUpIsDone = true;
 #endif
 }
 
@@ -150,7 +147,7 @@ void stopDSOPage(void) {
     registerSwipeEndCallback(NULL);
     registerTouchUpCallback(NULL);
 
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     // free buttons
     for (unsigned int i = 0; i < sizeof(TouchButtonsDSO) / sizeof(TouchButtonsDSO[0]); ++i) {
         (*TouchButtonsDSO[i]).deinit();
@@ -170,7 +167,7 @@ void stopDSOPage(void) {
 // restore old touch down handler
     registerTouchDownCallback(&simpleTouchDownHandler);
     // restore flag, since it is not reset by button touch
-    sDisableUntilTouchUpIsDone = false;
+    sDisableMoveEventsUntilTouchUpIsDone = false;
 
     setDimDelayMillis(BACKLIGHT_DIM_DEFAULT_DELAY);
 #endif
@@ -203,9 +200,9 @@ void loopDSOPage(void) {
         if (MeasurementControl.ADS7846ChannelsAsDatasource) {
             readADS7846Channels();
             // check if button pressed - to process stop and channel buttons here
-            TouchPanel.rd_data();
+            TouchPanel.readData();
             if (TouchPanel.mPressure > MIN_REASONABLE_PRESSURE) {
-                TouchButton::checkAllButtons(TouchPanel.getXActual(), TouchPanel.getYActual());
+                TouchButton::checkAllButtons(TouchPanel.getXActual(), TouchPanel.getYActual(), false);
             }
         }
 #endif
@@ -352,7 +349,7 @@ void loopDSOPage(void) {
                     memcpy(TempBufferForPreTriggerAdjustAndFFT, &DataBufferControl.DataBuffer[0],
                     DATABUFFER_PRE_TRIGGER_SIZE * sizeof(DataBufferControl.DataBuffer[0]));
                 }
-                drawDataBuffer((uint16_t *) TempBufferForPreTriggerAdjustAndFFT, DATABUFFER_PRE_TRIGGER_SIZE,
+                drawDataBuffer((uint16_t*) TempBufferForPreTriggerAdjustAndFFT, DATABUFFER_PRE_TRIGGER_SIZE,
                 COLOR_DATA_PRETRIGGER, COLOR_BACKGROUND_DSO, DRAW_MODE_REGULAR, false);
             }
             printInfo();
@@ -364,7 +361,7 @@ void loopDSOPage(void) {
             /*
              * show time
              */
-            showRTCTimeEverySecond(0, FONT_SIZE_INFO_LONG_ASC + 4 * FONT_SIZE_INFO_LONG, COLOR_RED, COLOR_BACKGROUND_DSO);
+            showRTCTimeEverySecond(0, FONT_SIZE_INFO_LONG_ASC + 4 * FONT_SIZE_INFO_LONG, COLOR16_RED, COLOR_BACKGROUND_DSO);
         }
     }
     /*
@@ -407,13 +404,11 @@ void loopDSOPage(void) {
 }
 /* Main loop end */
 
-
-
 /************************************************************************
  * Button handler section
  ************************************************************************/
 
-void doAcDcMode(BDButton * aTheTouchedButton, int16_t aValue) {
+void doAcDcMode(BDButton *aTheTouchedButton, int16_t aValue) {
     setACMode(!MeasurementControl.isACMode);
     setACModeButtonCaption();
     aTheTouchedButton->drawButton();
@@ -438,7 +433,7 @@ void prepareForStart(void) {
     redrawDisplay();
 }
 
-void doStartStopDSO(BDButton * aTheTouchedButton, int16_t aValue) {
+void doStartStopDSO(BDButton *aTheTouchedButton, int16_t aValue) {
     if (MeasurementControl.isRunning) {
         /*
          * Stop here
@@ -454,7 +449,7 @@ void doStartStopDSO(BDButton * aTheTouchedButton, int16_t aValue) {
 // in SingleShotMode stop is directly requested
         if (MeasurementControl.StopRequested && !MeasurementControl.isSingleShotMode) {
             // for stop requested 2 times -> stop immediately
-            uint16_t * tEndPointer = DataBufferControl.DataBufferNextInPointer;
+            uint16_t *tEndPointer = DataBufferControl.DataBufferNextInPointer;
             DataBufferControl.DataBufferEndPointer = tEndPointer;
             // clear trailing buffer space not used
             memset(tEndPointer, DATABUFFER_INVISIBLE_RAW_VALUE,
@@ -476,53 +471,80 @@ void doStartStopDSO(BDButton * aTheTouchedButton, int16_t aValue) {
     }
 }
 
-void doVoltageCalibration(BDButton * aTheTouchedButton, int16_t aValue) {
+/*
+ * Compute new attenuation factor for this voltage range.
+ *
+ * Here we show the current measured voltage (average voltage)
+ * We can then enter the actual voltage value for it, or cancel with cancel button of numberpad.
+ * TODO Create a separate page with "Enter new value" and "Cancel" buttons for voltage calibration and store value permanently
+ */
+void doVoltageCalibration(BDButton *aTheTouchedButton, int16_t aValue) {
 #ifdef LOCAL_DISPLAY_EXISTS
-// TODO use also BlueDisplay getNumber
     BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DSO);
-
-    BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, "Enter actual value",
-            TEXT_SIZE_22,
-            COLOR_RED, COLOR_BACKGROUND_DSO);
     float tOriginalValue = getFloatFromRawValue(MeasurementControl.RawValueAverage);
-    snprintf(sStringBuffer, sizeof sStringBuffer, "Current=%fV", tOriginalValue);
-    BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer,
-            TEXT_SIZE_22,
-            COLOR_BLACK, COLOR_INFO_BACKGROUND);
+    if (tOriginalValue < 1.0) {
+        BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND,
+                "Average voltage must be > 1 volt\nto do calibration",
+                TEXT_SIZE_11, COLOR16_RED, COLOR_BACKGROUND_DSO);
+        delayMillis(2000);
+    } else {
 
-// wait for touch to become active
-    do {
-        checkAndHandleEvents();
-        delayMillis(10);
-    }while (!sTouchIsStillDown);
+        BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, "Enter actual voltage",
+        TEXT_SIZE_22, COLOR16_RED, COLOR_BACKGROUND_DSO);
+        snprintf(sStringBuffer, sizeof sStringBuffer, "Current average voltage=%fV", tOriginalValue);
+        BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_11,
+        COLOR16_BLACK, COLOR_INFO_BACKGROUND);
 
-    FeedbackToneOK();
-    float tNumber = getNumberFromNumberPad(NUMBERPAD_DEFAULT_X, 0, COLOR_GUI_SOURCE_TIMEBASE);
-// check for cancel
-    if (!isnan(tNumber) && tNumber != 0) {
-        float tOldValue = RawAttenuationFactor[MeasurementControl.DisplayRangeIndex];
-        float tNewValue = tOldValue * (tNumber / tOriginalValue);
-        RawAttenuationFactor[MeasurementControl.DisplayRangeIndex] = tNewValue;
-        initRawToDisplayFactorsAndMaxPeakToPeakValues();
-
-        BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DSO);
-        snprintf(sStringBuffer, sizeof sStringBuffer, "Old value=%f", tOldValue);
-        BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer,
-                TEXT_SIZE_22,
-                COLOR_BLACK, COLOR_INFO_BACKGROUND);
-        snprintf(sStringBuffer, sizeof sStringBuffer, "New value=%f", tNewValue);
-        BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer,
-                TEXT_SIZE_22,
-                COLOR_BLACK, COLOR_INFO_BACKGROUND);
-
-// wait for touch to become active
+        // Blocking wait for touch to become active
         do {
-            delayMillis(10);
             checkAndHandleEvents();
-        }while (!sNothingTouched);
+            delayMillis(10);
+        } while (!sTouchIsStillDown);
 
-        sDisableTouchUpOnce = true;
-        FeedbackToneOK();
+        playLocalFeedbackTone();
+        /*
+         * Get actual voltage
+         */
+        float tNumber = getNumberFromNumberPad(NUMBERPAD_DEFAULT_X, 0, COLOR_GUI_SOURCE_TIMEBASE);
+
+        // Check for cancel
+        if (!isnan(tNumber) && tNumber != 0) {
+            /*
+             * Compute new attenuation factor for this voltage range
+             */
+            float tOldValue = RawAttenuationFactor[MeasurementControl.DisplayRangeIndex];
+            float tChangeFactor = (tNumber / tOriginalValue);
+            float tNewValue = tOldValue * tChangeFactor;
+
+            BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DSO);
+            snprintf(sStringBuffer, sizeof sStringBuffer, "Old attenuation factor=%f", tOldValue);
+            BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_11,
+            COLOR16_BLACK, COLOR_INFO_BACKGROUND);
+            snprintf(sStringBuffer, sizeof sStringBuffer, "New attenuation factor=%f", tNewValue);
+            BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, 4 * TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, sStringBuffer, TEXT_SIZE_11,
+            COLOR16_BLACK, COLOR_INFO_BACKGROUND);
+
+            /*
+             * Check for plausibility of entry
+             */
+            if (0.6 < tChangeFactor || tChangeFactor < 1.5) {
+                RawAttenuationFactor[MeasurementControl.DisplayRangeIndex] = tNewValue;
+                initRawToDisplayFactorsAndMaxPeakToPeakValues();
+            } else {
+                BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND,
+                        "New value is > 1.5 or < 0.6 * old value\n -> cancel", TEXT_SIZE_11,
+                        COLOR16_BLACK, COLOR_INFO_BACKGROUND);
+            }
+
+            // Blocking wait for touch to become active
+            do {
+                delayMillis(10);
+                checkAndHandleEvents();
+            } while (!sNothingTouched);
+
+            sDisableTouchUpOnce = true; // to avoid to interpret touch up for a button of DSOMoreSettingsPage
+            playLocalFeedbackTone();
+        }
     }
 
     BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DSO);
@@ -573,7 +595,7 @@ void doStoreLoadAcquisitionData(BDButton * aTheTouchedButton, int16_t aMode) {
 /*
  * Switch trigger line mode on and off (for data chart)
  */
-void doDrawModeTriggerLine(BDButton * aTheTouchedButton, int16_t aValue) {
+void doDrawModeTriggerLine(BDButton *aTheTouchedButton, int16_t aValue) {
 // switch mode
     if (!aValue && MeasurementControl.isRunning) {
 // erase old chart in old mode

@@ -1,11 +1,24 @@
 /*
  * main.cpp
  *
- * @date 17.01.2013
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.0.0
+ *
+ *  Copyright (C) 2012-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 // file:///E:/WORKSPACE_STM32/TouchScreenApps/html/index.html
@@ -15,19 +28,17 @@
  */
 //#define LOCAL_DISPLAY_EXISTS    // Activate, if a local display is attached and should be drawn simultaneously
 //#define USE_HY32D               // Activate, if local display is a HY32D / SSD1289 type. Otherwise a MI0283QT2 type is assumed.
-
 /*
  * Settings to configure the BlueDisplay library and to reduce its size
  */
 //#define BLUETOOTH_BAUD_RATE BAUD_115200  // Activate this, if you have reprogrammed the HC05 module for 115200, otherwise 9600 is used as baud rate
 //#define DO_NOT_NEED_BASIC_TOUCH_EVENTS // Disables basic touch events like down, move and up. Saves 620 bytes program memory and 36 bytes RAM
-#define USE_SIMPLE_SERIAL // Do not use the Serial object. Saves up to 1250 bytes program memory and 185 bytes RAM, if Serial is not used otherwise
-//#define BD_DRAW_TO_LOCAL_DISPLAY_TOO // Supports simultaneously drawing on a locally attached display. Not (yet) implemented for all commands!
-#include "BlueDisplay.hpp"
-
-#if defined(BD_DRAW_TO_LOCAL_DISPLAY_TOO) && !defined(LOCAL_DISPLAY_EXISTS)
-#error BD_DRAW_TO_LOCAL_DISPLAY_TOO is defined but no local display seems to be attached since LOCAL_DISPLAY_EXISTS is not defined.
-#endif
+//#define USE_SIMPLE_SERIAL // Do not use the Serial object. Saves up to 1250 bytes program memory and 185 bytes RAM, if Serial is not used otherwise
+//#define DISABLE_REMOTE_DISPLAY    // Suppress drawing to Bluetooth connected display. Allow only drawing on the locally attached display
+#define SUPPORT_LOCAL_DISPLAY       // Supports simultaneously drawing on the locally attached display. Not (yet) implemented for all commands!
+#include "LocalDisplay/SSD1289.hpp" // The implementation of the local display must be included before BlueDisplay.hpp
+#include "LocalDisplay/ADS7846.hpp"              // Must be after the local display implementation since it uses e.g. LOCAL_DISPLAY_HEIGHT
+#include "BlueDisplay.hpp"          // Is used to access the local display too
 
 #include "Pages.h"
 #include "stm32f3DiscoveryLedsButtons.h"
@@ -125,8 +136,10 @@ int main(void) {
         registerDelayCallback(&RTC_initialize, 2000);
     }
 
-    // is needed for remote display
+#if !defined(DISABLE_REMOTE_DISPLAY)
+    // is required for remote display
     UART_BD_initialize(115200);
+#endif
     BSP_LED_On(LED_GREEN);
 
 #ifdef LOCAL_DISPLAY_EXISTS
@@ -185,7 +198,7 @@ int main(void) {
         /**
          * Touch-panel calibration
          */
-        TouchPanel.rd_data();
+        TouchPanel.readData();
         // check if panel connected
         if (TouchPanel.getPressure() > MIN_REASONABLE_PRESSURE && TouchPanel.getPressure() < MAX_REASONABLE_PRESSURE) {
             // panel pressed
@@ -218,7 +231,7 @@ int main(void) {
             registerDelayCallback(&testAttachMMC, 200);
         }
 
-        struct lconv * tLconfPtr = localeconv();
+        struct lconv *tLconfPtr = localeconv();
         //*tLconfPtr->decimal_point = ','; does not work because string is constant and in flash rom
         tLconfPtr->decimal_point = (char*) ",";
         //tLconfPtr->thousands_sep = (char*) "."; // does not affect sprintf()
@@ -280,7 +293,6 @@ void SystemClock_Config(void) {
 //    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
 //        Error_Handler();
 //    }
-
     // saves 1712 Bytes
     /*
      * Timeouts are not possible since systick is not running

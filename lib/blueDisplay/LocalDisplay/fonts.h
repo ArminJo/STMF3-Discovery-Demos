@@ -1,8 +1,6 @@
 #ifndef fonts_h
 #define fonts_h
 
-#include <stdint.h>
-
 // All font data from Benedikt K.
 // http://www.mikrocontroller.net/topic/54860
 
@@ -25,7 +23,6 @@
 //#define FONT_END7F
 
 #define FONT_START (0x20) //first character
-
 
 #if defined(FONT_4X6)
 # define FONT_WIDTH   (4)
@@ -70,8 +67,10 @@
 # warning No font defined
 #endif
 
-
+#if defined(AVR)
+extern const uint8_t font_PGM[];
+#else
 extern const uint8_t font[];
-
+#endif
 
 #endif //fonts_h

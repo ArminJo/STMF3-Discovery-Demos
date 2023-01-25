@@ -54,6 +54,10 @@ defined in linker script */
 /* end address for the .bss section. defined in linker script */
 .word	_ebss
 
+/* start + end address of CCMRAM section. defined in linker script */
+.word _sccmram
+.word _eccmram
+
 .equ  BootRAM,        0xF1E0F85F
 /**
  * @brief  This is the code that gets called when the processor first
