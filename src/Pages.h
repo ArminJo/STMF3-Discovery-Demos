@@ -1,11 +1,23 @@
 /*
  * Pages.h
  *
- * @date 16.01.2013
- * @author Armin Joachimsmeyer
- *      Email:   armin.joachimsmeyer@gmail.com
- * @copyright LGPL v3 (http://www.gnu.org/licenses/lgpl.html)
- * @version 1.5.0
+ *  Copyright (C) 2013-2023  Armin Joachimsmeyer
+ *  armin.joachimsmeyer@gmail.com
+ *
+ *  This file is part of STMF3-Discovery-Demos https://github.com/ArminJo/STMF3-Discovery-Demos.
+ *
+ *  STMF3-Discovery-Demos is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  */
 
 #ifndef PAGES_H_
@@ -21,23 +33,31 @@
 #include "timing.h"
 #include "utils.h" // for showRTCTime
 
-#ifdef LOCAL_DISPLAY_EXISTS
-#include "LocalDisplay/SSD1289.h"
+#if defined(SUPPORT_LOCAL_DISPLAY)
+#include "LocalDisplay/LocalDisplayInterface.h"
 #include "LocalDisplay/ADS7846.h"
 #include "LocalGUI/LocalTouchSlider.h"
 #include "LocalGUI/LocalTouchButton.h"
 #include "LocalGUI/LocalTouchButtonAutorepeat.h"
 #include "LocalGUI/LocalTinyPrint.h"
+#include "Chart.h"
 #endif
 
 #include "stm32fx0xPeripherals.h"
 
 #include <stdio.h> // for sprintf
+#include <stdlib.h> // for abs()
 
+/*
+ * GUI used by multiple pages
+ */
+extern BDSlider TouchSliderBacklight;
 extern BDButton TouchButtonBack;
-
 // global flag for page control. Is evaluated by calling loop or page and set by buttonBack handler
 extern bool sBackButtonPressed;
+extern BDButton TouchButtonTPCalibration;
+extern BDButton TouchButtonDraw; // Used by main menu and Demo
+
 
 /**
  * From TouchDSOGui page
@@ -47,8 +67,8 @@ void startDSOPage(void);
 void loopDSOPage(void);
 void stopDSOPage(void);
 
-// have it here and not at MainMenuPage since it is also used for systems without main menu
-void doDefaultBackButton(BDButton * aTheTouchedButton, int16_t aValue);
+void doDefaultBackButton(BDButton *aTheTouchedButton, int16_t aValue); // Default handler for TouchButtonMainHome
+
 extern BDButton TouchButtonFrequencyPage;
 extern BDButton TouchButtonShowSystemInfo;
 
@@ -73,24 +93,23 @@ void stopSystemInfoPage(void);
 /**
  * from MainMenuPage
  */
-#define COLOR_BACKGROUND_DEFAULT COLOR16_WHITE
-
 #ifdef __cplusplus
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
 extern BDButton TouchButtonMainHome;
 
-extern TouchButtonAutorepeat TouchButtonAutorepeatPlus;
-extern TouchButtonAutorepeat TouchButtonAutorepeatMinus;
+extern LocalTouchButtonAutorepeat TouchButtonAutorepeatPlus;
+extern LocalTouchButtonAutorepeat TouchButtonAutorepeatMinus;
 
-extern TouchSlider TouchSliderVertical2;
-extern TouchSlider TouchSliderHorizontal2;
+extern LocalTouchSlider TouchSliderVertical2;
+extern LocalTouchSlider TouchSliderHorizontal2;
 
-void doMainMenuHomeButton(BDButton * aTheTouchedButton, int16_t aValue);
-void doClearScreen(BDButton * aTheTouchedButton, int16_t aValue);
-#endif // LOCAL_DISPLAY_EXISTS
+void doMainMenuHomeButton(BDButton *aTheTouchedButton, int16_t aValue);
+void doClearScreen(BDButton *aTheTouchedButton, int16_t aValue);
+void printTPData(void);
+#endif // SUPPORT_LOCAL_DISPLAY
 
 // for loop timings
-extern uint32_t MillisLastLoop;
+extern uint32_t sMillisOfLastLoop;
 extern unsigned int sMillisSinceLastInfoOutput;
 
 /**
@@ -104,18 +123,18 @@ void backToMainMenu(void);
 
 #define COLOR_PAGE_INFO COLOR16_RED
 
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
 /**
  * from SettingsPage
  */
 #define BACKLIGHT_CONTROL_X 30
 #define BACKLIGHT_CONTROL_Y 4
 
-void initBacklightElements(void);
+void createBacklightGUI(void);
 void deinitBacklightElements(void);
 void drawBacklightElements(void);
-void doBacklightSlider(BDSlider * aTheTouchedSlider, uint16_t aBrightness);
-#endif // LOCAL_DISPLAY_EXISTS
+void doBacklightSlider(BDSlider *aTheTouchedSlider, uint16_t aBrightness);
+#endif // SUPPORT_LOCAL_DISPLAY
 
 void initClockSettingElements(void);
 void deinitClockSettingElements(void);

@@ -22,21 +22,9 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
  *
  */
+
 #ifndef _TOUCH_DSO_GUI_HPP
 #define _TOUCH_DSO_GUI_HPP
-
-#if defined(AVR)
-#include <Arduino.h>
-
-//#include "SimpleTouchScreenDSO.h"
-#include "digitalWriteFast.h"
-#else
-#include "Pages.h"
-#include "TouchDSO.h"
-
-#include "Chart.h" // for adjustIntWithScaleFactor()
-#include "BlueDisplay.h"
-#endif // defined(AVR)
 
 uint8_t sLastPickerValue;
 
@@ -132,7 +120,7 @@ void computePeriodFrequency(void) {
         // First display value is the first after triggering condition so we have at least one trigger, but still no period.
         tCount = 0;
     }
-    for (i = 0; i < REMOTE_DISPLAY_WIDTH; ++i) {
+    for (i = 0; i < DISPLAY_WIDTH; ++i) {
 #else
     /**
      * Get period and frequency and average for display
@@ -440,7 +428,7 @@ void setACMode(bool aNewACMode) {
 #if defined(AVR)
 // must do it here after settings of flags and before drawing
     setACModeButtonCaption();
-    if (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS) {
+    if (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS) {
         // hide/show offset
         drawDSOSettingsPage();
     }
@@ -465,7 +453,7 @@ void clearInfo(uint8_t aOldMode) {
     if (aOldMode == INFO_MODE_LONG_INFO) {
         tHeight = (2 * FONT_SIZE_INFO_LONG) + 1;
     }
-    BlueDisplay1.fillRectRel(INFO_LEFT_MARGIN, 0, REMOTE_DISPLAY_WIDTH, tHeight, COLOR_BACKGROUND_DSO);
+    BlueDisplay1.fillRectRel(INFO_LEFT_MARGIN, 0, DISPLAY_WIDTH, tHeight, COLOR_BACKGROUND_DSO);
 }
 
 /***********************************************************************
@@ -486,13 +474,12 @@ BDButton TouchButtonMinMaxMode;
 BDButton TouchButtonDrawModeTriggerLine;
 #endif
 #endif
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 BDButton TouchButtonDrawModeLinePixel;
 const char DrawModeButtonStringLine[] = "Line";
 const char DrawModeButtonStringPixel[] = "Pixel";
 
 BDButton TouchButtonADS7846TestOnOff;
-BDSlider TouchSliderBacklight;
 #endif
 
 BDButton TouchButtonSingleshot;
@@ -504,9 +491,9 @@ const char sTriggerModeButtonStringManualTimeout[] PROGMEM = "Trigger\nman timeo
 const char sTriggerModeButtonStringManual[] PROGMEM = "Trigger\nman";
 const char sTriggerModeButtonStringFreeRunning[] PROGMEM = "Trigger\nfree";
 const char sTriggerModeButtonStringExternal[] PROGMEM = "Trigger\next";
-const char *const sTriggerModeButtonCaptionStringArray[] PROGMEM = { sTriggerModeButtonStringAuto,
-        sTriggerModeButtonStringManualTimeout, sTriggerModeButtonStringManual, sTriggerModeButtonStringFreeRunning,
-        sTriggerModeButtonStringExternal };
+const char *const sTriggerModeButtonCaptionStringArray[] PROGMEM = {sTriggerModeButtonStringAuto,
+    sTriggerModeButtonStringManualTimeout, sTriggerModeButtonStringManual, sTriggerModeButtonStringFreeRunning,
+    sTriggerModeButtonStringExternal};
 
 BDButton TouchButtonTriggerDelay;
 BDButton TouchButtonChartHistoryOnOff;
@@ -524,14 +511,14 @@ const char StringTemperature[] PROGMEM = "Temp";
 const char StringVRefint[] PROGMEM = "VRef";
 const char StringVBattDiv2[] PROGMEM = "\xBD" "VBatt";
 #if defined(AVR)
-const char *const ADCInputMUXChannelStrings[] = { StringChannel0, StringChannel1, StringChannel2, StringChannel3, StringChannel4,
-        StringTemperature, StringVRefint };
+const char *const ADCInputMUXChannelStrings[] = {StringChannel0, StringChannel1, StringChannel2, StringChannel3, StringChannel4,
+    StringTemperature, StringVRefint};
 #else
 #if defined(STM32F30X)
 const char *const ADCInputMUXChannelStrings[ADC_CHANNEL_COUNT] = { StringChannel2, StringChannel3, StringChannel4,
         StringTemperature, StringVBattDiv2, StringVRefint };
-uint8_t const ADCInputMUXChannels[] = { ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4,
-ADC_CHANNEL_TEMPSENSOR, ADC_CHANNEL_VBAT, ADC_CHANNEL_VREFINT };
+uint8_t const ADCInputMUXChannels[] = { ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4, ADC_CHANNEL_TEMPSENSOR, ADC_CHANNEL_VBAT,
+        ADC_CHANNEL_VREFINT };
 #else
 const char * const ADCInputMUXChannelStrings[] = {StringChannel0, StringChannel1, StringChannel2, StringChannel3,
     StringTemperature, StringVRefint};
@@ -550,8 +537,8 @@ BDButton TouchButtonAutoOffsetMode;
 const char AutoOffsetButtonString0[] PROGMEM = "Offset\n0V";
 const char AutoOffsetButtonStringAuto[] PROGMEM = "Offset\nauto";
 const char AutoOffsetButtonStringMan[] PROGMEM = "Offset\nman";
-const char *const sAutoOffsetButtonCaptionStringArray[] PROGMEM = { AutoOffsetButtonString0, AutoOffsetButtonStringAuto,
-        AutoOffsetButtonStringMan };
+const char *const sAutoOffsetButtonCaptionStringArray[] PROGMEM = {AutoOffsetButtonString0, AutoOffsetButtonStringAuto,
+    AutoOffsetButtonStringMan};
 
 BDButton TouchButtonAutoRangeOnOff;
 const char AutoRangeButtonStringAuto[] PROGMEM = "Range\nauto";
@@ -568,7 +555,7 @@ BDSlider TouchSliderTriggerLevel;
 BDSlider TouchSliderVoltagePicker;
 
 void initDSOGUI(void) {
-    BlueDisplay1.setButtonsGlobalFlags(FLAG_BUTTON_GLOBAL_USE_UP_EVENTS_FOR_BUTTONS); // since swipe can start on a button
+    BDButton::setGlobalFlags (FLAG_BUTTON_GLOBAL_USE_UP_EVENTS_FOR_BUTTONS); // since swipe can start on a button
 
     int tPosY = 0;
     /***************************
@@ -577,11 +564,11 @@ void initDSOGUI(void) {
 // 1. row
 // Button for Singleshot
 #if defined(AVR)
-    TouchButtonSingleshot.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, START_PAGE_BUTTON_HEIGHT,
-    COLOR_GUI_CONTROL, F("Singleshot"), TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartSingleshot);
+    TouchButtonSingleshot.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, START_PAGE_BUTTON_HEIGHT, COLOR_GUI_CONTROL,
+            F("Singleshot"), TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartSingleshot);
 #else
-    TouchButtonSingleshot.init(BUTTON_WIDTH_6_POS_4, tPosY, BUTTON_WIDTH_3, START_PAGE_BUTTON_HEIGHT,
-    COLOR_GUI_CONTROL, F("Singleshot"), TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartSingleshot);
+    TouchButtonSingleshot.init(BUTTON_WIDTH_6_POS_4, tPosY, BUTTON_WIDTH_3, START_PAGE_BUTTON_HEIGHT, COLOR_GUI_CONTROL,
+            F("Singleshot"), TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartSingleshot);
 #endif
 
 // 2. row
@@ -603,10 +590,9 @@ void initDSOGUI(void) {
 // 4. row
     tPosY += 2 * START_PAGE_ROW_INCREMENT;
 #if !defined(AVR)
-// Button for show FFT - only for Start and Chart pages
-    TouchButtonFFT.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "FFT",
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH, DisplayControl.ShowFFT,
-            &doShowFFT);
+// Button for show FFT - only for Start and Chart pages. Invisible if running.
+    TouchButtonFFT.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "FFT", TEXT_SIZE_22,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH, DisplayControl.ShowFFT, &doShowFFT);
 #endif
 
 // Button for settings page
@@ -622,23 +608,23 @@ void initDSOGUI(void) {
     /*
      * Button for chart history (erase color). Must be at first row since it is (hidden) active at running mode
      */
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonChartHistoryOnOff.init(SLIDER_DEFAULT_BAR_WIDTH + 6, tPosY, BUTTON_WIDTH_3 - (SLIDER_DEFAULT_BAR_WIDTH + 6),
     SETTINGS_PAGE_BUTTON_HEIGHT, 0, "History", TEXT_SIZE_11,
             FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH, 0, &doChartHistory);
 #else
-    TouchButtonChartHistoryOnOff.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, 0, F("History"),
-    TEXT_SIZE_18, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH, 0, &doChartHistory);
+    TouchButtonChartHistoryOnOff.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, 0, F("History"), TEXT_SIZE_18,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN_MANUAL_REFRESH, 0, &doChartHistory);
 #endif
 
 // Button for slope
     TouchButtonSlope.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTriggerSlope);
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTriggerSlope);
     setSlopeButtonCaption();
 
 // Back button for sub pages
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_CONTROL, F("Back"),
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doDefaultBackButton);
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doDefaultBackButton);
 
 // 2. row
     tPosY += SETTINGS_PAGE_ROW_INCREMENT;
@@ -652,47 +638,47 @@ void initDSOGUI(void) {
 
 // Button for trigger mode
     TouchButtonTriggerMode.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTriggerMode);
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doTriggerMode);
     setTriggerModeButtonCaption();
 
 // Button for channel 0
     TouchButtonChannels[0].init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
-    BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doChannelSelect);
+            BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doChannelSelect);
 
 // Button for channel 1
-    TouchButtonChannels[1].init(REMOTE_DISPLAY_WIDTH - BUTTON_WIDTH_6, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
-    BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doChannelSelect);
+    TouchButtonChannels[1].init(DISPLAY_WIDTH - BUTTON_WIDTH_6, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
+            BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doChannelSelect);
 
 // 3. row
     tPosY += SETTINGS_PAGE_ROW_INCREMENT;
 
 #if !defined(AVR)
 // Button for pretrigger area show
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonShowPretriggerValuesOnOff.init(SLIDER_DEFAULT_BAR_WIDTH + 6, tPosY, BUTTON_WIDTH_3 - (SLIDER_DEFAULT_BAR_WIDTH + 6),
     SETTINGS_PAGE_BUTTON_HEIGHT, 0, "Show\nPretrigger", TEXT_SIZE_11,
             FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, (DisplayControl.DatabufferPreTriggerDisplaySize != 0),
             &doShowPretriggerValuesOnOff);
 #else
-    TouchButtonShowPretriggerValuesOnOff.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT,
-            0, "Show\nPretrigger", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
+    TouchButtonShowPretriggerValuesOnOff.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, 0, "Show\nPretrigger",
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN,
             (DisplayControl.DatabufferPreTriggerDisplaySize != 0), &doShowPretriggerValuesOnOff);
 #endif
 #endif
 
 // Button for AutoRange on off
     TouchButtonAutoRangeOnOff.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doRangeMode);
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doRangeMode);
     setAutoRangeModeAndButtonCaption(true);
 
 // Button for channel 2
     TouchButtonChannels[2].init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
-    BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 2, &doChannelSelect);
+            BUTTON_AUTO_RED_GREEN_FALSE_COLOR, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 2, &doChannelSelect);
     setChannelButtonsCaption();
 
 // Button for channel select
-    TouchButtonChannelSelect.init(REMOTE_DISPLAY_WIDTH - BUTTON_WIDTH_6, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
-    BUTTON_AUTO_RED_GREEN_FALSE_COLOR, reinterpret_cast<const __FlashStringHelper*>(StringChannel3), TEXT_SIZE_11,
+    TouchButtonChannelSelect.init(DISPLAY_WIDTH - BUTTON_WIDTH_6, tPosY, BUTTON_WIDTH_6, SETTINGS_PAGE_BUTTON_HEIGHT,
+            BUTTON_AUTO_RED_GREEN_FALSE_COLOR, reinterpret_cast<const __FlashStringHelper*>(StringChannel3), TEXT_SIZE_11,
             FLAG_BUTTON_DO_BEEP_ON_TOUCH, 42, &doChannelSelect);
 
 // 4. row
@@ -700,19 +686,19 @@ void initDSOGUI(void) {
 
 #if !defined(AVR)
 // Button for min/max acquisition mode
-#  if defined(LOCAL_DISPLAY_EXISTS)
+#  if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonMinMaxMode.init(SLIDER_DEFAULT_BAR_WIDTH + 6, tPosY, BUTTON_WIDTH_3 - (SLIDER_DEFAULT_BAR_WIDTH + 6),
     SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "Min/Max\nmode", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, true,
             &doMinMaxMode);
 #  else
-    TouchButtonMinMaxMode.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "Min/Max\nmode", TEXT_SIZE_11,
-            FLAG_BUTTON_DO_BEEP_ON_TOUCH, true, &doMinMaxMode);
+    TouchButtonMinMaxMode.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "Min/Max\nmode",
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, true, &doMinMaxMode);
 #  endif
 #endif
 
 // Button for auto offset on, 0-Volt, manual
     TouchButtonAutoOffsetMode.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "",
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doOffsetMode);
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doOffsetMode);
     setAutoOffsetButtonCaption();
 
 #if defined(FUTURE)
@@ -724,25 +710,25 @@ void initDSOGUI(void) {
 #endif
 
 // 5. row
-    tPosY = REMOTE_DISPLAY_HEIGHT - SETTINGS_PAGE_BUTTON_HEIGHT;
+    tPosY = DISPLAY_HEIGHT - SETTINGS_PAGE_BUTTON_HEIGHT;
 
 // Button for selecting Frequency page.
     TouchButtonFrequencyPage.init(0, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR16_RED, F("Frequency\nGenerator"),
-    TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowFrequencyPage);
+            TEXT_SIZE_14, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowFrequencyPage);
 
 // Button for AC / DC
     TouchButtonAcDc.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT, COLOR_GUI_TRIGGER, "",
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doAcDcMode);
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doAcDcMode);
     setACModeButtonCaption();
 
 #if defined(AVR)
 // Button for reference voltage switching
     TouchButtonADCReference.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, SETTINGS_PAGE_BUTTON_HEIGHT,
-    COLOR_GUI_SOURCE_TIMEBASE, "", TEXT_SIZE_18, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doADCReference);
+            COLOR_GUI_SOURCE_TIMEBASE, "", TEXT_SIZE_18, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doADCReference);
 #else
 // Button for more-settings pages
-    TouchButtonDSOMoreSettings.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_5,
-    COLOR_GUI_CONTROL, "More", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowMoreSettingsPage);
+    TouchButtonDSOMoreSettings.init(BUTTON_WIDTH_3_POS_3, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_5, COLOR_GUI_CONTROL, "More",
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowMoreSettingsPage);
 
     /***************************
      * More Settings page
@@ -750,8 +736,8 @@ void initDSOGUI(void) {
 // 1. row
     tPosY = 0;
 // Button for voltage calibration
-    TouchButtonCalibrateVoltage.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
-    COLOR_GUI_SOURCE_TIMEBASE, "Calibrate U", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doVoltageCalibration);
+    TouchButtonCalibrateVoltage.init(0, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR_GUI_SOURCE_TIMEBASE, "Calibrate U",
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doVoltageCalibration);
 // 2. row
     tPosY += SETTINGS_PAGE_ROW_INCREMENT;
 // Button for system info
@@ -764,16 +750,16 @@ void initDSOGUI(void) {
      */
 // make slider slightly visible
 // slider for voltage picker
-    TouchSliderVoltagePicker.init(SLIDER_VPICKER_POS_X, 0, SLIDER_BAR_WIDTH, REMOTE_DISPLAY_HEIGHT, REMOTE_DISPLAY_HEIGHT, 0, 0,
-    COLOR_VOLTAGE_PICKER_SLIDER, FLAG_SLIDER_VALUE_BY_CALLBACK, &doVoltagePicker);
-    TouchSliderVoltagePicker.setBarBackgroundColor( COLOR_VOLTAGE_PICKER_SLIDER);
+    TouchSliderVoltagePicker.init(SLIDER_VPICKER_POS_X, 0, SLIDER_BAR_WIDTH, DISPLAY_HEIGHT, DISPLAY_HEIGHT, 0,
+            COLOR16_WHITE, COLOR_VOLTAGE_PICKER_SLIDER, FLAG_SLIDER_VALUE_BY_CALLBACK, &doVoltagePicker);
+    TouchSliderVoltagePicker.setBarBackgroundColor(COLOR_VOLTAGE_PICKER_SLIDER);
 
 // slider for trigger level
-    TouchSliderTriggerLevel.init(SLIDER_TLEVEL_POS_X, 0, SLIDER_BAR_WIDTH, REMOTE_DISPLAY_HEIGHT, REMOTE_DISPLAY_HEIGHT, 0, 0,
-    COLOR_TRIGGER_SLIDER, FLAG_SLIDER_VALUE_BY_CALLBACK, &doTriggerLevel);
-    TouchSliderTriggerLevel.setBarBackgroundColor( COLOR_TRIGGER_SLIDER);
+    TouchSliderTriggerLevel.init(SLIDER_TLEVEL_POS_X, 0, SLIDER_BAR_WIDTH, DISPLAY_HEIGHT, DISPLAY_HEIGHT, 0,
+            COLOR16_WHITE, COLOR_TRIGGER_SLIDER, FLAG_SLIDER_VALUE_BY_CALLBACK, &doTriggerLevel);
+    TouchSliderTriggerLevel.setBarBackgroundColor(COLOR_TRIGGER_SLIDER);
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 // 2. row
 // Button for switching draw mode - line/pixel
     TouchButtonDrawModeLinePixel.init(0, BUTTON_HEIGHT_4_LINE_2, BUTTON_WIDTH_3,
@@ -789,7 +775,7 @@ void initDSOGUI(void) {
      * Backlight slider
      */
     TouchSliderBacklight.init(0, 0, SLIDER_DEFAULT_BAR_WIDTH, BACKLIGHT_MAX_BRIGHTNESS_VALUE, BACKLIGHT_MAX_BRIGHTNESS_VALUE, sCurrentBacklightPercent,
-    COLOR16_BLUE, COLOR16_GREEN, FLAG_SLIDER_VERTICAL_SHOW_NOTHING, &doBacklightSlider);
+    COLOR16_WHITE, COLOR16_GREEN, FLAG_SLIDER_VERTICAL_SHOW_NOTHING, &doBacklightSlider);
 #endif
 
 }
@@ -802,7 +788,7 @@ void activateChartGui(void) {
     TouchButtonSingleshot.activate();
     TouchButtonStartStopDSOMeasurement.activate();
     TouchButtonSettingsPage.activate();
-#if !defined(AVR)
+#if !defined(ARDUINO)
     TouchButtonFFT.activate();
 #endif
 
@@ -811,7 +797,7 @@ void activateChartGui(void) {
         TouchSliderTriggerLevel.drawSlider();
     }
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if !defined(ARDUINO)
     TouchButtonMainHome.activate();
 #endif
 }
@@ -827,7 +813,7 @@ void redrawDisplay() {
         /*
          * running mode
          */
-        if (DisplayControl.DisplayPage >= DISPLAY_PAGE_SETTINGS) {
+        if (DisplayControl.DisplayPage >= DSO_PAGE_SETTINGS) {
             drawDSOSettingsPage();
         } else {
             activateChartGui();
@@ -837,16 +823,16 @@ void redrawDisplay() {
 #if !defined(AVR)
             TouchButtonChartHistoryOnOff.activate(); //???
             // initialize FFTDisplayBuffer
-            memset(&DisplayBufferFFT[0], REMOTE_DISPLAY_HEIGHT - 1, sizeof(DisplayBufferFFT));
+            memset(&DisplayBufferFFT[0], DISPLAY_HEIGHT - 1, sizeof(DisplayBufferFFT));
 #endif
         }
     } else {
         /*
          * analyze mode
          */
-        if (DisplayControl.DisplayPage == DISPLAY_PAGE_START) {
+        if (DisplayControl.DisplayPage == DSO_PAGE_START) {
             drawStartPage();
-        } else if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
+        } else if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
             activateChartGui();
             drawGridLinesWithHorizLabelsAndTriggerLine();
             drawMinMaxLines();
@@ -854,11 +840,11 @@ void redrawDisplay() {
 #if defined(AVR)
             drawDataBuffer(DataBufferControl.DataBufferDisplayStart, COLOR_DATA_HOLD, DisplayControl.EraseColor);
 #else
-            drawDataBuffer(DataBufferControl.DataBufferDisplayStart, REMOTE_DISPLAY_WIDTH, COLOR_DATA_HOLD, 0,
-            DRAW_MODE_REGULAR, MeasurementControl.isEffectiveMinMaxMode);
+            drawDataBuffer(DataBufferControl.DataBufferDisplayStart, DISPLAY_WIDTH, COLOR_DATA_HOLD, 0, DRAW_MODE_REGULAR,
+                    MeasurementControl.isEffectiveMinMaxMode);
 #endif
             printInfo();
-        } else if (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS) {
+        } else if (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS) {
             drawDSOSettingsPage();
         }
     }
@@ -881,19 +867,17 @@ void drawStartPage(void) {
 #endif
     TouchButtonSettingsPage.drawButton();
 //Welcome text
-    BlueDisplay1.drawMLText(10, BUTTON_HEIGHT_4_LINE_2 + 32, F("Welcome to\nArduino DSO"), 32, COLOR16_BLUE,
-    COLOR16_NO_BACKGROUND);
-    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 + (3 * 32), F("300 kSamples/s"), 22, COLOR16_BLUE,
-    COLOR_BACKGROUND_DSO);
-    uint8_t tPos = BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 + (3 * 32) + 22, F("V" VERSION_DSO "/" VERSION_BLUE_DISPLAY),
+    BlueDisplay1.drawMLText(10, BUTTON_HEIGHT_4_LINE_2 + 34, F("Welcome to\nArduino DSO"), 32, COLOR16_BLUE, COLOR16_NO_BACKGROUND);
+    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 + (3 * 32), F("300 kSamples/s"), 22, COLOR16_BLUE, COLOR_BACKGROUND_DSO);
+    uint8_t
+    tPos = BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_2 + (3 * 32) + 22, F("V" VERSION_DSO "/" VERSION_BLUE_DISPLAY),
             11, COLOR16_BLUE, COLOR_BACKGROUND_DSO);
     BlueDisplay1.drawText(tPos, BUTTON_HEIGHT_4_LINE_2 + (3 * 32) + 22, F(" from " __DATE__), 11, COLOR16_BLUE,
-    COLOR_BACKGROUND_DSO);
+            COLOR_BACKGROUND_DSO);
 
 // Hints
 #if !defined(AVR)
-    BlueDisplay1.drawText(BUTTON_WIDTH_3, TEXT_SIZE_11_ASCEND, "\xABScale\xBB", TEXT_SIZE_11, COLOR16_YELLOW,
-    COLOR_BACKGROUND_DSO);
+    BlueDisplay1.drawText(SLIDER_DEFAULT_BAR_WIDTH + 6, BUTTON_HEIGHT_4 + TEXT_SIZE_22_ASCEND, "\xABScale\xBB", TEXT_SIZE_22, COLOR16_YELLOW, COLOR_BACKGROUND_DSO);
 #endif
     BlueDisplay1.drawText(BUTTON_WIDTH_3, BUTTON_HEIGHT_4_LINE_4 + BUTTON_DEFAULT_SPACING + TEXT_SIZE_22_ASCEND,
             F("\xABScroll\xBB"), TEXT_SIZE_22, COLOR16_GREEN, COLOR_BACKGROUND_DSO);
@@ -954,7 +938,7 @@ void drawDSOSettingsPage(void) {
     TouchButtonDrawModeTriggerLine.drawButton();
 #endif
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     TouchSliderBacklight.drawSlider();
 #endif
 
@@ -974,13 +958,13 @@ void drawDSOSettingsPage(void) {
 #if !defined(AVR)
 void drawDSOMoreSettingsPage(void) {
 // do not clear screen here since gui is refreshed periodically while DSO is running
-    BDButton::deactivateAllButtons();
-    BDSlider::deactivateAllSliders();
+    BDButton::deactivateAll();
+    BDSlider::deactivateAll();
 //1. Row
     TouchButtonCalibrateVoltage.drawButton();
     TouchButtonBack.drawButton();
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 //2. Row
     TouchButtonDrawModeLinePixel.drawButton();
     TouchButtonADS7846TestOnOff.drawButton();
@@ -1004,18 +988,18 @@ void drawRunningOnlyPartOfGui(void) {
 //    }
 
     if (!MeasurementControl.RangeAutomatic || MeasurementControl.OffsetMode == OFFSET_MODE_MANUAL) {
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
         BlueDisplay1.drawMLText(TEXT_SIZE_11_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND, "\xD4\nR\na\nn\ng\ne\n\xD5",
         TEXT_SIZE_22, COLOR_GUI_TRIGGER, COLOR16_NO_BACKGROUND);
 #else
         //START_PAGE_BUTTON_HEIGHT + TEXT_SIZE_22_ASCEND is to much for 240 display
         BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, START_PAGE_BUTTON_HEIGHT, F("\xD4\nR\na\nn\ng\ne\n\xD5"), TEXT_SIZE_22,
-        COLOR_GUI_TRIGGER, COLOR16_NO_BACKGROUND);
+                COLOR_GUI_TRIGGER, COLOR16_NO_BACKGROUND);
 #endif
     }
 
     if (MeasurementControl.OffsetMode != OFFSET_MODE_0_VOLT) {
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
         BlueDisplay1.drawMLText(BUTTON_WIDTH_3_POS_3 - TEXT_SIZE_22_WIDTH, TEXT_SIZE_11_HEIGHT + TEXT_SIZE_22_ASCEND,
                 "\xD4\nO\nf\nf\ns\ne\nt\n\xD5", TEXT_SIZE_22, COLOR_GUI_TRIGGER, COLOR16_NO_BACKGROUND);
 #else
@@ -1024,8 +1008,8 @@ void drawRunningOnlyPartOfGui(void) {
 #endif
     }
 
-    BlueDisplay1.drawText(BUTTON_WIDTH_8, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_22_DECEND, F("\xABTimeBase\xBB"),
-    TEXT_SIZE_22, COLOR_GUI_SOURCE_TIMEBASE, COLOR_BACKGROUND_DSO);
+    BlueDisplay1.drawText(BUTTON_WIDTH_8, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_22_DECEND, F("\xABTimeBase\xBB"), TEXT_SIZE_22,
+            COLOR_GUI_SOURCE_TIMEBASE, COLOR_BACKGROUND_DSO);
 
 //1. Row
     TouchButtonChartHistoryOnOff.drawButton();
@@ -1048,7 +1032,7 @@ void clearTriggerLine(uint8_t aTriggerLevelDisplayValue) {
     if (!MeasurementControl.isRunning) {
         // in analysis mode restore graph at old y position
         uint8_t *ScreenBufferPointer = &DisplayBuffer[0];
-        for (unsigned int i = 0; i < REMOTE_DISPLAY_WIDTH; ++i) {
+        for (unsigned int i = 0; i < DISPLAY_WIDTH; ++i) {
             int tValueByte = *ScreenBufferPointer++;
             if (tValueByte == aTriggerLevelDisplayValue) {
                 // restore old pixel
@@ -1065,7 +1049,7 @@ void clearTriggerLine(uint8_t aTriggerLevelDisplayValue) {
 void drawTriggerLine(void) {
     uint8_t tValue = DisplayControl.TriggerLevelDisplayValue;
     if (tValue != 0 && MeasurementControl.TriggerMode < TRIGGER_MODE_FREE) {
-        BlueDisplay1.drawLineRel(0, tValue, REMOTE_DISPLAY_WIDTH, 0, COLOR_TRIGGER_LINE);
+        BlueDisplay1.drawLineRel(0, tValue, DISPLAY_WIDTH, 0, COLOR_TRIGGER_LINE);
     }
 }
 
@@ -1081,19 +1065,19 @@ void drawMinMaxLines(void) {
 #endif
     tValueDisplay = getDisplayFromRawInputValue(MeasurementControl.RawValueMax);
     if (tValueDisplay != 0) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
+        BlueDisplay1.drawLineRel(0, tValueDisplay, DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
     }
 // min line
     tValueDisplay = getDisplayFromRawInputValue(MeasurementControl.RawValueMin);
     if (tValueDisplay != DISPLAY_VALUE_FOR_ZERO) {
-        BlueDisplay1.drawLineRel(0, tValueDisplay, REMOTE_DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
+        BlueDisplay1.drawLineRel(0, tValueDisplay, DISPLAY_WIDTH, 0, COLOR_MAX_MIN_LINE);
     }
 }
 
 void clearHorizontalLineAndRestoreGrid(int aYposition) {
     // clear line
-    BlueDisplay1.drawLineRel(0, aYposition, REMOTE_DISPLAY_WIDTH, 0, COLOR_BACKGROUND_DSO);
-    for (unsigned int tXPos = TIMING_GRID_WIDTH - 1; tXPos < REMOTE_DISPLAY_WIDTH - 1; tXPos += TIMING_GRID_WIDTH) {
+    BlueDisplay1.drawLineRel(0, aYposition, DISPLAY_WIDTH, 0, COLOR_BACKGROUND_DSO);
+    for (unsigned int tXPos = TIMING_GRID_WIDTH - 1; tXPos < DISPLAY_WIDTH - 1; tXPos += TIMING_GRID_WIDTH) {
         BlueDisplay1.drawPixel(tXPos, aYposition, COLOR_GRID_LINES);
     }
 }
@@ -1102,12 +1086,12 @@ void clearHorizontalLineAndRestoreGrid(int aYposition) {
  * draws vertical timing + horizontal reference voltage lines
  */
 void drawGridLinesWithHorizLabelsAndTriggerLine() {
-    if (DisplayControl.DisplayPage != DISPLAY_PAGE_CHART) {
+    if (DisplayControl.DisplayPage != DSO_PAGE_CHART) {
         return;
     }
 // vertical (timing) lines
-    for (unsigned int tXPos = TIMING_GRID_WIDTH - 1; tXPos < REMOTE_DISPLAY_WIDTH; tXPos += TIMING_GRID_WIDTH) {
-        BlueDisplay1.drawLineRel(tXPos, 0, 0, REMOTE_DISPLAY_HEIGHT, COLOR_GRID_LINES);
+    for (unsigned int tXPos = TIMING_GRID_WIDTH - 1; tXPos < DISPLAY_WIDTH; tXPos += TIMING_GRID_WIDTH) {
+        BlueDisplay1.drawLineRel(tXPos, 0, 0, DISPLAY_HEIGHT, COLOR_GRID_LINES);
     }
 #if defined(AVR)
     /*
@@ -1126,18 +1110,18 @@ void drawGridLinesWithHorizLabelsAndTriggerLine() {
         for (int32_t tYPosLoop = 0x8000; tYPosLoop > 0; tYPosLoop -= MeasurementControl.HorizontalGridSizeShift8) {
             uint16_t tYPos = tYPosLoop / 0x100;
             // horizontal line
-            BlueDisplay1.drawLineRel(0, tYPos, REMOTE_DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
+            BlueDisplay1.drawLineRel(0, tYPos, DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
             dtostrf(tActualVoltage, tLength, tPrecision, tStringBuffer);
             // draw label over the line
             BlueDisplay1.drawText(HORIZONTAL_LINE_LABELS_CAPION_X, tYPos + (TEXT_SIZE_11_ASCEND / 2), tStringBuffer, 11,
-            COLOR_HOR_REF_LINE_LABEL, COLOR16_NO_BACKGROUND);
-            if (tYPos != REMOTE_DISPLAY_HEIGHT / 2) {
+                    COLOR_HOR_REF_LINE_LABEL, COLOR16_NO_BACKGROUND);
+            if (tYPos != DISPLAY_HEIGHT / 2) {
                 // line with negative value
-                BlueDisplay1.drawLineRel(0, REMOTE_DISPLAY_HEIGHT - tYPos, REMOTE_DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
+                BlueDisplay1.drawLineRel(0, DISPLAY_HEIGHT - tYPos, DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
                 dtostrf(-tActualVoltage, tLength, tPrecision, tStringBuffer);
                 // draw label over the line
                 BlueDisplay1.drawText(HORIZONTAL_LINE_LABELS_CAPION_X - TEXT_SIZE_11_WIDTH,
-                        REMOTE_DISPLAY_HEIGHT - tYPos + (TEXT_SIZE_11_ASCEND / 2), tStringBuffer, 11, COLOR_HOR_REF_LINE_LABEL,
+                        DISPLAY_HEIGHT - tYPos + (TEXT_SIZE_11_ASCEND / 2), tStringBuffer, 11, COLOR_HOR_REF_LINE_LABEL,
                         COLOR16_NO_BACKGROUND);
             }
             tActualVoltage += MeasurementControl.HorizontalGridVoltage;
@@ -1152,11 +1136,11 @@ void drawGridLinesWithHorizLabelsAndTriggerLine() {
         for (int32_t tYPosLoop = 0xFF80; tYPosLoop > 0; tYPosLoop -= MeasurementControl.HorizontalGridSizeShift8) {
             uint16_t tYPos = tYPosLoop / 0x100;
             // horizontal line
-            BlueDisplay1.drawLineRel(0, tYPos, REMOTE_DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
+            BlueDisplay1.drawLineRel(0, tYPos, DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
             dtostrf(tActualVoltage, tLength, tPrecision, tStringBuffer);
             // draw label over the line
             BlueDisplay1.drawText(HORIZONTAL_LINE_LABELS_CAPION_X, tYPos - tCaptionOffset, tStringBuffer, 11,
-            COLOR_HOR_REF_LINE_LABEL, COLOR16_NO_BACKGROUND);
+                    COLOR_HOR_REF_LINE_LABEL, COLOR16_NO_BACKGROUND);
             // draw next caption on the line
             tCaptionOffset = -(TEXT_SIZE_11_ASCEND / 2);
             tActualVoltage += MeasurementControl.HorizontalGridVoltage;
@@ -1186,20 +1170,20 @@ void drawGridLinesWithHorizLabelsAndTriggerLine() {
     for (int tYPos = DISPLAY_VALUE_FOR_ZERO; tYPos > 0; tYPos -= HORIZONTAL_GRID_HEIGHT) {
         if (tLabelChanged) {
             // clear old label
-            int tXpos = REMOTE_DISPLAY_WIDTH - PIXEL_AFTER_LABEL - (5 * TEXT_SIZE_11_WIDTH);
+            int tXpos = DISPLAY_WIDTH - PIXEL_AFTER_LABEL - (5 * TEXT_SIZE_11_WIDTH);
             int tY = tYPos - tCaptionOffset;
-            BlueDisplay1.fillRect(tXpos, tY - TEXT_SIZE_11_ASCEND, REMOTE_DISPLAY_WIDTH - PIXEL_AFTER_LABEL + 1,
+            BlueDisplay1.fillRect(tXpos, tY - TEXT_SIZE_11_ASCEND, DISPLAY_WIDTH - PIXEL_AFTER_LABEL + 1,
                     tY + TEXT_SIZE_11_HEIGHT - TEXT_SIZE_11_ASCEND, COLOR_BACKGROUND_DSO);
             // restore last vertical line since label may overlap these line
             BlueDisplay1.drawLineRel(9 * TIMING_GRID_WIDTH - 1, tY, 0, TEXT_SIZE_11_HEIGHT, COLOR_GRID_LINES);
         }
         // draw horizontal line
-        BlueDisplay1.drawLineRel(0, tYPos, REMOTE_DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
+        BlueDisplay1.drawLineRel(0, tYPos, DISPLAY_WIDTH, 0, COLOR_GRID_LINES);
 
         int tCount = snprintf(sStringBuffer, sizeof sStringBuffer, "%0.*f",
                 RangePrecision[MeasurementControl.DisplayRangeIndexForPrint], tActualVoltage);
         // right align but leave 2 pixel free after label for the last horizontal line
-        tPosX = REMOTE_DISPLAY_WIDTH - (tCount * TEXT_SIZE_11_WIDTH) - PIXEL_AFTER_LABEL;
+        tPosX = DISPLAY_WIDTH - (tCount * TEXT_SIZE_11_WIDTH) - PIXEL_AFTER_LABEL;
         // draw label over the line - use different color for negative values
         if (tActualVoltage >= 0) {
             tLabelColor = COLOR_HOR_GRID_LINE_LABEL;
@@ -1221,9 +1205,9 @@ void setChannelButtonsCaption(void) {
     for (uint_fast8_t i = 0; i < NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR; ++i) {
         if (MeasurementControl.AttenuatorType == ATTENUATOR_TYPE_FIXED_ATTENUATOR) {
 //            TouchButtonAutoOffsetMode.setCaptionFromStringArrayPGM(ChannelDivByButtonStrings, i); // requires 16 butes more
-            TouchButtonChannels[i].setCaptionPGM(ChannelDivByButtonStrings[i]);
+            TouchButtonChannels[i].setCaption((const __FlashStringHelper *)ChannelDivByButtonStrings[i]);
         } else {
-            TouchButtonChannels[i].setCaptionPGM(ADCInputMUXChannelStrings[i]);
+            TouchButtonChannels[i].setCaption((const __FlashStringHelper *)ADCInputMUXChannelStrings[i]);
         }
     }
 }
@@ -1238,12 +1222,12 @@ void setSlopeButtonCaption(void) {
         SlopeButtonString[SLOPE_STRING_INDEX + 1] = 'e'; // for decending
     }
     SlopeButtonString[SLOPE_STRING_INDEX] = tChar;
-    TouchButtonSlope.setCaption(SlopeButtonString, (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonSlope.setCaption(SlopeButtonString, (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 
 void setTriggerModeButtonCaption(void) {
-    TouchButtonTriggerMode.setCaptionFromStringArrayPGM(sTriggerModeButtonCaptionStringArray, MeasurementControl.TriggerMode,
-            (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonTriggerMode.setCaptionFromStringArray((const __FlashStringHelper *const *)sTriggerModeButtonCaptionStringArray, MeasurementControl.TriggerMode,
+            (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 
 void setAutoRangeModeAndButtonCaption(bool aNewAutoRangeMode) {
@@ -1254,19 +1238,19 @@ void setAutoRangeModeAndButtonCaption(bool aNewAutoRangeMode) {
     } else {
         tCaption = AutoRangeButtonStringManual;
     }
-    TouchButtonAutoRangeOnOff.setCaptionPGM(tCaption, (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonAutoRangeOnOff.setCaption((const __FlashStringHelper *)tCaption, (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 
 void setAutoOffsetButtonCaption(void) {
-    TouchButtonAutoOffsetMode.setCaptionFromStringArrayPGM(sAutoOffsetButtonCaptionStringArray, MeasurementControl.OffsetMode,
-            (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonAutoOffsetMode.setCaptionFromStringArray((const __FlashStringHelper *const *)sAutoOffsetButtonCaptionStringArray, MeasurementControl.OffsetMode,
+            (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 
 void setACModeButtonCaption(void) {
     if (MeasurementControl.ChannelIsACMode) {
-        TouchButtonAcDc.setCaptionPGM(PSTR("AC"));
+        TouchButtonAcDc.setCaption(F("AC"));
     } else {
-        TouchButtonAcDc.setCaptionPGM(PSTR("DC"));
+        TouchButtonAcDc.setCaption(F("DC"));
     }
 }
 
@@ -1276,7 +1260,7 @@ void setTriggerDelayCaption(void) {
     if (MeasurementControl.TriggerDelayMode != TRIGGER_DELAY_NONE) {
         printfTriggerDelay(&sStringBuffer[14], MeasurementControl.TriggerDelayMillisOrMicros);
     }
-    TouchButtonTriggerDelay.setCaption(sStringBuffer, (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonTriggerDelay.setCaption(sStringBuffer, (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 
 void setReferenceButtonCaption(void) {
@@ -1286,7 +1270,7 @@ void setReferenceButtonCaption(void) {
     } else {
         tCaption = ReferenceButton1_1V;
     }
-    TouchButtonADCReference.setCaptionPGM(tCaption, (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS));
+    TouchButtonADCReference.setCaption((const __FlashStringHelper *)tCaption, (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS));
 }
 #endif
 
@@ -1307,36 +1291,15 @@ void startDSOSettingsPage(void) {
  * Switch between upper info line short/long/off
  */
 void doSwitchInfoModeOnTouchUp(struct TouchEvent *const aTouchPosition) {
-#if defined(LOCAL_DISPLAY_EXISTS)
-// first check for buttons
-    if (!TouchButton::checkAllButtons(aTouchPosition->TouchPosition.PosX, aTouchPosition->TouchPosition.PosY, false)) {
-#endif
-        if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
-            // Wrap display mode
-//        uint8_t tOldMode = DisplayControl.showInfoMode;
-            uint8_t tNewMode = DisplayControl.showInfoMode + 1;
-            if (tNewMode > INFO_MODE_LONG_INFO) {
-                tNewMode = INFO_MODE_NO_INFO;
-            }
-            DisplayControl.showInfoMode = tNewMode;
-            redrawDisplay();
-
-//        if (tNewMode == INFO_MODE_NO_INFO) {
-//            if (MeasurementControl.isRunning) {
-//                // erase former info line
-//                clearInfo(tOldMode);
-//            } else {
-//                redrawDisplay();
-//            }
-//        } else {
-//            // erase former info line
-//            clearInfo(tOldMode);
-//            printInfo();
-//        }
+    if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
+        // Wrap display mode
+        uint8_t tNewMode = DisplayControl.showInfoMode + 1;
+        if (tNewMode > INFO_MODE_LONG_INFO) {
+            tNewMode = INFO_MODE_NO_INFO;
         }
-#if defined(LOCAL_DISPLAY_EXISTS)
+        DisplayControl.showInfoMode = tNewMode;
+        redrawDisplay();
     }
-#endif
 }
 
 /*
@@ -1345,7 +1308,7 @@ void doSwitchInfoModeOnTouchUp(struct TouchEvent *const aTouchPosition) {
  */
 void doLongTouchDownDSO(struct TouchEvent *const aTouchPosition) {
     static bool sIsGUIVisible = false;
-    if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
+    if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
         if (MeasurementControl.isRunning) {
             if (sIsGUIVisible) {
                 // hide GUI
@@ -1357,12 +1320,12 @@ void doLongTouchDownDSO(struct TouchEvent *const aTouchPosition) {
             sIsGUIVisible = !sIsGUIVisible;
         } else {
             // clear screen and show start gui
-            DisplayControl.DisplayPage = DISPLAY_PAGE_START;
+            DisplayControl.DisplayPage = DSO_PAGE_START;
             redrawDisplay();
         }
-    } else if (DisplayControl.DisplayPage == DISPLAY_PAGE_START) {
+    } else if (DisplayControl.DisplayPage == DSO_PAGE_START) {
         // only chart (and voltage picker)
-        DisplayControl.DisplayPage = DISPLAY_PAGE_CHART;
+        DisplayControl.DisplayPage = DSO_PAGE_CHART;
         redrawDisplay();
     }
 }
@@ -1371,13 +1334,9 @@ void doLongTouchDownDSO(struct TouchEvent *const aTouchPosition) {
  * responsible for swipe detection and dispatching
  */
 void doSwipeEndDSO(struct Swipe *const aSwipeInfo) {
-#if defined(AVR)
-    uint8_t tFeedbackType = FEEDBACK_TONE_ERROR;
-#else
-    int tFeedbackType = FEEDBACK_TONE_ERROR;
-#endif
+    bool tIsError = true;
 
-    if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
+    if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
         if (MeasurementControl.isRunning) {
             /*
              * Running mode
@@ -1392,7 +1351,7 @@ void doSwipeEndDSO(struct Swipe *const aSwipeInfo) {
                 int tTouchDeltaXGrid = aSwipeInfo->TouchDeltaX / 64;
 #endif
                 if (tTouchDeltaXGrid != 0) {
-                    tFeedbackType = changeTimeBaseValue(-tTouchDeltaXGrid);
+                    tIsError = changeTimeBaseValue(-tTouchDeltaXGrid);
                     printInfo();
                 }
             } else {
@@ -1402,7 +1361,7 @@ void doSwipeEndDSO(struct Swipe *const aSwipeInfo) {
 #endif
                 if (!MeasurementControl.RangeAutomatic) {
 #if defined(AVR)
-                    tFeedbackType = changeRange(aSwipeInfo->TouchDeltaY / 64);
+                    tIsError = changeRange(aSwipeInfo->TouchDeltaY / 64);
 #else
                     /*
                      * range manual. If offset not fixed, check if swipe in the right third of screen, then do changeOffsetGridCount()
@@ -1411,36 +1370,34 @@ void doSwipeEndDSO(struct Swipe *const aSwipeInfo) {
                         // decide which swipe to perform according to x position of swipe
                         if (aSwipeInfo->TouchStartX > BUTTON_WIDTH_3_POS_2) {
                             //offset
-                            tFeedbackType = changeOffsetGridCount(tTouchDeltaYGrid);
+                            tIsError = changeOffsetGridCount(tTouchDeltaYGrid);
                         } else {
-                            tFeedbackType = changeDisplayRangeAndAdjustOffsetGridCount(tTouchDeltaYGrid / 2);
+                            tIsError = changeDisplayRangeAndAdjustOffsetGridCount(tTouchDeltaYGrid / 2);
                         }
                     }
                 } else if (MeasurementControl.OffsetMode != OFFSET_MODE_0_VOLT) {
-                    tFeedbackType = changeOffsetGridCount(tTouchDeltaYGrid);
+                    tIsError = changeOffsetGridCount(tTouchDeltaYGrid);
 #endif
                 }
             }
         } else {
             /*
-             * Analyze Mode scroll or scale
+             * Analyze Mode -> scroll or scale
              */
 #if !defined(AVR)
-            if (aSwipeInfo->TouchStartY > BUTTON_HEIGHT_4_LINE_3 + TEXT_SIZE_22) {
+            if (aSwipeInfo->TouchStartY < LOCAL_DISPLAY_HEIGHT / 2) {
+                tIsError = changeXScale(aSwipeInfo->TouchDeltaX / 64);
+            } else
 #endif
-                tFeedbackType = scrollChart(-aSwipeInfo->TouchDeltaX);
-#if !defined(AVR)
-            } else {
-                // scale
-                tFeedbackType = changeXScale(aSwipeInfo->TouchDeltaX / 64);
+            {
+                tIsError = scrollChart(-aSwipeInfo->TouchDeltaX); // Scroll
             }
-#endif
         }
     }
-#if defined(LOCAL_DISPLAY_EXISTS)
-    FeedbackTone(tFeedbackType);
+#if defined(SUPPORT_LOCAL_DISPLAY)
+    LocalTouchButton::playFeedbackTone(tIsError);
 #else
-    BlueDisplay1.playFeedbackTone(tFeedbackType);
+    BDButton::playFeedbackTone(tIsError);
 #endif
 }
 
@@ -1458,12 +1415,12 @@ void doDefaultBackButton(BDButton *aTheTouchedButton, int16_t aValue) {
  * show gui of settings screen
  */
 void doShowSettingsPage(BDButton *aTheTouchedButton, int16_t aValue) {
-    DisplayControl.DisplayPage = DISPLAY_PAGE_SETTINGS;
+    DisplayControl.DisplayPage = DSO_PAGE_SETTINGS;
     redrawDisplay();
 }
 
 void doShowFrequencyPage(BDButton *aTheTouchedButton, int16_t aValue) {
-    DisplayControl.DisplayPage = DISPLAY_PAGE_FREQUENCY;
+    DisplayControl.DisplayPage = DSO_PAGE_FREQUENCY;
     startFrequencyGeneratorPage();
 }
 
@@ -1530,7 +1487,7 @@ void doOffsetMode(BDButton *aTheTouchedButton, int16_t aValue) {
  * Cycle through all external and internal adc channels if button value is > 20
  */
 void doChannelSelect(BDButton *aTheTouchedButton, int16_t aValue) {
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     if (MeasurementControl.ADS7846ChannelsAsDatasource) {
 // ADS7846 channels
         MeasurementControl.ADMUXChannel++;
@@ -1563,7 +1520,7 @@ void doChannelSelect(BDButton *aTheTouchedButton, int16_t aValue) {
                     //reset caption of 4. button to "Ch 3"
                     tCaptionIndex = NUMBER_OF_CHANNELS_WITH_FIXED_ATTENUATOR;
                 }
-                TouchButtonChannelSelect.setCaptionPGM(ADCInputMUXChannelStrings[tCaptionIndex]);
+                TouchButtonChannelSelect.setCaption((const __FlashStringHelper *)ADCInputMUXChannelStrings[tCaptionIndex]);
             }
         }
         setChannel(tNewChannelValue);
@@ -1574,7 +1531,7 @@ void doChannelSelect(BDButton *aTheTouchedButton, int16_t aValue) {
      * Refresh page if necessary
      */
 // check it here since it is also called by setup
-    if (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS) {
+    if (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS) {
         // manage AC/DC and auto offset buttons
         redrawDisplay();
     }
@@ -1585,7 +1542,7 @@ void doChannelSelect(BDButton *aTheTouchedButton, int16_t aValue) {
  */
 void doChartHistory(BDButton *aTheTouchedButton, int16_t aValue) {
     DisplayControl.showHistory = aValue;
-    if (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS) {
+    if (DisplayControl.DisplayPage == DSO_PAGE_SETTINGS || DisplayControl.DisplayPage == DSO_PAGE_START) {
         aTheTouchedButton->drawButton();
     }
 
@@ -1607,7 +1564,7 @@ void doStartSingleshot(BDButton *aTheTouchedButton, int16_t aValue) {
     aTheTouchedButton->deactivate();
     MeasurementControl.isSingleShotMode = true;
 
-    DisplayControl.DisplayPage = DISPLAY_PAGE_CHART;
+    DisplayControl.DisplayPage = DSO_PAGE_CHART;
 
     MeasurementControl.RawValueMax = 0;
     MeasurementControl.RawValueMin = 0;
@@ -1668,7 +1625,7 @@ void doVoltagePicker(BDSlider *aTheTouchedSlider, uint16_t aValue) {
         // restore graph
         uint8_t *ScreenBufferPointer = &DisplayBuffer[0];
         uint8_t *ScreenBufferMinPointer = &DisplayBufferMin[0];
-        for (unsigned int i = 0; i < REMOTE_DISPLAY_WIDTH; ++i) {
+        for (unsigned int i = 0; i < DISPLAY_WIDTH; ++i) {
             int tValueByte = *ScreenBufferPointer++;
             if (tValueByte == tYpos) {
                 BlueDisplay1.drawPixel(i, tValueByte, COLOR_DATA_HOLD);
@@ -1685,7 +1642,7 @@ void doVoltagePicker(BDSlider *aTheTouchedSlider, uint16_t aValue) {
 
 // draw new line
     int tValue = DISPLAY_VALUE_FOR_ZERO - aValue;
-    BlueDisplay1.drawLine(0, tValue, REMOTE_DISPLAY_WIDTH, tValue, COLOR_VOLTAGE_PICKER);
+    BlueDisplay1.drawLine(0, tValue, DISPLAY_WIDTH, tValue, COLOR_VOLTAGE_PICKER);
     sLastPickerValue = aValue;
 
     float tVoltage = getFloatFromDisplayValue(tValue);
@@ -1704,8 +1661,7 @@ void doVoltagePicker(BDSlider *aTheTouchedSlider, uint16_t aValue) {
         tYPos = SLIDER_VPICKER_INFO_LONG_Y;
     }
 // print value
-    BlueDisplay1.drawText(SLIDER_VPICKER_INFO_X, tYPos, sStringBuffer, FONT_SIZE_INFO_SHORT, COLOR16_BLACK,
-    COLOR_INFO_BACKGROUND);
+    BlueDisplay1.drawText(SLIDER_VPICKER_INFO_X, tYPos, sStringBuffer, FONT_SIZE_INFO_SHORT, COLOR16_BLACK, COLOR_INFO_BACKGROUND);
 }
 
 #if defined(AVR)
@@ -1755,12 +1711,12 @@ void doMinMaxMode(BDButton *aTheTouchedButton, int16_t aValue) {
  * show gui of more settings screen
  */
 void doShowMoreSettingsPage(BDButton *aTheTouchedButton, int16_t aValue) {
-    DisplayControl.DisplayPage = DISPLAY_PAGE_MORE_SETTINGS;
+    DisplayControl.DisplayPage = DSO_PAGE_MORE_SETTINGS;
     startDSOMoreSettingsPage();
 }
 
 void doShowSystemInfoPage(BDButton *aTheTouchedButton, int16_t aValue) {
-    DisplayControl.DisplayPage = DISPLAY_PAGE_SYST_INFO;
+    DisplayControl.DisplayPage = DSO_PAGE_SYST_INFO;
     startSystemInfoPage();
 }
 
@@ -1769,37 +1725,38 @@ void doShowSystemInfoPage(BDButton *aTheTouchedButton, int16_t aValue) {
  */
 void doShowFFT(BDButton *aTheTouchedButton, int16_t aValue) {
     DisplayControl.ShowFFT = aValue;
-    aTheTouchedButton->setValue(aValue);
-
+    if (DisplayControl.DisplayPage == DSO_PAGE_START) {
+        // Show button on Start page
+        aTheTouchedButton->drawButton();
+    }
     if (MeasurementControl.isRunning) {
-        if (DisplayControl.DisplayPage == DISPLAY_PAGE_SETTINGS) {
-            aTheTouchedButton->drawButton();
-        }
         if (aValue) {
             // initialize FFTDisplayBuffer
-            memset(&DisplayBufferFFT[0], REMOTE_DISPLAY_HEIGHT - 1, sizeof(DisplayBufferFFT));
+            memset(&DisplayBufferFFT[0], DISPLAY_HEIGHT - 1, sizeof(DisplayBufferFFT));
         } else {
             clearFFTValuesOnDisplay();
         }
-    } else if (DisplayControl.DisplayPage == DISPLAY_PAGE_CHART) {
+    } else if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
         if (aValue) {
             // compute and draw FFT
-            drawFFT();
+            computeAndDrawFFT();
+            DisplayControl.DisplaySubPage = DSO_SUB_PAGE_FFT;
         } else {
             // show graph data
+            DisplayControl.DisplaySubPage = DSO_SUB_PAGE_MAIN;
             redrawDisplay();
         }
     }
 }
 #endif
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 /*
  * Toggle between pixel and line draw mode (for data chart)
  */
 void doDrawMode(BDButton *aTheTouchedButton, int16_t aValue) {
 // erase old chart in old mode
-    drawDataBuffer(NULL, REMOTE_DISPLAY_WIDTH, DisplayControl.EraseColor, 0, DRAW_MODE_CLEAR_OLD,
+    drawDataBuffer(NULL, DISPLAY_WIDTH, DisplayControl.EraseColor, 0, DRAW_MODE_CLEAR_OLD,
             MeasurementControl.isEffectiveMinMaxMode);
 // switch mode
     if (!DisplayControl.drawPixelMode) {

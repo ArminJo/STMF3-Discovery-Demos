@@ -62,7 +62,7 @@ void setZeroAccelerometerGyroValue(void) {
         GyroscopeZeroCompensation[0] += GyroscopeRawDataBuffer[0];
         GyroscopeZeroCompensation[1] += GyroscopeRawDataBuffer[1];
         GyroscopeZeroCompensation[2] += GyroscopeRawDataBuffer[2];
-        delayMillis(10);
+        delay(10);
     }
     AccelerometerZeroCompensation[0] /= LSM303DLHC_CALIBRATION_OVERSAMPLING;
     AccelerometerZeroCompensation[1] /= LSM303DLHC_CALIBRATION_OVERSAMPLING;

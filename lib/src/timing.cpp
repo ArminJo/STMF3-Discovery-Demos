@@ -30,7 +30,7 @@ volatile uint32_t TimeoutCounterForThread = 0;
 volatile uint32_t TimeoutCounterForISR[NUMBER_OF_PREEMPTIVE_PRIOS] = { 0, 0, 0, 0 }; //! for timeout used by interrupt handlers - one for each preemptive prio lower than systic prio (gives 3)
 //! for delays
 volatile uint32_t TimingDelayForThread = 0;
-volatile uint32_t TimingDelayForISR[NUMBER_OF_PREEMPTIVE_PRIOS] = { 0, 0, 0, 0 }; //! delay to be used by interrupt handlers (first 2 values are not really used, because delay for this prio levels is done by delayMillisBusy())
+volatile uint32_t TimingDelayForISR[NUMBER_OF_PREEMPTIVE_PRIOS] = { 0, 0, 0, 0 }; //! delay to be used by interrupt handlers (first 2 values are not really used, because delay for this prio levels is done by delay(Busy())
 
 volatile uint32_t MillisSinceBoot = 0;
 
@@ -89,7 +89,7 @@ void delayNanos(int32_t aTimeNanos) {
  * @note Only for use if systic interrupt is disabled,
  * otherwise 2 calls of doOneSystic() happens per systic count.
  */
-static void delayMillisBusy(int32_t aTimeMillis) {
+static void delayBusy(int32_t aTimeMillis) {
     // reset systic counted flag
     hasSysticCounted();
     while (aTimeMillis != 0) {
@@ -339,7 +339,7 @@ extern "C" void SysTick_Handler(void) {
 /**
  * @retval millis since start of program
  */
-extern "C" uint32_t getMillisSinceBoot() {
+extern "C" uint32_t millis() {
     return MillisSinceBoot;
 }
 
@@ -347,13 +347,13 @@ extern "C" uint32_t getMillisSinceBoot() {
  * wait for aTimeMillis milliseconds.
  * @param  aTimeMillis: specifies the delay time length, in 1 ms.
  */
-extern "C" void delayMillis(int32_t aTimeMillis) {
+extern "C" void delay(int32_t aTimeMillis) {
     // get interrupt level
     uint32_t tIPSR = (__get_IPSR() & 0xFF);
     // in high priority system interrupt like bus_fault, systic etc.
     if (tIPSR > 0 && tIPSR < OFFSET_INTERRUPT_TYPE_TO_ISR_INT_NUMBER) {
         // no other delay possible
-        delayMillisBusy(aTimeMillis);
+        delayBusy(aTimeMillis);
     } else if (tIPSR == 0) {
         // No interrupt here
         if (TimingDelayForThread == 0) {
@@ -383,7 +383,7 @@ extern "C" void delayMillis(int32_t aTimeMillis) {
             }
         } else {
             // Here in ISR with equal or higher priority than systic handler itself
-            delayMillisBusy(aTimeMillis);
+            delayBusy(aTimeMillis);
         }
     }
 }
@@ -417,12 +417,12 @@ extern "C" bool isTimeoutVerbose(uint8_t* aFile, uint32_t aLine, uint32_t aValue
             char * tFile = (strrchr(((char*) aFile), '/') + 1);
             snprintf(sStringBuffer, sizeof sStringBuffer, "Timeout on line: %lu %#X %u\nfile: %s", aLine,
                     (unsigned int) aValue, (unsigned int) aValue, tFile);
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
             BlueDisplay1.drawMLText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #else
             BlueDisplay1.drawText(0, TEXT_SIZE_11_ASCEND, sStringBuffer, TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
 #endif
-            delayMillis(aMessageDisplayTimeMillis);
+            delay(aMessageDisplayTimeMillis);
         }
         return true;
     }

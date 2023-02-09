@@ -31,7 +31,7 @@
 #include "TouchDSOCommon.h"
 #include "BlueDisplay.h"
 #include "BDButton.h"
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
 #include "LocalDisplay/ADS7846.h"
 #endif
 
@@ -168,7 +168,7 @@ struct MeasurementControlStruct {
     volatile bool StopAcknowledged; // true if DMA made its last acquisition before stop
 
     // Input select
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
     bool ADS7846ChannelsAsDatasource;
 #endif
 
@@ -287,14 +287,17 @@ extern void * TempBufferForPreTriggerAdjustAndFFT;
 
 // values for DisplayPage
 // using enums increases code size by 120 bytes for Arduino
-#define DISPLAY_PAGE_START 0    // Start GUI
-#define DISPLAY_PAGE_CHART 1    // Chart in analyze and running mode
-#define DISPLAY_PAGE_SETTINGS 2
-#define DISPLAY_PAGE_FREQUENCY 3
+#define DSO_PAGE_START      0    // Start GUI
+#define DSO_PAGE_CHART      1    // Chart in analyze and running mode
+#define DSO_PAGE_SETTINGS   2
+#define DSO_PAGE_FREQUENCY  3
 #ifndef AVR
-#define DISPLAY_PAGE_MORE_SETTINGS 4
-#define DISPLAY_PAGE_SYST_INFO 5
+#define DSO_PAGE_MORE_SETTINGS 4
+#define DSO_PAGE_SYST_INFO  5
 #endif
+
+#define DSO_SUB_PAGE_MAIN   0
+#define DSO_SUB_PAGE_FFT    1
 
 // modes for showInfoMode
 #define INFO_MODE_NO_INFO 0
@@ -312,8 +315,9 @@ struct DisplayControlStruct {
     int8_t XScale; // Factor for X Data expansion(>0) or compression(<0). 2->display 1 value 2 times -2->display average of 2 values etc.
 
     uint8_t DisplayPage; // START, CHART, SETTINGS, MORE_SETTINGS
+    uint8_t DisplaySubPage; // DSO_SUB_PAGE_FFT
 
-#ifdef LOCAL_DISPLAY_EXISTS
+#if defined(SUPPORT_LOCAL_DISPLAY)
     bool drawPixelMode;
 #endif
     bool showTriggerInfoLine;
@@ -398,6 +402,6 @@ float getDataBufferTimebaseExactValueMicros(int8_t aTimebaseIndex);
 float32_t * computeFFT(uint16_t * aDataBufferPointer);
 void draw128FFTValuesFast(color16_t aColor);
 void clearFFTValuesOnDisplay(void);
-void drawFFT(void);
+void computeAndDrawFFT(void);
 
 #endif /* SIMPLETOUCHSCREENDSO_H_ */

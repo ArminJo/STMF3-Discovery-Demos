@@ -17,11 +17,6 @@
 
 #if IRMP_EXT_LOGGING == 1
 #if defined(ARM_STM32F30X)
-#if defined(USE_HY32D)
-#include "SSD1289.h"
-#else
-#include "MI0283QT2.h"
-#endif
 void initextlog(void) {
     printEnable();
 }

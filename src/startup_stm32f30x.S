@@ -301,7 +301,7 @@ g_pfnVectors:
 //	.weak	EXTI0_IRQHandler
 //	.thumb_set EXTI0_IRQHandler,Default_Handler
 
-#ifndef LOCAL_DISPLAY_EXISTS
+#if !defined(SUPPORT_LOCAL_DISPLAY)
 	.weak	EXTI1_IRQHandler
 	.thumb_set EXTI1_IRQHandler,Default_Handler
 #endif

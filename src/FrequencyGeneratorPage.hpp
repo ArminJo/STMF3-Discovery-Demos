@@ -40,10 +40,6 @@
 
 #if defined(AVR)
 #include "FrequencyGeneratorPage.h"
-#else
-#include "Pages.h"
-#include "main.h" // for StringBuffer
-#include "TouchDSO.h"
 #endif
 
 #include "Waveforms.h"
@@ -105,7 +101,7 @@ BDButton TouchButtonFrequencyStartStop;
 BDButton TouchButtonGetFrequency;
 BDButton TouchButtonWaveform;
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 BDButton TouchButton1;
 BDButton TouchButton2;
 BDButton TouchButton5;
@@ -165,7 +161,7 @@ void initFrequencyGeneratorPage(void) {
 
     sFrequencyInfo.isOutputEnabled = true; // to start output at first display of page
 
-#if !defined(LOCAL_DISPLAY_EXISTS)
+#if !defined(SUPPORT_LOCAL_DISPLAY)
     initFrequencyGeneratorPageGui();
 #endif
 }
@@ -173,7 +169,7 @@ void initFrequencyGeneratorPage(void) {
 void startFrequencyGeneratorPage(void) {
     BlueDisplay1.clearDisplay();
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     // do it here to enable freeing of button resources in stopFrequencyGeneratorPage()
     initFrequencyGeneratorPageGui();
 #endif
@@ -246,7 +242,7 @@ void initFrequencyGeneratorPageGui() {
         sprintf(sStringBuffer, "%u", tFrequency);
 #endif
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
         TouchButtonFixedFrequency[i]->init(tXPos, 96, BUTTON_WIDTH_10, BUTTON_HEIGHT_6, COLOR16_BLUE, sStringBuffer, TEXT_SIZE_11,
                 0, tFrequency, &doSetFixedFrequency);
 #else
@@ -259,13 +255,13 @@ void initFrequencyGeneratorPageGui() {
         tFrequencyCaptionPtr++;
 #endif
     }
-#if !defined(LOCAL_DISPLAY_EXISTS)
+#if !defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonFirstFixedFrequency.mButtonHandle -= NUMBER_OF_FIXED_FREQUENCY_BUTTONS - 1;
 #endif
 
     // Range next
     tXPos = 0;
-    int tYPos = REMOTE_DISPLAY_HEIGHT - BUTTON_HEIGHT_4 - BUTTON_HEIGHT_5 - BUTTON_DEFAULT_SPACING;
+    int tYPos = DISPLAY_HEIGHT - BUTTON_HEIGHT_4 - BUTTON_HEIGHT_5 - BUTTON_DEFAULT_SPACING;
     for (int i = 0; i < NUMBER_OF_FREQUENCY_RANGE_BUTTONS; ++i) {
         uint16_t tButtonColor = BUTTON_AUTO_RED_GREEN_FALSE_COLOR;
         if (i == BUTTON_INDEX_SELECTED_INITIAL) {
@@ -280,16 +276,16 @@ void initFrequencyGeneratorPageGui() {
 
     ActiveTouchButtonFrequencyRange = TouchButtonFrequencyRanges[BUTTON_INDEX_SELECTED_INITIAL];
 
-    TouchButtonFrequencyStartStop.init(0, REMOTE_DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, F("Start"),
+    TouchButtonFrequencyStartStop.init(0, DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, F("Start"),
             TEXT_SIZE_26, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, sFrequencyInfo.isOutputEnabled,
             &doFrequencyGeneratorStartStop);
     TouchButtonFrequencyStartStop.setCaptionForValueTrue(F("Stop"));
 
-    TouchButtonGetFrequency.init(BUTTON_WIDTH_3_POS_2, REMOTE_DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3,
+    TouchButtonGetFrequency.init(BUTTON_WIDTH_3_POS_2, DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4, COLOR16_BLUE, F("Hz..."), TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doGetFrequency);
 
 #if defined(AVR)
-    TouchButtonWaveform.init(BUTTON_WIDTH_3_POS_3, REMOTE_DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3,
+    TouchButtonWaveform.init(BUTTON_WIDTH_3_POS_3, DISPLAY_HEIGHT - BUTTON_HEIGHT_4, BUTTON_WIDTH_3,
     BUTTON_HEIGHT_4, COLOR16_BLUE, "", TEXT_SIZE_18, FLAG_BUTTON_DO_BEEP_ON_TOUCH, sFrequencyInfo.Waveform, &doWaveformMode);
     setWaveformButtonCaption();
 #endif
@@ -297,9 +293,9 @@ void initFrequencyGeneratorPageGui() {
 
 void drawFrequencyGeneratorPage(void) {
     // do not clear screen here since it is called periodically for GUI refresh while DSO is running
-    BDButton::deactivateAllButtons();
-    BDSlider::deactivateAllSliders();
-#if defined(LOCAL_DISPLAY_EXISTS)
+    BDButton::deactivateAll();
+    BDSlider::deactivateAll();
+#if !defined(ARDUINO)
     TouchButtonMainHome.drawButton();
 #else
     TouchButtonBack.drawButton();
@@ -309,7 +305,7 @@ void drawFrequencyGeneratorPage(void) {
     BlueDisplay1.drawText(TEXT_SIZE_11_WIDTH, FREQ_SLIDER_Y + 3 * FREQ_SLIDER_SIZE + TEXT_SIZE_11_HEIGHT, F("1"), TEXT_SIZE_11,
     COLOR16_BLUE, COLOR_BACKGROUND_FREQ);
 #if defined(AVR)
-    BlueDisplay1.drawText(REMOTE_DISPLAY_WIDTH - 5 * TEXT_SIZE_11_WIDTH,
+    BlueDisplay1.drawText(DISPLAY_WIDTH - 5 * TEXT_SIZE_11_WIDTH,
     FREQ_SLIDER_Y + 3 * FREQ_SLIDER_SIZE + TEXT_SIZE_11_HEIGHT, F("1000"), TEXT_SIZE_11, COLOR16_BLUE,
     COLOR_BACKGROUND_FREQ);
 #else
@@ -320,10 +316,7 @@ void drawFrequencyGeneratorPage(void) {
 
     // fixed frequency buttons
     // we know that the buttons handles are increasing numbers
-#if !defined(LOCAL_DISPLAY_EXISTS)
-    BDButton tButton(TouchButtonFirstFixedFrequency);
-#endif
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
     for (uint8_t i = 0; i < NUMBER_OF_FIXED_FREQUENCY_BUTTONS - 1; ++i) {
         // Generate strings each time buttons are drawn since only the pointer to caption is stored in button
         sprintf(sStringBuffer, "%u", FixedFrequencyButtonCaptions[i]);
@@ -334,6 +327,7 @@ void drawFrequencyGeneratorPage(void) {
     TouchButtonFixedFrequency[NUMBER_OF_FIXED_FREQUENCY_BUTTONS - 1]->setCaption("1k");
     TouchButtonFixedFrequency[NUMBER_OF_FIXED_FREQUENCY_BUTTONS - 1]->drawButton();
 #else
+    BDButton tButton(TouchButtonFirstFixedFrequency);
     for (uint8_t i = 0; i < NUMBER_OF_FIXED_FREQUENCY_BUTTONS; ++i) {
         tButton.drawButton();
         tButton.mButtonHandle++; // Simply increment id to get the next button
@@ -392,10 +386,10 @@ void doSetFixedFrequency(BDButton *aTheTouchedButton, int16_t aNormalizedFrequen
     setFrequencyNormalizedForGUI(aNormalizedFrequency);
     // Play error feedback tone, if frequency is not available for this waveform
     bool tErrorOrClippingHappend = setWaveformFrequencyAndPrintValues();
-#if defined(LOCAL_DISPLAY_EXISTS)
-    FeedbackTone(tErrorOrClippingHappend);
+#if defined(SUPPORT_LOCAL_DISPLAY)
+    LocalTouchButton::playFeedbackTone(tErrorOrClippingHappend);
 #else
-    BlueDisplay1.playFeedbackTone(tErrorOrClippingHappend);
+    BDButton::playFeedbackTone(tErrorOrClippingHappend);
 #endif
 }
 
@@ -434,7 +428,7 @@ void doSetFrequencyRange(BDButton *aTheTouchedButton, int16_t aInputRangeIndex) 
 
 #if defined(AVR)
 void setWaveformButtonCaption(void) {
-    TouchButtonWaveform.setCaptionPGM(getWaveformModePGMString(), (DisplayControl.DisplayPage == DISPLAY_PAGE_FREQUENCY));
+    TouchButtonWaveform.setCaption(getWaveformModePGMString(), (DisplayControl.DisplayPage == DSO_PAGE_FREQUENCY));
 }
 #endif
 
@@ -445,7 +439,7 @@ void doWaveformMode(BDButton *aTheTouchedButton, int16_t aValue) {
 #endif
 }
 
-#if defined(LOCAL_DISPLAY_EXISTS)
+#if defined(SUPPORT_LOCAL_DISPLAY)
 /**
  * gets frequency value from numberpad
  * @param aTheTouchedButton

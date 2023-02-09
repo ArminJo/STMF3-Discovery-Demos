@@ -136,7 +136,7 @@ caddr_t _sbrk(int incr) {
     if (heap_end + incr > &HeapEnd) {
         if (isLocalDisplayAvailable) {
             drawTextC(0, TEXT_SIZE_11_ASCEND, "Heap CCRAM 8kB exhausted", TEXT_SIZE_11, COLOR16_RED, COLOR16_WHITE);
-            delayMillis(1000);
+            delay(1000);
         }
 //		write(1, "Heap and stack collision\n", 25);
 //		abort();

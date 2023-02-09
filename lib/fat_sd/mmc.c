@@ -111,9 +111,9 @@ UINT wt /* Timeout [ms] */
 ) {
     uint32_t tLR14 = getLR14();
     // setTimeoutMillis(wt);  does not work because setTimeoutMillis() is not reentrant and used by calling routine too
-    uint32_t tTimestamp = getMillisSinceBoot() + wt;
+    uint32_t tTimestamp = millis() + wt;
     while (rcvr_spi() != 0xFF) {
-        if (getMillisSinceBoot() > tTimestamp) {
+        if (millis() > tTimestamp) {
             failParamMessage(tLR14, "Timeout in wait_ready()");
             break;
         }

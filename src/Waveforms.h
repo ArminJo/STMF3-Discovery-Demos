@@ -27,7 +27,6 @@
 #define WAVEFORM_SINE       1
 #define WAVEFORM_TRIANGLE   2
 #define WAVEFORM_SAWTOOTH   3
-#define WAVEFORM_MAX        WAVEFORM_MODE_SAWTOOTH
 #define WAVEFORM_MASK       0x03
 
 #define FREQUENCY_RANGE_INDEX_MILLI_HERTZ   0
@@ -67,8 +66,8 @@ extern const char FrequencyRangeChars[4]; // see FrequencyRangeIndex above
 
 void setWaveformMode(uint8_t aNewMode);
 void cycleWaveformMode();
-const char * cycleWaveformModePGMString();
-const char * getWaveformModePGMString();
+const __FlashStringHelper* cycleWaveformModePGMString();
+const __FlashStringHelper* getWaveformModePGMString();
 float getPeriodMicros();
 
 void setNormalizedFrequencyAndFactor(float aFrequency);

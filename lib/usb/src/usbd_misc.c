@@ -152,6 +152,6 @@ void CDC_TestSend(void) {
     int tCount = snprintf(sStringBuffer, sizeof sStringBuffer, "Test %p", &sStringBuffer[0]);
     USBD_CDC_SetTxBuffer(&USBDDeviceHandle, (uint8_t*) &sStringBuffer[0], tCount);
     while (USBD_CDC_TransmitPacket(&USBDDeviceHandle) == USBD_BUSY) {
-        delayMillis(100);
+        delay(100);
     }
 }

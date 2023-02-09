@@ -26,8 +26,6 @@
 /*
  * Enabling program features dependent on display configuration
  */
-//#define LOCAL_DISPLAY_EXISTS    // Activate, if a local display is attached and should be drawn simultaneously
-//#define USE_HY32D               // Activate, if local display is a HY32D / SSD1289 type. Otherwise a MI0283QT2 type is assumed.
 /*
  * Settings to configure the BlueDisplay library and to reduce its size
  */
@@ -35,12 +33,17 @@
 //#define DO_NOT_NEED_BASIC_TOUCH_EVENTS // Disables basic touch events like down, move and up. Saves 620 bytes program memory and 36 bytes RAM
 //#define USE_SIMPLE_SERIAL // Do not use the Serial object. Saves up to 1250 bytes program memory and 185 bytes RAM, if Serial is not used otherwise
 //#define DISABLE_REMOTE_DISPLAY    // Suppress drawing to Bluetooth connected display. Allow only drawing on the locally attached display
+#define USE_TIMER_FOR_PERIODIC_LOCAL_TOUCH_CHECKS // Use registerDelayCallback() and changeDelayCallback() for periodic touch checks
+#define SUPPORT_LOCAL_LONG_TOUCH_DOWN_DETECTION
+#define LOCAL_DISPLAY_GENERATES_BD_EVENTS
 #define SUPPORT_LOCAL_DISPLAY       // Supports simultaneously drawing on the locally attached display. Not (yet) implemented for all commands!
-#include "LocalDisplay/SSD1289.hpp" // The implementation of the local display must be included before BlueDisplay.hpp
-#include "LocalDisplay/ADS7846.hpp"              // Must be after the local display implementation since it uses e.g. LOCAL_DISPLAY_HEIGHT
+#include "LocalSSD1289Display.hpp"  // The implementation of the local display must be included before BlueDisplay.hpp
+#define DISPLAY_HEIGHT LOCAL_DISPLAY_HEIGHT // Use local size for remote too
+#define DISPLAY_WIDTH  LOCAL_DISPLAY_WIDTH
 #include "BlueDisplay.hpp"          // Is used to access the local display too
 
-#include "Pages.h"
+#include "PageMainMenu.hpp"
+
 #include "stm32f3DiscoveryLedsButtons.h"
 #include "stm32f3DiscoPeripherals.h"
 
@@ -142,11 +145,10 @@ int main(void) {
 #endif
     BSP_LED_On(LED_GREEN);
 
-#ifdef LOCAL_DISPLAY_EXISTS
-    // init display early because assertions and timeouts want to be displayed :-)
+#if defined(SUPPORT_LOCAL_DISPLAY)    // init display early because assertions and timeouts want to be displayed :-)
     // sets isLocalDisplayAvailable
     LocalDisplay.init();
-    setDimDelayMillis(BACKLIGHT_DIM_DEFAULT_DELAY);
+    setDimdelay(BACKLIGHT_DIM_DEFAULT_DELAY_MILLIS);
 #endif
     BSP_LED_On(LED_ORANGE_2);
 
@@ -188,8 +190,8 @@ int main(void) {
     registerConnectCallback(&initDisplay);
     // do initialize also on reset
     initDisplay();
-    BlueDisplay1.clearDisplay(COLOR_BACKGROUND_DEFAULT);
-#ifdef LOCAL_DISPLAY_EXISTS
+    BlueDisplay1.clearDisplay(BACKGROUND_COLOR);
+#if defined(SUPPORT_LOCAL_DISPLAY)
     if (isLocalDisplayAvailable) {
 
         //init touch controller
@@ -249,7 +251,7 @@ int main(void) {
             stopMainMenuPage();
         }
     } else {
-        delayMillis(1000);
+        delay(1000);
         allLedsOff();
         while (1) {
             // no display attached

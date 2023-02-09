@@ -1017,7 +1017,6 @@ uint8_t RTC_getSecond(void) {
 #endif
 }
 
-#ifdef LOCAL_DISPLAY_EXISTS
 #define CALIBRATION_MAGIC_NUMBER 0x5A5A5A5A
 // value is set only if values are manually set by do calibration and not if default values are set
 void RTC_setMagicNumber(void) {
@@ -1041,7 +1040,7 @@ bool RTC_checkMagicNumber(void) {
     }
     return false;
 }
-#endif
+
 
 /**
  * not used yet
@@ -1097,7 +1096,7 @@ int RTC_getDateStringForFile(char * aStringBuffer) {
         RTC_DateIsValid = true;
     } else {
 // fallback - set time to seconds since boot
-        uint32_t tTime = getMillisSinceBoot() / 1000;
+        uint32_t tTime = millis() / 1000;
         RTC_TimeStructure.Seconds = tTime % 60;
         tTime = tTime / 60;
         RTC_TimeStructure.Minutes = tTime % 60;
@@ -1330,27 +1329,11 @@ void FeedbackToneOK(void) {
     tone(3000, 50);
 }
 
-void FeedbackTone(unsigned int aFeedbackType) {
-    if (aFeedbackType == FEEDBACK_TONE_OK) {
-        tone(3000, 50);
-    } else if (aFeedbackType == FEEDBACK_TONE_ERROR) {
-// two short beeps
-        tone(4000, 30);
-        delayMillis(60);
-        tone(2000, 30);
-    } else if (aFeedbackType == FEEDBACK_TONE_NO_TONE) {
-        return;
-    } else {
-// long tone
-        tone(3000, 500);
-    }
-}
-
 void playEndTone(void) {
     tone(NOTE_A5, 1000);
-    delayMillis(1000);
+    delay(1000);
     tone(NOTE_E5, 1000);
-    delayMillis(1000);
+    delay(1000);
     tone(NOTE_A4, 1000);
 }
 

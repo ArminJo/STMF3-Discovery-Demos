@@ -510,7 +510,6 @@ void reset(void);
 void initalizeTone(void);
 void tone(uint16_t aFreqHertz, uint16_t aDurationMillis);
 void FeedbackToneOK(void);
-void FeedbackTone(unsigned int aFeedbackType);
 void playEndTone(void);
 void noTone(void);
 

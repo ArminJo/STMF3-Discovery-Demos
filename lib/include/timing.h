@@ -75,8 +75,8 @@ void testTimingsLoop(int aCount);
 #ifdef __cplusplus
 extern "C" {
 #endif
-uint32_t getMillisSinceBoot(void);
-void delayMillis(int32_t aTimeMillis);
+uint32_t millis(void);
+void delay(int32_t aTimeMillis);
 
 void setTimeoutMillis(int32_t aTimeMillis);
 #define isTimeout(aValue) (isTimeoutVerbose((uint8_t *)__FILE__, __LINE__,aValue,2000))
