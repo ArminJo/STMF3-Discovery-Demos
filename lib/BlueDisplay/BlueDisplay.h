@@ -7,7 +7,7 @@
  *  It also implements basic GUI elements as buttons and sliders.
  *  GUI callback, touch and sensor events are sent back to Arduino.
  *
- *  Copyright (C) 2014-2022  Armin Joachimsmeyer
+ *  Copyright (C) 2014-2023  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
@@ -30,10 +30,10 @@
 #ifndef _BLUEDISPLAY_H
 #define _BLUEDISPLAY_H
 
-#define VERSION_BLUE_DISPLAY "4.0.0"
+#define VERSION_BLUE_DISPLAY "4.0.1"
 #define VERSION_BLUE_DISPLAY_MAJOR 4
 #define VERSION_BLUE_DISPLAY_MINOR 0
-#define VERSION_BLUE_DISPLAY_PATCH 0
+#define VERSION_BLUE_DISPLAY_PATCH 1
 // The change log is at the bottom of the file
 
 /*
@@ -245,7 +245,7 @@ public:
 
     void debugMessage(const char *aStringPtr);
     void debug(const char *aStringPtr);
-#if defined(AVR)
+#if defined(__AVR__)
     void debug(const __FlashStringHelper *aPGMString);
 #endif
     void debug(uint8_t aByte);
@@ -312,7 +312,7 @@ public:
 
     void setSensor(uint8_t aSensorType, bool aDoActivate, uint8_t aSensorRate, uint8_t aFilterFlag);
 
-#if defined(AVR)
+#if defined(__AVR__)
     // On non AVR platforms PGM functions are reduced to plain functions
     uint16_t drawTextPGM(uint16_t aPositionX, uint16_t aPositionY, const char *aPGMString, uint16_t aFontSize, color16_t aTextColor,
             color16_t aBackgroundColor);
@@ -322,8 +322,6 @@ public:
 #endif
 
     // Not yet implemented    void getTextWithShortPromptPGM(void (*aTextHandler)(const char *), const __FlashStringHelper *aPGMShortPromptString);
-
-    void printVCCAndTemperaturePeriodically(uint16_t aXPos, uint16_t aYPos, uint16_t aFontSize, uint16_t aPeriodMillis);
 
     struct XYSize mRequestedDisplaySize; // contains requested display size
     struct XYSize mCurrentDisplaySize; // contains real host display size. Is initialized at connection build up and updated at reorientation and redraw event.
@@ -371,7 +369,8 @@ void writeStringC(const char *aStringPtr, uint8_t aStringLength);
  */
 uint16_t readADCChannelWithReferenceOversample(uint8_t aChannelNumber, uint8_t aReference, uint8_t aOversampleExponent);
 float getVCCVoltage(void);
-float getTemperature(void);
+float getTemperature(void) __attribute__ ((deprecated ("Renamed to getCPUTemperature()"))); // deprecated
+float getCPUTemperature(void);
 
 // For convenience also included here
 #include "BlueSerial.h"
@@ -384,8 +383,8 @@ float getTemperature(void);
 /*
  * Version 4.0.0
  * - Major refactoring, many bug fixes and seamless support of local display.
- * - All *Rel*() functions now have signed delta parameters. Fixed bug in drawLineRelWithThickness() for local display.
- * - Improved handling of local display and fixed bugs in drawLineRelWithThickness() and Button list for local display.
+ * - All *Rel*() functions now have signed delta parameters.
+ * - Fixed bugs in drawLineRelWithThickness() and Button list for local display.
  * - Added debug(const __FlashStringHelper *aStringPtr).
  * - Added bool delay(AndCheckForEvent().
  *

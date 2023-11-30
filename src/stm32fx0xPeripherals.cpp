@@ -65,7 +65,7 @@ TIM_HandleTypeDef TIM_DSOHandle;
 TIM_HandleTypeDef TIM7Handle;
 RTC_HandleTypeDef RTCHandle;
 extern SPI_HandleTypeDef SpiHandle; // from stm32f3_discovery.c line 98 - must remove static there
-SPI_HandleTypeDef * SPI1HandlePtr = &SpiHandle;
+SPI_HandleTypeDef *SPI1HandlePtr = &SpiHandle;
 #ifdef HAL_WWDG_MODULE_ENABLED
 WWDG_HandleTypeDef WWDGHandle;
 #endif
@@ -150,7 +150,7 @@ void ADC_setRawToVoltFactor(void) {
 }
 
 // TODO replace HAL_ADC_ConfigChannel (448 bytes code size)
-void MY_ADC_ConfigChannel(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig) {
+void MY_ADC_ConfigChannel(ADC_HandleTypeDef *hadc, ADC_ChannelConfTypeDef *sConfig) {
 
 }
 
@@ -168,7 +168,7 @@ void MY_ADC_ConfigChannel(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConf
 #define ADC2_INPUT2_PIN                         GPIO_PIN_1
 #define ADC2_INPUT2_PORT                        GPIOC
 
-void HAL_ADC_MspInit(ADC_HandleTypeDef* aADCHandle) {
+void HAL_ADC_MspInit(ADC_HandleTypeDef *aADCHandle) {
     GPIO_InitTypeDef GPIO_InitStructure;
 
     // use slow clock
@@ -362,7 +362,7 @@ void ADC1_init(void) {
     ADC_initalizeTimer();
 }
 
-void ADC_enableAndWait(ADC_HandleTypeDef* aADCHandle) {
+void ADC_enableAndWait(ADC_HandleTypeDef *aADCHandle) {
     __HAL_ADC_ENABLE(aADCHandle);
 #ifdef STM32F30X
     // wait for ADRDY
@@ -378,7 +378,7 @@ void ADC_enableAndWait(ADC_HandleTypeDef* aADCHandle) {
 #endif
 }
 
-void ADC_disableAndWait(ADC_HandleTypeDef* aADCHandle) {
+void ADC_disableAndWait(ADC_HandleTypeDef *aADCHandle) {
 #ifdef STM32F30X
 // stop if not already done
     if (HAL_IS_BIT_SET(aADCHandle->Instance->CR, ADC_CR_ADSTART)) {
@@ -471,7 +471,7 @@ uint16_t ADC1_getChannelValue(uint8_t aChannel, int aOversamplingExponent) {
     return tValue;
 }
 
-void ADC_SelectChannelAndSetSampleTime(ADC_HandleTypeDef* aADCHandle, uint8_t aChannelNumber, bool aFastMode) {
+void ADC_SelectChannelAndSetSampleTime(ADC_HandleTypeDef *aADCHandle, uint8_t aChannelNumber, bool aFastMode) {
     ADCChannelConfigDefault.Channel = aChannelNumber;
     uint32_t tSampleTime = 0;
     switch (aChannelNumber) {
@@ -576,7 +576,7 @@ void ADC1_DMA_initialize(void) {
     __DMA1_CLK_ENABLE()
     ;
 
-    DMA_HandleTypeDef * tDMA_ADCHandle = ADC1Handle.DMA_Handle;
+    DMA_HandleTypeDef *tDMA_ADCHandle = ADC1Handle.DMA_Handle;
 
     tDMA_ADCHandle->Instance = DMA1_Channel1;
 
@@ -634,7 +634,7 @@ void ADC1_DMA_initialize(void) {
 
 void ADC1_DMA_start(uint32_t aMemoryBaseAddr, uint16_t aBufferSize, bool aModeCircular) {
 // Disable DMA1 channel1 - is really needed here!
-    DMA_HandleTypeDef * tDMA_ADCHandle = ADC1Handle.DMA_Handle;
+    DMA_HandleTypeDef *tDMA_ADCHandle = ADC1Handle.DMA_Handle;
     CLEAR_BIT(tDMA_ADCHandle->Instance->CCR, DMA_CCR_EN);
 
 #ifdef STM32F30X
@@ -885,16 +885,16 @@ extern "C" uint8_t SPI1_sendReceiveFast(uint8_t byte) {
 
     while (HAL_IS_BIT_SET(SPI1HandlePtr->Instance->SR, SPI_FLAG_RXNE)) {
         /* fetch the Byte read from the SPI bus in order to empty RX fifo */
-        dummy = *(__IO uint8_t *) spixbase;
+        dummy = *(__IO uint8_t*) spixbase;
     }
 
     /* Send a Byte through the SPI peripheral */
-    *(__IO uint8_t *) spixbase = byte;
+    *(__IO uint8_t*) spixbase = byte;
 
     /* Wait to receive a Byte */
     setTimeoutMillis(SPI_TIMEOUT);
     while (HAL_IS_BIT_CLR(SPI1HandlePtr->Instance->SR, SPI_FLAG_RXNE)) {
-        if (isTimeoutVerbose((uint8_t *) __FILE__, __LINE__, tLR14, 2000)) {
+        if (isTimeoutVerbose((uint8_t*) __FILE__, __LINE__, tLR14, 2000)) {
             break;
         }
     }
@@ -903,7 +903,7 @@ extern "C" uint8_t SPI1_sendReceiveFast(uint8_t byte) {
     spixbase = (uint32_t) SPI1;
     spixbase += 0x0C;
     inSendReceiveFast = 0; // reset semaphore
-    return *(__IO uint8_t *) spixbase;
+    return *(__IO uint8_t*) spixbase;
 }
 
 bool sRTCIsInitalized = false;
@@ -981,7 +981,7 @@ void RTC_initialize(void) {
     HAL_RTC_Init(&RTCHandle);
 
     if (__HAL_RCC_GET_FLAG(RCC_FLAG_LSERDY) == RESET) {
-        RTC_setTime(0, 0, 12, 6, 16, 4, 2017);
+        RTC_setTime(0, 0, 12, 4, 1, 12, 2023);
     }
     sRTCIsInitalized = true;
 }
@@ -1041,7 +1041,6 @@ bool RTC_checkMagicNumber(void) {
     return false;
 }
 
-
 /**
  * not used yet
  */
@@ -1056,7 +1055,7 @@ long RTC_getTimeAsLong(void) {
  * @param aStringBuffer
  * @return
  */
-int RTC_getTimeStringForFile(char * aStringBuffer) {
+int RTC_getTimeStringForFile(char *aStringBuffer) {
     if (!sRTCIsInitalized) {
         //return empty string
         aStringBuffer[0] = '\0';
@@ -1078,7 +1077,7 @@ int RTC_getTimeStringForFile(char * aStringBuffer) {
  * @param aStringBuffer
  * @return value of sprintf()
  */
-int RTC_getDateStringForFile(char * aStringBuffer) {
+int RTC_getDateStringForFile(char *aStringBuffer) {
     if (!sRTCIsInitalized) {
         //return empty string
         aStringBuffer[0] = '\0';
@@ -1119,7 +1118,7 @@ bool RTC_DateIsValid = false; // true if year != 0
  * @param aStringBuffer
  * @return value of sprintf()
  */
-int RTC_getTimeString(char * aStringBuffer) {
+int RTC_getTimeString(char *aStringBuffer) {
     if (!sRTCIsInitalized) {
         //return empty string
         aStringBuffer[0] = '\0';
@@ -1383,7 +1382,7 @@ void MICROSD_IO_initalize(void) {
 /**
  * @brief  DAC channels configurations PA4 in analog,
  */
-void HAL_DAC_MspInit(DAC_HandleTypeDef* aDACHandle) {
+void HAL_DAC_MspInit(DAC_HandleTypeDef *aDACHandle) {
     GPIO_InitTypeDef GPIO_InitStructure;
     /* GPIOA clock enable */
     __GPIOA_CLK_ENABLE()

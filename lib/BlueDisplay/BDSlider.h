@@ -60,7 +60,7 @@ static const int FLAG_SLIDER_IS_ONLY_OUTPUT = 0x20;     // is equivalent to slid
 #define FLAG_SLIDER_VALUE_CAPTION_ALIGN_MIDDLE       0x02
 #define FLAG_SLIDER_VALUE_CAPTION_BELOW              0x00
 #define FLAG_SLIDER_VALUE_CAPTION_ABOVE              0x04
-#define FLAG_SLIDER_VALUE_TAKE_DEFAULT_MARGIN        0x08 // supported since BlueDisplay App 4.3.2
+#define FLAG_SLIDER_VALUE_CAPTION_TAKE_DEFAULT_MARGIN 0x08 // margin = RequestedCanvasHeight / 60. supported since BlueDisplay App 4.3.2
 
 static const int FLAG_SLIDER_CAPTION_ALIGN_LEFT_BELOW = 0x00;
 static const int FLAG_SLIDER_CAPTION_ALIGN_LEFT = 0x00;
@@ -75,7 +75,7 @@ static const int FLAG_SLIDER_CAPTION_ABOVE = 0x04;
 #include "LocalGUI/LocalTouchSlider.h"
 #endif
 
-#if defined(AVR)
+#if defined(__AVR__)
 typedef uint8_t BDSliderHandle_t;
 #else
 typedef uint16_t BDSliderHandle_t;
@@ -102,7 +102,7 @@ public:
     // Defaults
     void setDefaultBarThresholdColor(color16_t aDefaultBarThresholdColor);
 
-    // TODO !!! Possible memory leak !!!
+    // !!! Possible memory leak !!!
     static void resetAll();
 
     /*

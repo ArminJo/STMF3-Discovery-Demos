@@ -1096,15 +1096,12 @@ bool setDisplayRange(int aNewRangeIndex) {
 
 /**
  * Adds aValue to existing DisplayRangeIndex and checks for bounds, then just calls setDisplayRange()
- * Additionally adjust OffsetGridCount (for offset != 0) so that bottom line will stay.
  *
  * @param aValue to add to MeasurementControl.IndexDisplayRange
  * @return true if no clipping if index occurs
  */
-int changeDisplayRangeAndAdjustOffsetGridCount(int aValue) {
+int changeDisplayRange(int aValue) {
     int tFeedbackType = FEEDBACK_TONE_OK;
-    float tOldFactor = ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndex];
-
     int tNewDisplayRange = MeasurementControl.DisplayRangeIndex + aValue;
     // check for bounds
     if (tNewDisplayRange < 0) {
@@ -1115,6 +1112,21 @@ int changeDisplayRangeAndAdjustOffsetGridCount(int aValue) {
         tFeedbackType = FEEDBACK_TONE_ERROR;
     }
     setDisplayRange(tNewDisplayRange);
+
+    return tFeedbackType;
+}
+
+/**
+ * Adds aValue to existing DisplayRangeIndex and checks for bounds, then just calls setDisplayRange()
+ * Additionally adjust OffsetGridCount (for offset != 0) so that bottom line will stay.
+ *
+ * @param aValue to add to MeasurementControl.IndexDisplayRange
+ * @return true if no clipping if index occurs
+ */
+int changeDisplayRangeAndAdjustOffsetGridCount(int aValue) {
+    float tOldFactor = ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndex];
+    int tFeedbackType = changeDisplayRange(aValue);
+
     // adjust OffsetGridCount so that bottom line will stay
     setOffsetGridCount(MeasurementControl.OffsetGridCount * tOldFactor / ScaleVoltagePerDiv[MeasurementControl.DisplayRangeIndex]);
 

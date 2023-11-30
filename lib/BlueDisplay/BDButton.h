@@ -65,7 +65,7 @@ static const int FLAG_BUTTON_GLOBAL_SET_BEEP_TONE = 0x02;   // Beep on button to
 #include "LocalGUI/LocalTouchButton.h"
 #endif
 
-#if defined(AVR)
+#if defined(__AVR__)
 typedef uint8_t BDButtonHandle_t;
 #else
 typedef uint16_t BDButtonHandle_t;
@@ -140,16 +140,16 @@ public:
     void setCaption(const __FlashStringHelper *aPGMCaption, bool doDrawButton = false);
     void setCaptionForValueTrue(const char *aCaption);
     void setCaptionForValueTrue(const __FlashStringHelper *aCaption);
-    void setCaptionFromStringArray(const char *const *aCaptionStringArrayPtr, uint8_t aStringIndex, bool doDrawButton);
-    void setCaptionFromStringArray(const __FlashStringHelper *const *aCaptionStringArrayPtr, uint8_t aStringIndex, bool doDrawButton);
+    void setCaptionFromStringArray(const char *const *aCaptionStringArrayPtr, uint8_t aStringIndex, bool doDrawButton = false);
+    void setCaptionFromStringArray(const __FlashStringHelper *const *aCaptionStringArrayPtr, uint8_t aStringIndex, bool doDrawButton = false);
 
-#if defined(AVR)
+#if defined(__AVR__)
     void setCaptionPGM(const char *aPGMCaption, bool doDrawButton = false) __attribute__ ((deprecated ("Use setCaptionForValueTrue(const __FlashStringHelper *aCaption,...) with cast")));
     void setCaptionPGMForValueTrue(const char *aCaption) __attribute__ ((deprecated ("Use setCaption(const __FlashStringHelper *aCaption) with cast")));
     void setCaptionFromStringArrayPGM(const char *const aPGMCaptionStringArrayPtr[], uint8_t aStringIndex,
             bool doDrawButton = false) __attribute__ ((deprecated ("Use setCaptionFromStringArray(const __FlashStringHelper *const *aCaptionStringArrayPtr,...) with cast")));
 
-#endif // defined(AVR)
+#endif // defined(__AVR__)
 
     // Value
     void setValue(int16_t aValue, bool doDrawButton = false);

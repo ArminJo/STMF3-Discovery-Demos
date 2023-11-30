@@ -37,6 +37,7 @@
 #define SUPPORT_LOCAL_LONG_TOUCH_DOWN_DETECTION
 #define LOCAL_DISPLAY_GENERATES_BD_EVENTS
 #define SUPPORT_LOCAL_DISPLAY       // Supports simultaneously drawing on the locally attached display. Not (yet) implemented for all commands!
+#define FONT_8X12                   // Font size used here
 #include "LocalSSD1289Display.hpp"  // The implementation of the local display must be included before BlueDisplay.hpp
 #define DISPLAY_HEIGHT LOCAL_DISPLAY_HEIGHT // Use local size for remote too
 #define DISPLAY_WIDTH  LOCAL_DISPLAY_WIDTH
@@ -65,7 +66,7 @@ extern "C" {
 #include "GuiDemo.h"
 
 /*
- * buffers for any purpose...
+ * buffer for any purpose...
  */
 char sStringBuffer[SIZEOF_STRINGBUFFER];
 
