@@ -47,7 +47,7 @@ const char *const TriggerStatusStrings[] = { "slope", "level", "nothing" }; // w
  * FFT
  */
 Chart ChartFFT;
-#define FFT_DISPLAY_SCALE_FACTOR_X (BlueDisplay1.getDisplayWidth() / FFT_SIZE) // 2 pixel per value
+#define FFT_DISPLAY_SCALE_FACTOR_X (BlueDisplay1.getDisplayWidth() / (FFT_SIZE / 2) ) // We display 128 values and for 320 display width we get 2 pixel per value
 /*******************************************************************************************
  * Program code starts here
  *******************************************************************************************/
@@ -111,7 +111,7 @@ void drawDataBuffer(uint16_t *aDataBufferPointer, int aLength, color16_t aColor,
                 /*
                  * get data from data buffer and perform X scaling
                  */
-                if (tXScale == 0) {
+                if (tXScale == CHART_X_AXIS_SCALE_FACTOR_1) {
                     tDataBufferPointer++;
                 } else if (tXScale < -1) {
                     // compress - get average of multiple values
@@ -382,7 +382,8 @@ void computeAndDrawFFT(void) {
     float *tFFTDataPointer = computeFFT(DataBufferControl.DataBufferDisplayStart);
     // init and draw chart 12 milliseconds with -O0
     // display with Xscale = 2
-    ChartFFT.initChart(4 * TEXT_SIZE_11_WIDTH, REMOTE_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT, FFT_SIZE, 32 * 5, 2, true, 64, 32);
+    ChartFFT.initChart(4 * TEXT_SIZE_11_WIDTH, REMOTE_DISPLAY_HEIGHT - 2 * TEXT_SIZE_11_HEIGHT, FFT_SIZE, 32 * 5, 2, TEXT_SIZE_11,
+            true, 32 * FFT_DISPLAY_SCALE_FACTOR_X, 32);
     ChartFFT.initChartColors(COLOR_FFT_DATA, COLOR16_RED, COLOR16(0xC0, 0xC0, 0xC0), COLOR16_RED, COLOR_BACKGROUND_DSO);
     // compute Label for x Frequency axis
     char tFreqUnitString[4] = { " Hz" };
@@ -394,7 +395,8 @@ void computeAndDrawFFT(void) {
         tFreqAtBin32 /= 1000;
         tFreqUnitString[0] = 'k'; // kHz
     }
-    ChartFFT.initXLabelInt(0, tFreqAtBin32 * FFT_DISPLAY_SCALE_FACTOR_X, FFT_DISPLAY_SCALE_FACTOR_X, 4);
+    ChartFFT.initXLabelInteger(0, tFreqAtBin32, CHART_X_AXIS_SCALE_FACTOR_1, 4);
+    ChartFFT.setXDataScaleFactor(FFT_DISPLAY_SCALE_FACTOR_X);  // 2 for 320 display
     ChartFFT.setXTitleText(tFreqUnitString);
     // display 1.0 for input value of tMaxValue -> normalize while drawing chart
     ChartFFT.initYLabelFloat(0, 0.2, 1.0 / FFTInfo.MaxValue, 3, 1);
@@ -402,7 +404,7 @@ void computeAndDrawFFT(void) {
     /*
      * Show FFT chart
      */
-    ChartFFT.drawChartDataFloat(tFFTDataPointer, tFFTDataPointer + FFT_SIZE, CHART_MODE_AREA);
+    ChartFFT.drawChartDataFloat(tFFTDataPointer, FFT_SIZE, CHART_MODE_AREA);
     ChartFFT.drawXAxisTitle();
 
     /*
@@ -593,7 +595,7 @@ void printInfo(bool aRecomputeValues) {
             tChannelString = ADS7846ChannelStrings[MeasurementControl.ADMUXChannel];
         }
 #endif
-        getScaleFactorAsString(&sStringBuffer[40], DisplayControl.XScale);
+        Chart::getIntegerScaleFactorAsString(&sStringBuffer[40], DisplayControl.XScale);
         snprintf(sStringBuffer, sizeof sStringBuffer, "%s %4u%cs %s %s", &sStringBuffer[40], tUnitsPerGrid, tTimebaseUnitChar,
                 tBufferForPeriodAndFrequency, tChannelString);
         BlueDisplay1.drawText(0, FONT_SIZE_INFO_LONG_ASC + FONT_SIZE_INFO_LONG, sStringBuffer, FONT_SIZE_INFO_LONG, COLOR16_BLACK,
@@ -808,9 +810,9 @@ bool checkDatabufferPointerForDrawing(void) {
 // check for DataBufferDisplayStart
     if (DataBufferControl.DataBufferDisplayStart
             > DataBufferControl.DataBufferEndPointer
-                    - (adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1)) {
+                    - (Chart::reduceLongWithIntegerScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1)) {
         DataBufferControl.DataBufferDisplayStart = (uint16_t*) DataBufferControl.DataBufferEndPointer
-                - (adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1);
+                - (Chart::reduceLongWithIntegerScaleFactor(REMOTE_DISPLAY_WIDTH, DisplayControl.XScale) - 1);
         // Check begin - if no screen full of data acquired (by forced stop)
         if ((DataBufferControl.DataBufferDisplayStart < &DataBufferControl.DataBuffer[0])) {
             DataBufferControl.DataBufferDisplayStart = &DataBufferControl.DataBuffer[0];
@@ -851,7 +853,7 @@ bool changeXScale(int aValue) {
 int scrollChart(int aValue) {
     uint8_t tFeedbackType = FEEDBACK_TONE_OK;
     if (DisplayControl.DisplayPage == DSO_PAGE_CHART) {
-        DataBufferControl.DataBufferDisplayStart += adjustIntWithScaleFactor(aValue, DisplayControl.XScale);
+        DataBufferControl.DataBufferDisplayStart += Chart::reduceLongWithIntegerScaleFactor(aValue, DisplayControl.XScale);
 
         // Check begin
         if ((DataBufferControl.DataBufferDisplayStart < &DataBufferControl.DataBuffer[0])) {

@@ -29,7 +29,6 @@
 #include "usbd_hid.h" // for USBD_HID_SendReport
 #include "lsm303dlhc.h" // for MAG_I2C_ADDRESS
 
-
 #define COLOR_ACC_GYRO_BACKGROUND COLOR16_CYAN
 
 #define COMPASS_RADIUS 40
@@ -60,11 +59,11 @@ BDButton TouchButtonSetZero;
 static BDSlider TouchSliderRoll; // Horizontal
 static BDSlider TouchSliderPitch; // Vertical
 
-void doChangeAccScale(BDButton * aTheTouchedButton, int16_t aValue);
+void doChangeAccScale(BDButton *aTheTouchedButton, int16_t aValue);
 
-void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallbackInfo);
+void doSensorChange(uint8_t aSensorType, struct SensorCallback *aSensorCallbackInfo);
 
-void doSetZero(BDButton * aTheTouchedButton, int16_t aValue) {
+void doSetZero(BDButton *aTheTouchedButton, int16_t aValue) {
     // wait for end of touch vibration
     delay(300);
     setZeroAccelerometerGyroValue();
@@ -135,7 +134,7 @@ void initAccelerometerCompassPage(void) {
     GyroYawLine.BackgroundColor = COLOR_ACC_GYRO_BACKGROUND;
 }
 
-void doClearAccelerometerCompassScreen(BDButton * aTheTouchedButton, int16_t aValue) {
+void doClearAccelerometerCompassScreen(BDButton *aTheTouchedButton, int16_t aValue) {
     BlueDisplay1.clearDisplay(aValue);
     drawAccDemoGui();
 }
@@ -146,22 +145,20 @@ void startAccelerometerCompassPage(void) {
     //USB_ChangeToJoystick();
 
     // 4. row
-    TouchButtonAutorepeatAccScalePlus.init(BUTTON_WIDTH_6_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
-    BUTTON_HEIGHT_4, COLOR16_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1,
-            &doChangeAccScale);
+    TouchButtonAutorepeatAccScalePlus.init(BUTTON_WIDTH_6_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6, BUTTON_HEIGHT_4,
+            COLOR16_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1, &doChangeAccScale);
     TouchButtonAutorepeatAccScalePlus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
     TouchButtonAutorepeatAccScaleMinus.init(0, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6, BUTTON_HEIGHT_4, COLOR16_RED, "-",
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeAccScale);
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, -1, &doChangeAccScale);
     TouchButtonAutorepeatAccScaleMinus.setButtonAutorepeatTiming(600, 100, 10, 20);
 
-    TouchButtonSetZero.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR16_RED, "Zero", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetZero);
+    TouchButtonSetZero.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "Zero",
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetZero);
 
     // Clear button - lower left corner
-    TouchButtonClearScreen.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR16_RED, "Clear", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, BACKGROUND_COLOR,
-            &doClearAccelerometerCompassScreen);
+    TouchButtonClearScreen.init(BUTTON_WIDTH_3_POS_3, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, COLOR16_RED, "Clear",
+            TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, BACKGROUND_COLOR, &doClearAccelerometerCompassScreen);
 
     drawAccDemoGui();
     registerRedrawCallback(&drawAccDemoGui);
@@ -227,9 +224,8 @@ void loopAccelerometerGyroCompassPage(void) {
         readCompassRaw(&AccelerometerCompassRawDataBuffer[0]);
         snprintf(sStringBuffer, sizeof sStringBuffer, "Compass X=%5d Y=%5d Z=%5d", AccelerometerCompassRawDataBuffer[0],
                 AccelerometerCompassRawDataBuffer[1], AccelerometerCompassRawDataBuffer[2]);
-        BlueDisplay1.drawText(TEXT_START_X, TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11,
-        COLOR16_BLACK,
-        COLOR16_GREEN);
+        BlueDisplay1.drawText(TEXT_START_X, TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_BLACK,
+                COLOR16_GREEN);
         // values can reach 800
         BlueDisplay1.refreshVector(&CompassLine, (AccelerometerCompassRawDataBuffer[0] >> 5),
                 -(AccelerometerCompassRawDataBuffer[2] >> 5));
@@ -241,9 +237,8 @@ void loopAccelerometerGyroCompassPage(void) {
         readGyroscopeZeroCompensated(&GyroscopeRawDataBuffer[0]);
         snprintf(sStringBuffer, sizeof sStringBuffer, "Gyroscope R=%7.1f P=%7.1f Y=%7.1f", GyroscopeRawDataBuffer[0],
                 GyroscopeRawDataBuffer[1], GyroscopeRawDataBuffer[2]);
-        BlueDisplay1.drawText(TEXT_START_X, 2 * TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11,
-        COLOR16_BLACK,
-        COLOR16_GREEN);
+        BlueDisplay1.drawText(TEXT_START_X, 2 * TEXT_SIZE_11_HEIGHT + TEXT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_BLACK,
+                COLOR16_GREEN);
 
         TouchSliderRoll.setValueAndDrawBar(
                 ((int16_t) (GyroscopeRawDataBuffer[0] / (sAccelerationScale / 4))) + HORIZONTAL_SLIDER_NULL_VALUE);
@@ -261,7 +256,7 @@ void stopAccelerometerCompassPage(void) {
 //    registerSensorChangeCallback(TYPE_ACCELEROMETER, SENSOR_DELAY_NORMAL, NULL);
 //    BlueDisplay1.setScreenOrientationLock(false);
 
-    USBD_Stop(&USBDDeviceHandle);
+    USBD_Stop (&USBDDeviceHandle);
 
 #if defined(SUPPORT_LOCAL_DISPLAY)
     TouchButtonSetZero.deinit();
@@ -273,7 +268,7 @@ void stopAccelerometerCompassPage(void) {
 #endif
 }
 
-void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallbackInfo) {
+void doSensorChange(uint8_t aSensorType, struct SensorCallback *aSensorCallbackInfo) {
     snprintf(sStringBuffer, sizeof sStringBuffer, "Accelerometer X=%7.4f Y=%7.4f Z=%7.4f", aSensorCallbackInfo->ValueX,
             aSensorCallbackInfo->ValueY, aSensorCallbackInfo->ValueZ);
     BlueDisplay1.drawText(TEXT_START_X, TEXT_START_Y, sStringBuffer, TEXT_SIZE_11, COLOR16_BLACK, COLOR16_GREEN);
@@ -283,7 +278,7 @@ void doSensorChange(uint8_t aSensorType, struct SensorCallback * aSensorCallback
 
 }
 
-void doChangeAccScale(BDButton * aTheTouchedButton, int16_t aValue) {
+void doChangeAccScale(BDButton *aTheTouchedButton, int16_t aValue) {
     bool tIsError = false;
     sAccelerationScale += aValue * 10;
     if (sAccelerationScale < 10) {
@@ -291,9 +286,8 @@ void doChangeAccScale(BDButton * aTheTouchedButton, int16_t aValue) {
         tIsError = true;
     }
     snprintf(sStringBuffer, sizeof sStringBuffer, "Scale=%3u", sAccelerationScale);
-    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND - 4, sStringBuffer, TEXT_SIZE_11,
-    COLOR16_BLUE,
-    COLOR_ACC_GYRO_BACKGROUND);
+    BlueDisplay1.drawText(10, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_11_DECEND - 4, sStringBuffer, TEXT_SIZE_11, COLOR16_BLUE,
+            COLOR_ACC_GYRO_BACKGROUND);
     BDButton::playFeedbackTone(tIsError);
 }
 

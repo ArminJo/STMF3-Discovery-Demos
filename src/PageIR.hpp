@@ -145,9 +145,9 @@ void doSetYawTrim(BDButton *aTheTouchedButton, int16_t aValue) {
 
 void doToggleSendReceive(BDButton *aTheTouchedButton, int16_t aValue) {
     if (sSend) {
-        aTheTouchedButton->setCaption(StringReceive);
+        aTheTouchedButton->setText(StringReceive);
     } else {
-        aTheTouchedButton->setCaption(StringSend);
+        aTheTouchedButton->setText(StringSend);
     }
     aTheTouchedButton->drawButton();
     sSend = !sSend;

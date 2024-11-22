@@ -91,7 +91,7 @@ static void doChangeDACWaveform(BDButton *aTheTouchedButton, int16_t aValue) {
         DAC_ModeTriangle();
         DAC_Start();
     }
-    aTheTouchedButton->setCaption(WaveformStrings[sActualWaveform]);
+    aTheTouchedButton->setText(WaveformStrings[sActualWaveform]);
     aTheTouchedButton->drawButton();
 }
 
@@ -240,7 +240,7 @@ void startDACPage(void) {
     int tPosY = 0;
     TouchButtonStartStop.init(BUTTON_WIDTH_3_POS_2, tPosY, BUTTON_WIDTH_3, BUTTON_HEIGHT_4, 0, "Start", TEXT_SIZE_22,
             FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN, true, &doDACStop);
-    TouchButtonStartStop.setCaptionForValueTrue("Stop");
+    TouchButtonStartStop.setTextForValueTrue("Stop");
 
     TouchButtonMainHome.setPosition(BUTTON_WIDTH_3_POS_3, 0);
 

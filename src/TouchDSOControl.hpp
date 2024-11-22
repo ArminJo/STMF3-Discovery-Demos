@@ -421,7 +421,7 @@ void loopDSOPage(void) {
 
 void doAcDcMode(BDButton *aTheTouchedButton, int16_t aValue) {
     setACMode(!MeasurementControl.isACMode);
-    setACModeButtonCaption();
+    setACModeButtonText();
     aTheTouchedButton->drawButton();
 }
 

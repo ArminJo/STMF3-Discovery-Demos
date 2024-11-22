@@ -3,7 +3,7 @@
  *
  * Implements the methods to receive events from the Android BlueDisplay app.
  *
- *  Copyright (C) 2014-2023  Armin Joachimsmeyer
+ *  Copyright (C) 2014-2024  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
@@ -45,14 +45,14 @@ unsigned long sMillisOfLastReceivedBDEvent;
 #if !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
 struct TouchEvent sCurrentPosition; // for printEventTouchPositionData()
 bool sTouchIsStillDown = false; // To enable simple blocking touch down and touch up detection (without using a touch down or up callback).
+bool sDisableMoveEventsUntilTouchUpIsDone = false; // To suppress move events after button press to avoid interpreting it for a slider. Useful, if page changed and a slider is presented on the position where the page switch button was.
 #endif
 
 bool sBDEventJustReceived = false;
-bool sDisableTouchUpOnce = false; // Disable next touch up detection. E.g. because we are already in a touch handler and don't want the end of this touch to be interpreted for a newly displayed button.
-bool sDisableMoveEventsUntilTouchUpIsDone = false; // To suppress move events after button press to avoid interpreting it for a slider. Useful, if page changed and a slider is presented on the position where the page switch button was.
+bool sButtonCalledWithFalse = false; // true if last button callback has the value false/zero. If Red/Green buttons are turning red, this is true. Used for stop detection.
 
 struct BluetoothEvent remoteEvent; // To hold the current received event
-#if defined(USE_SIMPLE_SERIAL)
+#if defined(BD_USE_SIMPLE_SERIAL)
 // Is used for touch down events. If remoteEvent is not empty, it is used as buffer for next regular event to avoid overwriting of remoteEvent
 struct BluetoothEvent remoteTouchDownEvent;
 #endif
@@ -64,11 +64,14 @@ uint32_t sLastMillisOfLastCallOfPeriodicTouchCallback;
 #  endif
 #endif // defined(SUPPORT_LOCAL_DISPLAY)
 
-bool sDisplayXYValuesEnabled = false;// displays touch values on screen
+bool sDisplayXYValuesEnabled = false; // displays touch values on screen
 
 /*
  * Event handler support
  */
+#if !defined(DO_NOT_NEED_TOUCH_AND_SWIPE_EVENTS)
+bool sDisableTouchUpOnce = false; // Disable next touch up detection. E.g. because we are already in a touch handler and don't want the end of this touch to be interpreted for a newly displayed button.
+
 void (*sTouchDownCallback)(struct TouchEvent*) = NULL;
 void (*sLongTouchDownCallback)(struct TouchEvent*) = NULL; // The callback handler
 #if defined(SUPPORT_LOCAL_LONG_TOUCH_DOWN_DETECTION)
@@ -82,17 +85,29 @@ bool sTouchUpCallbackEnabled = false;
 
 void (*sSwipeEndCallback)(struct Swipe*) = NULL; // can be called by event handler and by local touch up handler, which recognizes the swipe
 bool sSwipeEndCallbackEnabled = false;  // for temporarily disabling swipe callbacks
+#endif
 
 void (*sConnectCallback)() = NULL;
-void (*sRedrawCallback)() = NULL;
+void (*sRedrawCallback)() = NULL; // Intended to redraw screen, if size of display changes.
 void (*sReorientationCallback)() = NULL;
-
 void (*sSensorChangeCallback)(uint8_t aEventType, struct SensorCallback *aSensorCallbackInfo) = NULL;
 
 void copyDisplaySizeAndTimestamp(struct BluetoothEvent *aEvent);
 
 /*
- * Is also called on Connect and Reorientation events
+ * Connect event also calls redraw event
+ */
+void registerConnectCallback(void (*aConnectCallback)()) {
+    sConnectCallback = aConnectCallback;
+}
+
+/*
+ * Redraw event is intended to redraw screen, if size of display changes.
+ * The app itself does the scaling of the screen content, but this can be coarse, especially when inflating
+ * so we will get better quality, if we redraw the content.
+ * Size changes will not happen, if BD_FLAG_USE_MAX_SIZE is set, and no reorientation (implying size changes) happens.
+ *
+ * The redraw event handler is automatically called directly after the reconnect or reorientation handler.
  */
 void registerRedrawCallback(void (*aRedrawCallback)()) {
     sRedrawCallback = aRedrawCallback;
@@ -106,17 +121,30 @@ void (* getRedrawCallback())() {
 // @formatter:on
 
 /*
- * Connect event also calls redraw event
- */
-void registerConnectCallback(void (*aConnectCallback)()) {
-    sConnectCallback = aConnectCallback;
-}
-
-/*
  * Reorientation event also calls redraw event
  */
 void registerReorientationCallback(void (*aReorientationCallback)()) {
     sReorientationCallback = aReorientationCallback;
+}
+
+/**
+ * Values received from accelerator sensor are in g (m/(s*s))
+ * @param aSensorType see see android.hardware.Sensor. FLAG_SENSOR_TYPE_ACCELEROMETER, FLAG_SENSOR_TYPE_GYROSCOPE (in BlueDisplay.h)
+ * @param aSensorRate see android.hardware.SensorManager (0-3) one of  {@link #FLAG_SENSOR_DELAY_NORMAL} 200 ms, {@link #FLAG_SENSOR_DELAY_UI} 60 ms,
+ *        {@link #FLAG_SENSOR_DELAY_GAME} 20ms, or {@link #FLAG_SENSOR_DELAY_FASTEST}
+ *        If aSensorRate is > FLAG_SENSOR_DELAY_NORMAL (3) the value is interpreted (by BD app) as milliseconds interval (down do 5 ms).
+ * @param aFilterFlag If FLAG_SENSOR_SIMPLE_FILTER, then sensor values are sent via BT only if value changed.
+ * To avoid noise (event value is solely switching between 2 values), values are skipped too if they are equal last or second last value.
+ * @param aSensorChangeCallback one callback for all sensors types
+ */
+void registerSensorChangeCallback(uint8_t aSensorType, uint8_t aSensorRate, uint8_t aFilterFlag,
+        void (*aSensorChangeCallback)(uint8_t aSensorType, struct SensorCallback *aSensorCallbackInfo)) {
+    bool tSensorEnable = true;
+    if (aSensorChangeCallback == NULL) {
+        tSensorEnable = false;
+    }
+    BlueDisplay1.setSensor(aSensorType, tSensorEnable, aSensorRate, aFilterFlag);
+    sSensorChangeCallback = aSensorChangeCallback;
 }
 
 #if !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
@@ -162,6 +190,7 @@ void (* getTouchUpCallback())(struct TouchEvent * ) {
 // @formatter:on
 #endif // !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
 
+#if !defined(DO_NOT_NEED_TOUCH_AND_SWIPE_EVENTS)
 /**
  * Register a callback routine which is only called after a timeout if screen is still touched
  * Send only timeout value to BD Host
@@ -203,45 +232,15 @@ void setSwipeEndCallbackEnabled(bool aSwipeEndCallbackEnabled) {
         sSwipeEndCallbackEnabled = false;
     }
 }
-
-/**
- * Values received from accelerator sensor are in g (m/(s*s))
- * @param aSensorType see see android.hardware.Sensor. FLAG_SENSOR_TYPE_ACCELEROMETER, FLAG_SENSOR_TYPE_GYROSCOPE (in BlueDisplay.h)
- * @param aSensorRate see android.hardware.SensorManager (0-3) one of  {@link #FLAG_SENSOR_DELAY_NORMAL} 200 ms, {@link #FLAG_SENSOR_DELAY_UI} 60 ms,
- *        {@link #FLAG_SENSOR_DELAY_GAME} 20ms, or {@link #FLAG_SENSOR_DELAY_FASTEST}
- *        If aSensorRate is > FLAG_SENSOR_DELAY_NORMAL (3) the value is interpreted (by BD app) as milliseconds interval (down do 5 ms).
- * @param aFilterFlag If FLAG_SENSOR_SIMPLE_FILTER, then sensor values are sent via BT only if value changed.
- * To avoid noise (event value is solely switching between 2 values), values are skipped too if they are equal last or second last value.
- * @param aSensorChangeCallback one callback for all sensors types
- */
-void registerSensorChangeCallback(uint8_t aSensorType, uint8_t aSensorRate, uint8_t aFilterFlag,
-        void (*aSensorChangeCallback)(uint8_t aSensorType, struct SensorCallback *aSensorCallbackInfo)) {
-    bool tSensorEnable = true;
-    if (aSensorChangeCallback == NULL) {
-        tSensorEnable = false;
-    }
-    BlueDisplay1.setSensor(aSensorType, tSensorEnable, aSensorRate, aFilterFlag);
-    sSensorChangeCallback = aSensorChangeCallback;
-}
+#endif // #if !defined(DO_NOT_NEED_TOUCH_AND_SWIPE_EVENTS)
 
 /*
  * Delay, which also checks for events
  * AVR - Is not affected by overflow of millis()!
  */
 void delayMillisWithCheckAndHandleEvents(unsigned long aDelayMillis) {
-#if defined(ARDUINO)
     unsigned long tStartMillis = millis();
     while (millis() - tStartMillis < aDelayMillis) {
-#  if !defined(USE_SIMPLE_SERIAL) && defined(__AVR__)
-        // check for Arduino serial - copied code from arduino main.cpp / main()
-        if (serialEventRun) {
-            serialEventRun(); // this in turn calls serialEvent from BlueSerial.cpp
-        }
-#  endif
-#else // ARDUINO
-    unsigned long tStartMillis = millis();
-    while (millis() - tStartMillis < aDelayMillis) {
-#endif
         checkAndHandleEvents();
 #if defined(ESP8266)
         yield(); // required for ESP8266
@@ -256,21 +255,37 @@ void delayMillisWithCheckAndHandleEvents(unsigned long aDelayMillis) {
  */
 bool delayMillisAndCheckForEvent(unsigned long aDelayMillis) {
     sBDEventJustReceived = false;
-#if defined(ARDUINO)
+
     unsigned long tStartMillis = millis();
     while (millis() - tStartMillis < aDelayMillis) {
-#  if !defined(USE_SIMPLE_SERIAL) && defined(__AVR__)
-        // check for Arduino serial - copied code from arduino main.cpp / main()
-        if (serialEventRun) {
-            serialEventRun(); // this in turn calls serialEvent from BlueSerial.cpp
-        }
-#  endif
-#else // ARDUINO
-    unsigned long tStartMillis = millis();
-    while (millis() - tStartMillis < aDelayMillis) {
-#endif
         checkAndHandleEvents();
         if (sBDEventJustReceived) {
+            return true;
+        }
+#if defined(ESP8266)
+            yield(); // required for ESP8266
+#endif
+    }
+    return false;
+}
+
+/*
+ * Assume that stop is requested, if a button is called with value 0/false, i.e. a Red/Green button is set to red.
+ */
+bool isStopRequested() {
+    checkAndHandleEvents();
+    return sButtonCalledWithFalse;
+}
+
+/*
+ * Special delay function for the Red/Green buttons. Returns prematurely if a button turns to red.
+ * To be used in blocking functions as delay
+ * @return  true - as soon as a turn to red is received
+ */
+bool delayMillisAndCheckForStop(uint16_t aDelayMillis) {
+    unsigned long tStartMillis = millis();
+    while (millis() - tStartMillis < aDelayMillis) {
+        if (isStopRequested()) {
             return true;
         }
 #if defined(ESP8266)
@@ -299,7 +314,7 @@ void checkAndHandleEvents() {
 
 #if !defined(DISABLE_REMOTE_DISPLAY)
 #  if defined(ARDUINO)
-#    if defined(USE_SIMPLE_SERIAL)
+#    if defined(BD_USE_SIMPLE_SERIAL)
     handleEvent(&remoteTouchDownEvent);
     handleEvent(&remoteEvent);
 #    else
@@ -355,9 +370,9 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
     case EVENT_TOUCH_ACTION_DOWN:
 //    if (tEventType == EVENT_TOUCH_ACTION_DOWN) {
         sCurrentPosition = tEvent.EventData.TouchEventInfo;
-#if defined(USE_STM32F3_DISCO)
+#  if defined(USE_STM32F3_DISCO)
         BSP_LED_On(LED_BLUE_2); // BLUE Front
-#endif
+#  endif
         sTouchIsStillDown = true;
         if (sTouchDownCallback != NULL) {
             sTouchDownCallback(&tEvent.EventData.TouchEventInfo);
@@ -377,9 +392,9 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
 
     case EVENT_TOUCH_ACTION_UP:
 //    } else if (tEventType == EVENT_TOUCH_ACTION_UP) {
-#if defined(USE_STM32F3_DISCO)
+#  if defined(USE_STM32F3_DISCO)
         BSP_LED_Off(LED_BLUE_2); // BLUE Front
-#endif
+#  endif
         sTouchIsStillDown = false;
         if (sDisableTouchUpOnce || sDisableMoveEventsUntilTouchUpIsDone) {
             sDisableTouchUpOnce = false;
@@ -414,7 +429,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             /*
              * We can not call performTouchAction() of the local button here.
              * It is because for autorepeat buttons, CallbackFunctionAddress is the mOriginalButtonOnTouchHandler and not the mOnTouchHandler
-             * and red green handling will loop between local and remote.
+             * and Red/Green button handling will loop between local and remote.
              */
             if ((tLocalButton->mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) && !(tLocalButton->mFlags & FLAG_BUTTON_TYPE_MANUAL_REFRESH)) {
                 tLocalButton->drawButton(); // handle color change for local button too
@@ -426,6 +441,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             ((void (*)(BDButton*, int16_t)) tEvent.EventData.GuiCallbackInfo.CallbackFunctionAddress)(tLocalButton->mBDButtonPtr, tLocalButton->mValue);
         }
 #elif !defined(SUPPORT_LOCAL_DISPLAY)
+        sButtonCalledWithFalse = (tEvent.EventData.GuiCallbackInfo.ValueForGUICallback.uint16Values[0] == false);
         // BDButton * is the same as BDButtonHandle_t * because BDButton only has one BDButtonHandle_t element
         ((void (*)(BDButton*, int16_t)) tEvent.EventData.GuiCallbackInfo.CallbackFunctionAddress)(
                 (BDButton*) &tEvent.EventData.GuiCallbackInfo.ObjectIndex,
@@ -463,12 +479,13 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
                 tEvent.EventData.GuiCallbackInfo.ValueForGUICallback.floatValue);
         break;
 
+#if !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
     case EVENT_SWIPE_CALLBACK:
 //    } else if (tEventType == EVENT_SWIPE_CALLBACK) {
         // reset flags, since swipe is sent at touch up
-#if !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)
         sTouchIsStillDown = false;
 #endif
+#if !defined(DO_NOT_NEED_TOUCH_AND_SWIPE_EVENTS)
         if (sSwipeEndCallback != NULL) {
             // compute it locally - not required to send it over the line
             if (tEvent.EventData.SwipeInfo.SwipeMainDirectionIsX) {
@@ -495,6 +512,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
          */
         sDisableTouchUpOnce = true;
         break;
+#endif
 
     case EVENT_INFO_CALLBACK:
 //    } else if (tEventType == EVENT_INFO_CALLBACK) {
@@ -527,13 +545,14 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             tEventType = EVENT_REDRAW; // This sets mCurrentDisplaySize
         }
 
+#if !defined(ONLY_CONNECT_EVENT_REQUIRED)
         if (tEventType == EVENT_REORIENTATION) {
             if (sReorientationCallback != NULL) {
                 sReorientationCallback();
             }
-            // Since with simpleSerial we have only buffer for 1 event, only one event is sent and we must also call redraw here
-            tEventType = EVENT_REDRAW;
+            tEventType = EVENT_REDRAW; // We also call redraw here, which in turn sets mCurrentDisplaySize and mHostUnixTimestamp
         }
+#endif
 
         break;
 
@@ -551,14 +570,13 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
         copyDisplaySizeAndTimestamp(&tEvent); // must be done before call of sConnectCallback()
         BlueDisplay1.mBlueDisplayConnectionEstablished = true;
 
-        // first write a NOP command for synchronizing
+        // first write a 40 bytes NOP command for synchronizing
         BlueDisplay1.sendSync();
 
         if (sConnectCallback != NULL) {
             sConnectCallback();
         }
-        // Since with simpleSerial we have only buffer for 1 event, we must also call redraw here
-        tEventType = EVENT_REDRAW;
+        tEventType = EVENT_REDRAW; // We also call redraw here, which in turn sets mCurrentDisplaySize and mHostUnixTimestamp
 
 #if defined(SUPPORT_REMOTE_AND_LOCAL_DISPLAY)
         // do it after sConnectCallback() since the upper tends to send a reset all command
@@ -578,6 +596,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
                 && sSensorChangeCallback != NULL) {
             sSensorChangeCallback(tEventType - EVENT_FIRST_SENSOR_ACTION_CODE, &tEvent.EventData.SensorCallbackInfo);
         }
+
         break;
     }
 
@@ -587,12 +606,17 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
     if (tEventType == EVENT_REDRAW) {
         /*
          * Got current display size since host display size has changed (manually)
+         * sets mCurrentDisplaySize and mHostUnixTimestamp
          */
         copyDisplaySizeAndTimestamp(&tEvent);
         if (sRedrawCallback != NULL) {
             sRedrawCallback();
         }
     }
+    /*
+     * End of individual event handling
+     */
+
     sBDEventJustReceived = true;
 #if defined(ARDUINO)
     sMillisOfLastReceivedBDEvent = millis(); // set time of (last) event
@@ -602,10 +626,8 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
 }
 
 void copyDisplaySizeAndTimestamp(struct BluetoothEvent *aEvent) {
-    BlueDisplay1.mMaxDisplaySize.XWidth = aEvent->EventData.DisplaySize.XWidth;
-    BlueDisplay1.mCurrentDisplaySize.XWidth = aEvent->EventData.DisplaySize.XWidth;
-    BlueDisplay1.mMaxDisplaySize.YHeight = aEvent->EventData.DisplaySize.YHeight;
-    BlueDisplay1.mCurrentDisplaySize.YHeight = aEvent->EventData.DisplaySize.YHeight;
+    BlueDisplay1.mCurrentDisplaySize.XWidth = aEvent->EventData.DisplaySizeAndTimestamp.DisplaySize.XWidth;
+    BlueDisplay1.mCurrentDisplaySize.YHeight = aEvent->EventData.DisplaySizeAndTimestamp.DisplaySize.YHeight;
     BlueDisplay1.mHostUnixTimestamp = aEvent->EventData.DisplaySizeAndTimestamp.UnixTimestamp;
 }
 
@@ -624,9 +646,12 @@ bool isDisplayXYValuesEnabled() {
  */
 void printEventTouchPositionData(int x, int y, color16_t aColor, color16_t aBackgroundColor) {
     char tStringBuffer[12];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
     // We want it this way, but we get a warning '%03i' directive output may be truncated writing between 3 and 5 bytes into a region of size between 2 and 4
     snprintf(tStringBuffer, 12, "X:%03i Y:%03i", sCurrentPosition.TouchPosition.PositionX,
             sCurrentPosition.TouchPosition.PositionY);
+#pragma GCC diagnostic pop
     BlueDisplay1.drawText(x, y, tStringBuffer, TEXT_SIZE_11, aColor, aBackgroundColor);
 }
 #endif // !defined(DO_NOT_NEED_BASIC_TOUCH_EVENTS)

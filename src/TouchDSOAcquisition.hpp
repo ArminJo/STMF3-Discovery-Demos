@@ -560,12 +560,12 @@ void DMACheckForTriggerCondition(void) {
 
         // correct start by DisplayControl.XScale - XScale is known to be >=0 here
         DataBufferControl.DataBufferDisplayStart = tDMAMemoryAddress - 1
-                - adjustIntWithScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
+                - Chart::reduceLongWithIntegerScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
         if (MeasurementControl.StopRequested) {
             MeasurementControl.StopAcknowledged = true;
         } else {
             // set end pointer to end of display for reproducible min max + average findings - XScale is known to be >=0 here
-            int tAdjust = adjustIntWithScaleFactor(REMOTE_DISPLAY_WIDTH - DisplayControl.DatabufferPreTriggerDisplaySize - 1,
+            int tAdjust = Chart::reduceLongWithIntegerScaleFactor(REMOTE_DISPLAY_WIDTH - DisplayControl.DatabufferPreTriggerDisplaySize - 1,
                     DisplayControl.XScale);
             DataBufferControl.DataBufferEndPointer = tDMAMemoryAddress + tAdjust;
         }

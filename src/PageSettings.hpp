@@ -58,9 +58,9 @@ unsigned long LoopMillis = 0;
 #define PRINT_MODE_USB_ENABLED 1 //true
 static uint8_t sPrintMode = PRINT_MODE_USB_DISABLED;
 
-#define SET_DATE_STRING_INDEX 4 // index of variable part in StringSetDateCaption
+#define SET_DATE_STRING_INDEX 4 // index of variable part in StringSetDateText
 /* Private variables ---------------------------------------------------------*/
-char StringSetDateCaption[] = "Set\nclock  "; // spaces needed for string "minute"
+char StringSetDateText[] = "Set\nclock  "; // spaces needed for string "minute"
 
 #if defined(SUPPORT_LOCAL_DISPLAY)
 void doTPCalibration(BDButton *aTheTouchedButton, int16_t aValue);
@@ -170,10 +170,10 @@ void doSetDateMode(BDButton *aTheTouchedButton, int16_t aValue);
 void doSetDate(BDButton *aTheTouchedButton, int16_t aValue);
 
 void initClockSettingElements(void) {
-    strncpy(&StringSetDateCaption[SET_DATE_STRING_INDEX], DateStrings[0], sizeof StringSecond);
+    strncpy(&StringSetDateText[SET_DATE_STRING_INDEX], DateStrings[0], sizeof StringSecond);
 
     TouchButtonSetDate.init(BUTTON_WIDTH_3_POS_2, BUTTON_HEIGHT_4_LINE_3, BUTTON_WIDTH_3,
-    BUTTON_HEIGHT_4, COLOR16_RED, StringSetDateCaption, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
+    BUTTON_HEIGHT_4, COLOR16_RED, StringSetDateText, TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doSetDateMode);
     // for RTC setting
     TouchButtonAutorepeatDate_Plus.init(BUTTON_WIDTH_6_POS_4, BUTTON_HEIGHT_4_LINE_4, BUTTON_WIDTH_6,
     BUTTON_HEIGHT_5, COLOR16_RED, "+", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH | FLAG_BUTTON_TYPE_AUTOREPEAT, 1, &doSetDate);
@@ -210,8 +210,8 @@ void doSetDateMode(BDButton *aTheTouchedButton, int16_t aValue) {
         sSetDateMode = 0;
     }
 
-    strncpy(&StringSetDateCaption[SET_DATE_STRING_INDEX], DateStrings[sSetDateMode], sizeof StringSecond);
-    aTheTouchedButton->setCaption(StringSetDateCaption);
+    strncpy(&StringSetDateText[SET_DATE_STRING_INDEX], DateStrings[sSetDateMode], sizeof StringSecond);
+    aTheTouchedButton->setText(StringSetDateText);
     aTheTouchedButton->drawButton();
 }
 

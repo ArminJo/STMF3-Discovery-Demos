@@ -34,12 +34,30 @@
 #include <cstdarg> // for va_start, va_list etc.
 #endif
 
-#if defined(ESP32)
+#if defined(__AVR__)
+#  if defined(SUPPORT_REMOTE_AND_LOCAL_DISPLAY)
+#include "LocalDisplay/digitalWriteFast.h"
+#  endif
+#  if !defined(BD_USE_SIMPLE_SERIAL) && defined(BD_USE_SERIAL1)
+#define BDSerial Serial1
+#  else
+#define BDSerial Serial // Use Serial object throughout this file
+#  endif
+
+#elif defined(ESP32)
 #include "BluetoothSerial.h"
 BluetoothSerial SerialBT;
-#define SERIAL_REDEFINED
-#define Serial SerialBT // use SerialBT object instead of Serial object throughout this file
+#define BDSerial SerialBT // use SerialBT object instead of Serial object throughout this file
+#else
+
+// Other platforms
+#  if !defined(BD_USE_SIMPLE_SERIAL) && defined(BD_USE_SERIAL1)
+#define BDSerial Serial1
+#  else
+#define BDSerial Serial // Use Serial object throughout this file
+#  endif
 #endif
+
 /****************************************************************************
  *
  * Common functions which are independent of using simple or standard serial
@@ -193,20 +211,20 @@ void sendUSARTArgsAndByteBuffer(uint8_t aFunctionTag, uint_fast8_t aNumberOfArgs
 /*********************************************
  * serialEvent() function for standard serial
  *********************************************/
-#if !defined(USE_SIMPLE_SERIAL)
+#if !defined(BD_USE_SIMPLE_SERIAL)
 #  if defined(ARDUINO)
 uint8_t getReceiveBufferByte() {
-    return Serial.read();
+    return BDSerial.read();
 }
 
 size_t getReceiveBytesAvailable() {
-    return Serial.available();
+    return BDSerial.available();
 }
 #  endif
 /**
  * Check if a touch event has completely received by USART
  * Function is not synchronized because it should only be used by main thread
- * Will be called after each loop() (by Arduino Serial...) to process input data if available.
+ * Will be called after each Arduino loop() (by Arduino main() function, if serial available) to process input data if available.
  * Fills in the remoteEvent structure with BD event data from serial
  * EventType is set if event is complete
  */
@@ -265,7 +283,7 @@ void serialEvent(void) {
         }
     }
 }
-#endif // !defined(USE_SIMPLE_SERIAL)
+#endif // !defined(BD_USE_SIMPLE_SERIAL)
 
 /*********************************************************************
  *
@@ -291,7 +309,7 @@ void initSerial() {
  * Take BLUETOOTH_BAUD_RATE for initialization, otherwise use 9600
  */
 void initSerial() {
-#  if defined(USE_SIMPLE_SERIAL)
+#  if defined(BD_USE_SIMPLE_SERIAL)
 #    if defined BLUETOOTH_BAUD_RATE
     initSimpleSerial(BLUETOOTH_BAUD_RATE);
 #    else
@@ -299,22 +317,22 @@ void initSerial() {
 #    endif
 #  else
 #    if defined BLUETOOTH_BAUD_RATE
-    Serial.begin(BLUETOOTH_BAUD_RATE);
+    BDSerial.begin(BLUETOOTH_BAUD_RATE);
 #    else
-    Serial.begin(9600);
+    BDSerial.begin(9600);
 #    endif
-#  endif // defined(USE_SIMPLE_SERIAL)
+#  endif // defined(BD_USE_SIMPLE_SERIAL)
 }
 
 /*
  * With explicit baud rate
  */
 void initSerial(uint32_t aBaudRate) {
-#  if defined(USE_SIMPLE_SERIAL)
+#  if defined(BD_USE_SIMPLE_SERIAL)
     initSimpleSerial(aBaudRate);
 #  else
-    Serial.begin(aBaudRate);
-#  endif // defined(USE_SIMPLE_SERIAL)
+    BDSerial.begin(aBaudRate);
+#  endif // defined(BD_USE_SIMPLE_SERIAL)
 }
 #endif // defined(ESP32)
 
@@ -323,9 +341,9 @@ void initSerial(uint32_t aBaudRate) {
  */
 void sendUSARTBufferNoSizeCheck(uint8_t *aParameterBufferPointer, uint8_t aParameterBufferLength, uint8_t *aDataBufferPointer,
         size_t aDataBufferLength) {
-#if !defined(USE_SIMPLE_SERIAL) || (!defined(UCSR1A) && !defined(UCSR0A))
-    Serial.write(aParameterBufferPointer, aParameterBufferLength);
-    Serial.write(aDataBufferPointer, aDataBufferLength);
+#if !defined(BD_USE_SIMPLE_SERIAL) || (!defined(UCSR1A) && !defined(UCSR0A))
+    BDSerial.write(aParameterBufferPointer, aParameterBufferLength);
+    BDSerial.write(aDataBufferPointer, aDataBufferLength);
 #else
     /*
      * Simple and reliable blocking version for Atmega328
@@ -364,21 +382,12 @@ void sendUSARTBufferNoSizeCheck(uint8_t *aParameterBufferPointer, uint8_t aParam
         aDataBufferPointer++;
         aDataBufferLength--;
     }
-#endif // USE_SIMPLE_SERIAL
+#endif // BD_USE_SIMPLE_SERIAL
 }
 
 #endif // defined(ARDUINO)
 
 #if defined(__AVR__)
-
-#  if defined(SUPPORT_REMOTE_AND_LOCAL_DISPLAY)
-#include "LocalDisplay/digitalWriteFast.h"
-#  endif
-
-#  if !defined(USE_SIMPLE_SERIAL) && defined(USE_SERIAL1)
-#define Serial Serial1
-#  endif
-
 /**************************************************************
  *
  * Functions which depends on using simple or standard serial
@@ -387,10 +396,10 @@ void sendUSARTBufferNoSizeCheck(uint8_t *aParameterBufferPointer, uint8_t aParam
 
 /**
  * ultra simple blocking USART send routine - works 100%!
- * Only defined for USE_SIMPLE_SERIAL
+ * Only defined for BD_USE_SIMPLE_SERIAL
  */
 void sendUSART(char aChar) {
-#if defined(USE_SIMPLE_SERIAL)
+#if defined(BD_USE_SIMPLE_SERIAL)
     // wait for buffer to become empty
 #  if defined(UCSR1A)
     // Use TX1 on MEGA and on Leonardo, which has no TX0
@@ -405,8 +414,8 @@ void sendUSART(char aChar) {
     UDR0 = aChar;
 #  endif
 #else
-    Serial.write(aChar);
-#endif // USE_SIMPLE_SERIAL
+    BDSerial.write(aChar);
+#endif // BD_USE_SIMPLE_SERIAL
 }
 
 void sendUSART(const char *aString) {
@@ -421,7 +430,7 @@ void sendUSART(const char *aString) {
  * Functions only valid for simple serial
  *
  *******************************************/
-#if defined(USE_SIMPLE_SERIAL)
+#if defined(BD_USE_SIMPLE_SERIAL)
 void initSimpleSerial(uint32_t aBaudRate, bool aUsePairedPin) {
 #  if defined(SUPPORT_REMOTE_AND_LOCAL_DISPLAY)
     setUsePairedPin(aUsePairedPin);
@@ -531,7 +540,7 @@ ISR(USART1_RX_vect) {
             }
         }
     }
-#endif // USE_SIMPLE_SERIAL
+#endif // BD_USE_SIMPLE_SERIAL
 
 #elif !defined(ARDUINO) && (defined(STM32F303xC) || defined(STM32F103xB)) // defined(__AVR__)
 
@@ -544,7 +553,7 @@ ISR(USART1_RX_vect) {
 #include <string.h> // for memcpy
 #include <stdarg.h>  // for varargs
 
-//#define USE_SIMPLE_SERIAL
+//#define BD_USE_SIMPLE_SERIAL
 
 DMA_HandleTypeDef DMA_UART_BD_TXHandle;
 DMA_HandleTypeDef DMA_UART_BD_RXHandle;
@@ -854,7 +863,7 @@ int getSendBufferFreeSpace(void) {
  */
 void sendUSARTBufferNoSizeCheck(uint8_t *aParameterBufferPointer, uint8_t aParameterBufferLength, uint8_t *aDataBufferPointer,
         size_t aDataBufferLength) {
-#ifdef USE_SIMPLE_SERIAL
+#if defined(BD_USE_SIMPLE_SERIAL)
     sendUSARTBufferSimple(aParameterBufferPointer, aParameterBufferLength, aDataBufferPointer, aDataBufferLength);
     return;
 #else
@@ -946,7 +955,7 @@ void sendUSARTBufferNoSizeCheck(uint8_t *aParameterBufferPointer, uint8_t aParam
  */
 void sendUSARTBuffer(uint8_t *aParameterBufferPointer, size_t aParameterBufferLength, uint8_t *aDataBufferPointer,
         size_t aDataBufferLength) {
-#ifdef USE_SIMPLE_SERIAL
+#if defined(BD_USE_SIMPLE_SERIAL)
     sendUSARTBufferSimple(aParameterBufferPointer, aParameterBufferLength, aDataBufferPointer, aDataBufferLength);
     return;
 #else
@@ -970,7 +979,7 @@ void sendUSARTBuffer(uint8_t *aParameterBufferPointer, size_t aParameterBufferLe
 #endif
 }
 
-#ifdef USE_SIMPLE_SERIAL
+#if defined(BD_USE_SIMPLE_SERIAL)
 /**
  * very simple blocking USART send routine - works 100%!
  */
@@ -1095,7 +1104,4 @@ extern "C" void DMA1_Channel2_IRQHandler(void) {
 }
 #endif // defined(STM32F303xC) || defined(STM32F103xB)
 
-#if defined(SERIAL_REDEFINED)
-#undef Serial
-#endif
 #endif // _BLUESERIAL_HPP
