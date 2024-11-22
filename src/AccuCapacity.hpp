@@ -255,7 +255,7 @@ void redrawAccuCapacityPages(void);
 void doStartStopAccuCap(BDButton *aTheTouchedButton, int16_t aProbeIndex);
 
 bool changeXOffset(int aValue);
-void changeXScaleFactor(int aValue);
+void changeIntegerScaleFactor(int aValue);
 void changeYOffset(int aValue);
 void changeYScaleFactor(int aValue);
 
@@ -335,11 +335,11 @@ bool CheckStopCondition(DataloggerMeasurementControlStruct *aProbe) {
 void TouchUpHandlerAccuCapacity(struct TouchEvent *const aTouchPosition) {
     // first check for buttons
 //    if (!LocalTouchButton::checkAllButtons(aTouchPosition->TouchPosition.PositionX, aTouchPosition->TouchPosition.PositionY)) {
-        if (ActualPage == PAGE_CHART) {
-            //touch press but no gui element matched?
-            // switch chart overlay;
-            doSwitchChartOverlay();
-        }
+    if (ActualPage == PAGE_CHART) {
+        //touch press but no gui element matched?
+        // switch chart overlay;
+        doSwitchChartOverlay();
+    }
 //    }
 }
 
@@ -380,7 +380,7 @@ void swipeEndHandlerAccuCapacity(struct Swipe *const aSwipeInfo) {
                 tIsError = changeXOffset(-tTouchDeltaGrid);
             } else {
                 // scale
-                changeXScaleFactor(tTouchDeltaGrid / 2);
+                changeIntegerScaleFactor(tTouchDeltaGrid / 2);
             }
         } else {
             int tTouchDeltaGrid = aSwipeInfo->TouchDeltaY / CHART_GRID_Y_SIZE;
@@ -416,9 +416,8 @@ void initAccuCapacity(void) {
     for (int i = 0; i < NUMBER_OF_PROBES; ++i) {
         // init charts
         // use maximum height and length - show grid
-        VoltageCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, true,
-        CHART_GRID_X_SIZE,
-        CHART_GRID_Y_SIZE);
+        VoltageCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, TEXT_SIZE_11, true,
+        CHART_GRID_X_SIZE, CHART_GRID_Y_SIZE);
         VoltageCharts[i]->setDataColor(COLOR16_BLUE);
 
         BatteryControl[i].ProbeIndex = i;
@@ -428,9 +427,8 @@ void initAccuCapacity(void) {
         VoltageCharts[i]->setYTitleText("Volt");
         AccuCapDisplayControl[i].VoltYScaleFactor = 0;            // 0=identity
 
-        ResistanceCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, true,
-        CHART_GRID_X_SIZE,
-        CHART_GRID_Y_SIZE);
+        ResistanceCharts[i]->initChart(CHART_START_X, CHART_START_Y, CHART_WIDTH, CHART_HEIGHT, 2, TEXT_SIZE_11, true,
+        CHART_GRID_X_SIZE, CHART_GRID_Y_SIZE);
         ResistanceCharts[i]->setDataColor(COLOR16_RED);
 
         // y axis
@@ -550,7 +548,7 @@ void doShowChartScreen(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
  */
 bool changeXOffset(int aValue) {
     signed int tNewValue = AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex
-            + VoltageCharts[IndexOfDisplayedProbe]->adjustIntWithXScaleFactor(aValue);
+            + VoltageCharts[IndexOfDisplayedProbe]->reduceIntWithIntegerScaleFactor(aValue);
     bool tIsError = false;
     if (tNewValue < 0) {
         tNewValue = 0;
@@ -568,11 +566,12 @@ bool changeXOffset(int aValue) {
     return tIsError;
 }
 
-void changeXScaleFactor(int aValue) {
-    signed int tXScaleFactor = VoltageCharts[IndexOfDisplayedProbe]->getXScaleFactor() + aValue;
+void changeIntegerScaleFactor(int aValue) {
+    signed int tIntegerScaleFactor = VoltageCharts[IndexOfDisplayedProbe]->getIntegerScaleFactor() + aValue;
 // redraw xLabels
-    VoltageCharts[IndexOfDisplayedProbe]->setXScaleFactor(tXScaleFactor, true);
-    ResistanceCharts[IndexOfDisplayedProbe]->setXScaleFactor(tXScaleFactor, false);
+    VoltageCharts[IndexOfDisplayedProbe]->setIntegerScaleFactor(tIntegerScaleFactor);
+    VoltageCharts[IndexOfDisplayedProbe]->drawXAxisAndLabels();
+    ResistanceCharts[IndexOfDisplayedProbe]->setIntegerScaleFactor(tIntegerScaleFactor);
     drawData(true);
 }
 
@@ -591,12 +590,12 @@ void changeYScaleFactor(int aValue) {
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ActualDataChart == CHART_DATA_RESISTANCE) {
         AccuCapDisplayControl[IndexOfDisplayedProbe].ResistorYScaleFactor += aValue;
         ResistanceCharts[IndexOfDisplayedProbe]->setYLabelBaseIncrementValue(
-                adjustIntWithScaleFactor(CHART_MIN_Y_INCREMENT_RESISTANCE,
+                Chart::reduceIntWithIntegerScaleFactor(CHART_MIN_Y_INCREMENT_RESISTANCE,
                         AccuCapDisplayControl[IndexOfDisplayedProbe].ResistorYScaleFactor));
     } else {
         AccuCapDisplayControl[IndexOfDisplayedProbe].VoltYScaleFactor += aValue;
         VoltageCharts[IndexOfDisplayedProbe]->setYLabelBaseIncrementValueFloat(
-                adjustFloatWithScaleFactor(CHART_MIN_Y_INCREMENT_VOLT,
+                Chart::reduceFloatWithIntegerScaleFactor(CHART_MIN_Y_INCREMENT_VOLT,
                         AccuCapDisplayControl[IndexOfDisplayedProbe].VoltYScaleFactor));
     }
 
@@ -745,10 +744,10 @@ void doSwitchChartData(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
             && BatteryControl[aProbeIndex].Mode != MODE_EXTERNAL_VOLTAGE) {
         // no resistance for external mode (U min instead)
         // y axis for resistance only shown at CHART_RESISTANCE
-        ResistanceCharts[IndexOfDisplayedProbe]->drawYAxis(true);
+        ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisAndLabels();
         ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_RESISTANCE);
     } else if (AccuCapDisplayControl[aProbeIndex].ActualDataChart == CHART_DATA_BOTH) {
-        VoltageCharts[IndexOfDisplayedProbe]->drawYAxis(true);
+        VoltageCharts[IndexOfDisplayedProbe]->drawYAxisAndLabels();
         ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_VOLTAGE);
     }
     if (BatteryControl[aProbeIndex].Mode == MODE_EXTERNAL_VOLTAGE) {
@@ -803,8 +802,9 @@ void doClearDataBuffer(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
     AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex = 0;
 // redraw xLabels
     VoltageCharts[IndexOfDisplayedProbe]->setXLabelIntStartValueByIndex(0, false);
-    VoltageCharts[IndexOfDisplayedProbe]->setXScaleFactor(1, true);
-    ResistanceCharts[IndexOfDisplayedProbe]->setXScaleFactor(1, false);
+    VoltageCharts[IndexOfDisplayedProbe]->setIntegerScaleFactor(1);
+    VoltageCharts[IndexOfDisplayedProbe]->drawXAxisAndLabels();
+    ResistanceCharts[IndexOfDisplayedProbe]->setIntegerScaleFactor(1);
 
     BatteryControl[aProbeIndex].BatteryInfo.CapacityAccumulator = 0;
     BatteryControl[aProbeIndex].BatteryInfo.CapacityMilliampereHour = 0;
@@ -961,10 +961,10 @@ void initGUIAccuCapacity(void) {
      */
 
 // for main screen
-    TouchButtonsMain[0].init(0, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[0], "Probe 1",
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
-    TouchButtonsMain[1].init(BUTTON_WIDTH_2_5_POS_2, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[1], "Probe 2",
-    TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doShowChartScreen);
+    TouchButtonsMain[0].init(0, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[0], "Probe 1", TEXT_SIZE_22,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
+    TouchButtonsMain[1].init(BUTTON_WIDTH_2_5_POS_2, 0, BUTTON_WIDTH_2_5, BUTTON_HEIGHT_4, ProbeColors[1], "Probe 2", TEXT_SIZE_22,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 1, &doShowChartScreen);
 
     /*
      * chart buttons from left to right
@@ -977,15 +977,14 @@ void initGUIAccuCapacity(void) {
     COLOR_GUI_CONTROL, "Sett.", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowSettings);
     TouchButtonClearDataBuffer.init(BUTTON_WIDTH_5_POS_2, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
     COLOR_GUI_VALUES, "Clear", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doClearDataBuffer);
-    TouchButtonChartSwitchData.init(BUTTON_WIDTH_5_POS_2, 2 * (BUTTON_HEIGHT_5 + (BUTTON_DEFAULT_SPACING / 2)),
-    BUTTON_WIDTH_5, BUTTON_HEIGHT_5, COLOR_GUI_DISPLAY_CONTROL, "Volt", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
-            &doSwitchChartData);
+    TouchButtonChartSwitchData.init(BUTTON_WIDTH_5_POS_2, 2 * (BUTTON_HEIGHT_5 + (BUTTON_DEFAULT_SPACING / 2)), BUTTON_WIDTH_5,
+            BUTTON_HEIGHT_5, COLOR_GUI_DISPLAY_CONTROL, "Volt", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSwitchChartData);
 
     /*
      * 2. column
      */
-    TouchButtonStartStopCapacityMeasurement.init(BUTTON_WIDTH_5_POS_3, 0, BUTTON_WIDTH_5,
-    BUTTON_HEIGHT_5, COLOR_GUI_CONTROL, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartStopAccuCap);
+    TouchButtonStartStopCapacityMeasurement.init(BUTTON_WIDTH_5_POS_3, 0, BUTTON_WIDTH_5, BUTTON_HEIGHT_5, COLOR_GUI_CONTROL, "",
+            TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doStartStopAccuCap);
     TouchButtonMode.init(BUTTON_WIDTH_5_POS_3, PosY, BUTTON_WIDTH_5, BUTTON_HEIGHT_5,
     COLOR_GUI_VALUES, "", TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doChargeMode);
 
@@ -1010,16 +1009,16 @@ void initGUIAccuCapacity(void) {
      */
 // 1. row
     int tPosY = 0;
-    TouchButtonSetProbeNumber.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringProbeNumber,
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetProbeNumber);
+    TouchButtonSetProbeNumber.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringProbeNumber, TEXT_SIZE_11,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetProbeNumber);
 
     TouchButtonBack.init(BUTTON_WIDTH_3_POS_3, 0, BUTTON_WIDTH_3, BUTTON_HEIGHT_4,
     COLOR_GUI_CONTROL, "Back", TEXT_SIZE_22, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doShowChartScreen);
 
 // 2. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonSetLoadResistor.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringLoadResistor,
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetLoadResistorValue);
+    TouchButtonSetLoadResistor.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringLoadResistor, TEXT_SIZE_11,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetLoadResistorValue);
 
 // Value settings buttons
     TouchButtonAutorepeatSamplePeriodPlus.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_6, BUTTON_HEIGHT_4,
@@ -1039,12 +1038,11 @@ void initGUIAccuCapacity(void) {
 
 // 4. row
     tPosY += BUTTON_HEIGHT_4_LINE_2;
-    TouchButtonSetStopValue.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStopVoltage,
-    TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetStopValue);
+    TouchButtonSetStopValue.init(0, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStopVoltage, TEXT_SIZE_11,
+            FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetStopValue);
 
-    TouchButtonSetChargeVoltage.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2,
-    BUTTON_HEIGHT_4, COLOR_GUI_VALUES, StringStoreChargeVoltage, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0,
-            &doSetReadingChargeVoltage);
+    TouchButtonSetChargeVoltage.init(BUTTON_WIDTH_2_POS_2, tPosY, BUTTON_WIDTH_2, BUTTON_HEIGHT_4, COLOR_GUI_VALUES,
+            StringStoreChargeVoltage, TEXT_SIZE_11, FLAG_BUTTON_DO_BEEP_ON_TOUCH, 0, &doSetReadingChargeVoltage);
 
 #pragma GCC diagnostic pop
 
@@ -1060,20 +1058,28 @@ void adjustXAxisToSamplePeriod(unsigned int aProbeIndex, int aSamplePeriodSecond
     AccuCapDisplayControl[aProbeIndex].XStartIndex = 0;
     if (aSamplePeriodSeconds < 40) {
         // 10 (minutes) scale
-        VoltageCharts[aProbeIndex]->iniXAxisInt(600 / aSamplePeriodSeconds, 0, 10, 2);
-        ResistanceCharts[aProbeIndex]->iniXAxisInt(600 / aSamplePeriodSeconds, 0, 10, 2);
+        VoltageCharts[aProbeIndex]->initXLabelInt(0, 10, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        ResistanceCharts[aProbeIndex]->initXLabelInt(0, 10, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        VoltageCharts[aProbeIndex]->setXGridSpacing(600 / aSamplePeriodSeconds);
+        ResistanceCharts[aProbeIndex]->setXGridSpacing(600 / aSamplePeriodSeconds);
     } else if (aSamplePeriodSeconds < 90) {
         // 30 min scale
-        VoltageCharts[aProbeIndex]->iniXAxisInt(1800 / aSamplePeriodSeconds, 0, 30, 2);
-        ResistanceCharts[aProbeIndex]->iniXAxisInt(1800 / aSamplePeriodSeconds, 0, 30, 2);
+        VoltageCharts[aProbeIndex]->initXLabelInt(0, 30, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        ResistanceCharts[aProbeIndex]->initXLabelInt(0, 30, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        VoltageCharts[aProbeIndex]->setXGridSpacing(1800 / aSamplePeriodSeconds);
+        ResistanceCharts[aProbeIndex]->setXGridSpacing(1800 / aSamplePeriodSeconds);
     } else if (aSamplePeriodSeconds <= 240) {
         // 60 min scale
-        VoltageCharts[aProbeIndex]->iniXAxisInt(3600 / aSamplePeriodSeconds, 0, 60, 2);
-        ResistanceCharts[aProbeIndex]->iniXAxisInt(3600 / aSamplePeriodSeconds, 0, 60, 2);
+        VoltageCharts[aProbeIndex]->initXLabelInt(0, 60, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        ResistanceCharts[aProbeIndex]->initXLabelInt(0, 60, CHART_X_AXIS_SCALE_FACTOR_1, 2);
+        VoltageCharts[aProbeIndex]->setXGridSpacing(3600 / aSamplePeriodSeconds);
+        ResistanceCharts[aProbeIndex]->setXGridSpacing(3600 / aSamplePeriodSeconds);
     } else {
         // 1 (hour) scale
-        VoltageCharts[aProbeIndex]->iniXAxisInt(7200 / aSamplePeriodSeconds, 0, 2, 1);
-        ResistanceCharts[aProbeIndex]->iniXAxisInt(7200 / aSamplePeriodSeconds, 0, 2, 1);
+        VoltageCharts[aProbeIndex]->initXLabelInt(0, 2, CHART_X_AXIS_SCALE_FACTOR_1, 1);
+        ResistanceCharts[aProbeIndex]->initXLabelInt(0, 2, CHART_X_AXIS_SCALE_FACTOR_1, 1);
+        VoltageCharts[aProbeIndex]->setXGridSpacing(7200 / aSamplePeriodSeconds);
+        ResistanceCharts[aProbeIndex]->setXGridSpacing(7200 / aSamplePeriodSeconds);
         tXLabelText = "hour";
     }
     VoltageCharts[aProbeIndex]->setXTitleText(tXLabelText);
@@ -1085,7 +1091,7 @@ void printSamplePeriod(void) {
     tSeconds %= 60;
     snprintf(sStringBuffer, sizeof sStringBuffer, "Sample period %u:%02u", tMinutes, tSeconds);
     BlueDisplay1.drawText(BUTTON_WIDTH_2_POS_2, BUTTON_HEIGHT_4_LINE_3, sStringBuffer, TEXT_SIZE_11, COLOR16_BLACK,
-    BACKGROUND_COLOR);
+            BACKGROUND_COLOR);
 }
 
 void doStartStopAccuCap(BDButton *aTheTouchedButton, int16_t aProbeIndex) {
@@ -1232,14 +1238,15 @@ void storeBatteryValues(DataloggerMeasurementControlStruct *aProbe) {
  */
 void setYAutorange(int16_t aProbeIndex, uint16_t aVoltageMillivolt) {
     float tNumberOfMinYIncrementsPerChart = CHART_HEIGHT / CHART_GRID_Y_SIZE;
-    adjustFloatWithScaleFactor(tNumberOfMinYIncrementsPerChart, AccuCapDisplayControl[IndexOfDisplayedProbe].VoltYScaleFactor);
+    Chart::reduceFloatWithIntegerScaleFactor(tNumberOfMinYIncrementsPerChart,
+            AccuCapDisplayControl[IndexOfDisplayedProbe].VoltYScaleFactor);
 // let start voltage = readingVoltage - half of actual chart range
     float tYLabelStartVoltage = ((float) (aVoltageMillivolt) / 1000)
             - (tNumberOfMinYIncrementsPerChart * (CHART_MIN_Y_INCREMENT_VOLT / 2));
 // round to 0.1
     tYLabelStartVoltage = roundf(10 * tYLabelStartVoltage) * CHART_MIN_Y_INCREMENT_VOLT;
     VoltageCharts[IndexOfDisplayedProbe]->setYLabelStartValueFloat(tYLabelStartVoltage);
-    VoltageCharts[IndexOfDisplayedProbe]->drawYAxis(true);
+    VoltageCharts[IndexOfDisplayedProbe]->drawYAxisAndLabels();
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ChartShowMode == SHOW_MODE_GUI) {
         // show symbol for vertical swipe
         BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR16_BLUE, BACKGROUND_COLOR);
@@ -1252,7 +1259,7 @@ void setYAutorange(int16_t aProbeIndex, uint16_t aVoltageMillivolt) {
 void clearBasicInfo(void) {
 // values correspond to drawText above
     BlueDisplay1.fillRectRel(BASIC_INFO_X, BASIC_INFO_Y, BlueDisplay1.getDisplayWidth() - BASIC_INFO_X, 2 * TEXT_SIZE_11_HEIGHT,
-    BACKGROUND_COLOR);
+            BACKGROUND_COLOR);
 }
 
 //show A/D data on LCD screen
@@ -1278,8 +1285,7 @@ void printBatteryValues(void) {
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
             snprintf(sStringBuffer, sizeof sStringBuffer, "%4umA", BatteryControl[i].BatteryInfo.Milliampere);
-            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i],
-            BACKGROUND_COLOR);
+            BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[i], BACKGROUND_COLOR);
 
             tPosY += 4 + TEXT_SIZE_22_HEIGHT;
             snprintf(sStringBuffer, sizeof sStringBuffer, "%4umAh", BatteryControl[i].BatteryInfo.CapacityMilliampereHour);
@@ -1305,8 +1311,7 @@ void printBatteryValues(void) {
                 } else if (BatteryControl[i].Mode == MODE_CHARGING) {
                     snprintf(sStringBuffer, sizeof sStringBuffer, "stop %4dmAh", BatteryControl[i].StopMilliampereHour);
                 }
-                BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[i],
-                BACKGROUND_COLOR);
+                BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[i], BACKGROUND_COLOR);
             }
             tPosX = BUTTON_WIDTH_2_5_POS_2;
         }
@@ -1333,7 +1338,7 @@ void printBatteryValues(void) {
             int tCount = (snprintf(sStringBuffer, sizeof sStringBuffer, "%u:%02u %2.1f\x81", tMinutes, tSeconds,
                     (float) (BatteryControl[IndexOfDisplayedProbe].LoadResistorMilliohm) / 1000) + 1) * TEXT_SIZE_11_WIDTH;
             BlueDisplay1.drawText(BASIC_INFO_X, BASIC_INFO_Y + TEXT_SIZE_11_HEIGHT + 2 + TEXT_SIZE_11_ASCEND, sStringBuffer,
-            TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
+                    TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
             showRTCTime(BASIC_INFO_X + tCount, BASIC_INFO_Y + TEXT_SIZE_11_HEIGHT + 2 + TEXT_SIZE_11_ASCEND,
                     ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR, false);
         } else {
@@ -1345,27 +1350,23 @@ void printBatteryValues(void) {
 
             snprintf(sStringBuffer, sizeof sStringBuffer, "%5.3fV",
                     ((float) BatteryControl[IndexOfDisplayedProbe].BatteryInfo.VoltageNoLoadMillivolt) / 1000);
-            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe],
-            BACKGROUND_COLOR);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
             snprintf(sStringBuffer, sizeof sStringBuffer, "%4umA", BatteryControl[IndexOfDisplayedProbe].BatteryInfo.Milliampere);
             BlueDisplay1.drawText(tPosX + TEXT_SIZE_22_WIDTH, tPosY, sStringBuffer, TEXT_SIZE_22,
-                    ProbeColors[IndexOfDisplayedProbe],
-                    BACKGROUND_COLOR);
+                    ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
             snprintf(sStringBuffer, sizeof sStringBuffer, "%4umAh",
                     BatteryControl[IndexOfDisplayedProbe].BatteryInfo.CapacityMilliampereHour);
-            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe],
-            BACKGROUND_COLOR);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
 
             tPosY += 2 + TEXT_SIZE_22_HEIGHT;
             snprintf(sStringBuffer, sizeof sStringBuffer, "%5.3f\x81",
                     ((float) BatteryControl[IndexOfDisplayedProbe].BatteryInfo.ESRMilliohm) / 1000);
 
-            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe],
-            BACKGROUND_COLOR);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_22, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
 
             tPosY += 4 + TEXT_SIZE_11_HEIGHT;
             tSeconds = BatteryControl[IndexOfDisplayedProbe].SamplePeriodSeconds;
@@ -1374,8 +1375,7 @@ void printBatteryValues(void) {
             snprintf(sStringBuffer, sizeof sStringBuffer, "%d %2.1f\x81 %u:%02umin",
                     BatteryControl[IndexOfDisplayedProbe].ProbeNumber,
                     (float) (BatteryControl[IndexOfDisplayedProbe].LoadResistorMilliohm) / 1000, tMinutes, tSeconds);
-            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe],
-            BACKGROUND_COLOR);
+            BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe], BACKGROUND_COLOR);
 
             if (BatteryControl[IndexOfDisplayedProbe].Mode != MODE_EXTERNAL_VOLTAGE) {
                 tPosY += 1 + TEXT_SIZE_11_HEIGHT;
@@ -1387,7 +1387,7 @@ void printBatteryValues(void) {
                             BatteryControl[IndexOfDisplayedProbe].StopMilliampereHour);
                 }
                 BlueDisplay1.drawText(tPosX, tPosY, sStringBuffer, TEXT_SIZE_11, ProbeColors[IndexOfDisplayedProbe],
-                BACKGROUND_COLOR);
+                        BACKGROUND_COLOR);
             }
         }
     }
@@ -1511,7 +1511,7 @@ void redrawAccuCapacityChartPage(void) {
 
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ActualDataChart == CHART_DATA_RESISTANCE) {
         ResistanceCharts[IndexOfDisplayedProbe]->drawAxesAndGrid(); // X labels are not drawn here
-        VoltageCharts[IndexOfDisplayedProbe]->drawXAxis(false); // Because X labels are taken from Voltage chart
+//        VoltageCharts[IndexOfDisplayedProbe]->drawXAxisAndLabels(); // Because X labels are taken from Voltage chart
         ResistanceCharts[IndexOfDisplayedProbe]->drawYAxisTitle(CHART_Y_LABEL_OFFSET_RESISTANCE);
     } else {
         VoltageCharts[IndexOfDisplayedProbe]->drawAxesAndGrid();
@@ -1554,8 +1554,7 @@ void drawData(bool doClearBefore) {
                 (int16_t*) (&BatteryControl[IndexOfDisplayedProbe].VoltageNoLoadDatabuffer[0]
                         + AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex
                                 * VoltageCharts[IndexOfDisplayedProbe]->getXGridSpacing()),
-                (int16_t*) &BatteryControl[IndexOfDisplayedProbe].VoltageNoLoadDatabuffer[BatteryControl[IndexOfDisplayedProbe].SampleCount],
-                CHART_MODE_LINE);
+                BatteryControl[IndexOfDisplayedProbe].SampleCount, CHART_MODE_LINE);
 
     }
     if (AccuCapDisplayControl[IndexOfDisplayedProbe].ActualDataChart == CHART_DATA_BOTH
@@ -1570,8 +1569,7 @@ void drawData(bool doClearBefore) {
                     (int16_t*) (&BatteryControl[IndexOfDisplayedProbe].ESRMilliohmDatabuffer[0]
                             + AccuCapDisplayControl[IndexOfDisplayedProbe].XStartIndex
                                     * VoltageCharts[IndexOfDisplayedProbe]->getXGridSpacing()),
-                    (int16_t*) &BatteryControl[IndexOfDisplayedProbe].ESRMilliohmDatabuffer[BatteryControl[IndexOfDisplayedProbe].SampleCount],
-                    CHART_MODE_LINE);
+                    BatteryControl[IndexOfDisplayedProbe].SampleCount, CHART_MODE_LINE);
         }
     }
 }
@@ -1588,15 +1586,14 @@ void activateOrShowChartGui(void) {
             (*ButtonsChart[i]).drawButton();
         }
         // show Symbols for horizontal swipe
-        BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3,
-        BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_22_HEIGHT - BUTTON_DEFAULT_SPACING, StringDoubleHorizontalArrow,
-        TEXT_SIZE_22, COLOR16_BLUE, BACKGROUND_COLOR);
-        BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3, BUTTON_HEIGHT_4_LINE_4, StringDoubleHorizontalArrow, TEXT_SIZE_22,
-        COLOR16_BLUE, BACKGROUND_COLOR);
+        BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3, BUTTON_HEIGHT_4_LINE_4 - TEXT_SIZE_22_HEIGHT - BUTTON_DEFAULT_SPACING,
+                StringDoubleHorizontalArrow, TEXT_SIZE_22, COLOR16_BLUE, BACKGROUND_COLOR);
+        BlueDisplay1.drawText(BUTTON_WIDTH_5_POS_3, BUTTON_HEIGHT_4_LINE_4, StringDoubleHorizontalArrow, TEXT_SIZE_22, COLOR16_BLUE,
+                BACKGROUND_COLOR);
         // show Symbols for vertical swipe
         BlueDisplay1.drawChar(0, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR16_BLUE, BACKGROUND_COLOR);
-        BlueDisplay1.drawChar(BUTTON_WIDTH_5 + BUTTON_DEFAULT_SPACING, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22,
-        COLOR16_BLUE, BACKGROUND_COLOR);
+        BlueDisplay1.drawChar(BUTTON_WIDTH_5 + BUTTON_DEFAULT_SPACING, BUTTON_HEIGHT_5_LINE_4, '\xE0', TEXT_SIZE_22, COLOR16_BLUE,
+                BACKGROUND_COLOR);
 
     } else {
         // activate only next button

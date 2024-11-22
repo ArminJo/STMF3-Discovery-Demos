@@ -80,19 +80,21 @@ void BlueDisplay::resetLocal() {
 }
 
 /**
- * Sets callback handler and calls host for requestMaxCanvasSize().
- * If host is connected, this results in a EVENT_REQUESTED_DATA_CANVAS_SIZE callback event,
- * which sends display size and local timestamp. This event calls the ConnectCallback as well as the RedrawCallback.
+ * Sets callback handler and calls android app (host) for requestMaxCanvasSize().
+ * If host is still Bluetooth connected, this results in a EVENT_REQUESTED_DATA_CANVAS_SIZE event.
+ * This event sets mCurrentDisplaySize and mHostUnixTimestamp and in turn calls the ConnectCallback as well as the RedrawCallback.
  *
- * Waits for 300 ms for connection to be established
+ * Wait 300 ms for receiving the EVENT_REQUESTED_DATA_CANVAS_SIZE event.
+ *
+ * For ESP32 and after power on of the Bluetooth module (HC-05) at other platforms, Bluetooth is just enabled here,
+ * but the android app (host) is not manually (re)connected to us, so we are most likely not connected here.
+ *
+ * At the time of manual (re)connection in the android app, a connection start event is send,
+ * which has the same content as the EVENT_REQUESTED_DATA_CANVAS_SIZE requested here.
+ * This event is then processed by the periodic call of checkAndHandleEvents() in the main loop.
  *
  * Reorientation callback function is only required if we have a responsive layout,
  * since connect and reorientation event also calls the redraw callback.
- *
- * For ESP32 and after power on at other platforms, Bluetooth is just enabled here,
- * but the android app (host) is not manually (re)connected to us, so we are most likely not connected here.
- * In this case, the periodic call of checkAndHandleEvents() in the main loop catches the connection build up message
- * from the android app at the time of manual (re)connection and in turn calls the initDisplay() and drawGui() functions.
  */
 void BlueDisplay::initCommunication(void (*aConnectCallback)(), void (*aRedrawCallback)(), void (*aReorientationCallback)()) {
     registerConnectCallback(aConnectCallback);
@@ -108,7 +110,7 @@ void BlueDisplay::initCommunication(void (*aConnectCallback)(), void (*aRedrawCa
 
     for (uint_fast8_t i = 0; i < 30; ++i) {
         /*
-         * Wait 300 ms for size to be sent back by a canvas size event.
+         * Wait 300 ms for receiving the EVENT_REQUESTED_DATA_CANVAS_SIZE event.
          * Time measured is between 50 and 150 ms (or 80 and 120) for Bluetooth.
          */
         delayMillisWithCheckAndHandleEvents(10);
@@ -127,7 +129,7 @@ void BlueDisplay::initCommunication(void (*aConnectCallback)(), void (*aRedrawCa
 bool BlueDisplay::isConnectionEstablished() {
     return mBlueDisplayConnectionEstablished;
 }
-// sends 4 byte function and 24 byte data message
+// sends 4 byte function and 36 byte data message containing 32 0x00
 void BlueDisplay::sendSync() {
     if (USART_isBluetoothPaired()) {
         char tStringBuffer[STRING_BUFFER_STACK_SIZE];
@@ -177,7 +179,11 @@ void BlueDisplay::setLongTouchDownTimeout(uint16_t aLongTouchDownTimeoutMillis) 
  */
 void BlueDisplay::setScreenOrientationLock(uint8_t aLockMode) {
     sendUSARTArgs(FUNCTION_GLOBAL_SETTINGS, 2, SUBFUNCTION_GLOBAL_SET_SCREEN_ORIENTATION_LOCK, aLockMode);
+}
 
+// 0 / BD_SCREEN_BRIGHTNESS_USER is user default, 1 / BD_SCREEN_BRIGHTNESS_MIN is dark and BD_SCREEN_BRIGHTNESS_MAX / 0xFF is full bright
+void BlueDisplay::setScreenBrightness(uint8_t aScreenBrightness) {
+    sendUSARTArgs(FUNCTION_GLOBAL_SETTINGS, 2, SUBFUNCTION_GLOBAL_SET_SCREEN_BRIGHTNESS, aScreenBrightness);
 }
 
 void BlueDisplay::playTone() {
@@ -300,7 +306,7 @@ void BlueDisplay::drawVectorDegrees(uint16_t aStartX, uint16_t aStartY, uint16_t
 }
 
 /*
- * aRadian in radian, not degree
+ * aRadian in float radian, not degree
  */
 void BlueDisplay::drawVectorRadian(uint16_t aStartX, uint16_t aStartY, uint16_t aLength, float aRadian, color16_t aColor,
         int16_t aThickness) {
@@ -311,7 +317,7 @@ void BlueDisplay::drawVectorRadian(uint16_t aStartX, uint16_t aStartY, uint16_t 
             uint16_t shortArray[2];
         } floatToShortArray;
         floatToShortArray.floatValue = aRadian;
-        sendUSARTArgs(FUNCTION_DRAW_VECTOR_DEGREE, 7, aStartX, aStartY, aLength, floatToShortArray.shortArray[0],
+        sendUSARTArgs(FUNCTION_DRAW_VECTOR_RADIAN, 7, aStartX, aStartY, aLength, floatToShortArray.shortArray[0],
                 floatToShortArray.shortArray[1], aColor, aThickness);
     }
 }
@@ -636,7 +642,7 @@ void BlueDisplay::debug(const char *aStringPtr) {
     sendUSARTArgsAndByteBuffer(FUNCTION_DEBUG_STRING, 0, strlen(aStringPtr), (uint8_t*) aStringPtr);
 }
 
-#if defined(__AVR__)
+#if defined(F) && defined(ARDUINO)
 void BlueDisplay::debug(const __FlashStringHelper *aPGMString) {
     if (USART_isBluetoothPaired()) {
         char tStringBuffer[STRING_BUFFER_STACK_SIZE];
@@ -840,14 +846,16 @@ void BlueDisplay::debug(float aFloat) {
 }
 
 /*
- * Maximum size of aMessage string is up to 30 character depending on content of aFloat.
+ * Maximum size of aMessage string is 12 character because 17 characters on content of aFloat.
  */
 void BlueDisplay::debug(const char *aMessage, float aFloat) {
     if (USART_isBluetoothPaired()) {
-        char tStringBuffer[STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE];
+        char tStringBuffer[STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE]; // 34 chars
 #if defined(__AVR__)
         strncpy(tStringBuffer, aMessage, (STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE - 22));
+        tStringBuffer[STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE - 22] = '\0'; // Terminate strings which are too long
         dtostrf(aFloat, 16, 7, &tStringBuffer[strlen(tStringBuffer)]);
+        tStringBuffer[STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE - 1] = '\0'; // Terminate floats which are too long
 //    snprintf(tStringBuffer, STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE, "%s%f", aMessage, (double)aFloat); // requires ca. 800 bytes more
 #else
         snprintf(tStringBuffer, STRING_BUFFER_STACK_SIZE_FOR_DEBUG_WITH_MESSAGE, "%s%f", aMessage, aFloat);
@@ -893,16 +901,37 @@ void BlueDisplay::drawChartByteBuffer(uint16_t aXOffset, uint16_t aYOffset, colo
     }
 }
 
-struct XYSize* BlueDisplay::getMaxDisplaySize() {
-    return &mMaxDisplaySize;
+/**
+ * if aClearBeforeColor != 0 then previous line is cleared before
+ * chart index is coded in the upper 4 bits of aYOffset
+ *
+ * aIntegerScaleFactor > 1 : expansion by factor aIntegerScaleFactor
+ * Factor == 1 : expansion by 1.5
+ * Factor == 0 : identity
+ * Factor == -1 : compression by 1.5
+ * Factor < -1 : compression by factor aIntegerScaleFactor
+ */
+void BlueDisplay::drawChartByteBufferScaled(uint16_t aXOffset, uint16_t aYOffset, int16_t aIntegerScaleFactor, float aYScaleFactor,
+        uint8_t aLineSize, uint8_t aChartMode, color16_t aColor, color16_t aClearBeforeColor, uint8_t aChartIndex,
+        bool aDoDrawDirect, uint8_t *aByteBuffer, size_t aByteBufferLength) {
+    if (USART_isBluetoothPaired()) {
+        aYOffset = aYOffset | ((aChartIndex & 0x0F) << 12);
+        uint8_t tFunctionTag = FUNCTION_DRAW_SCALED_CHART_WITHOUT_DIRECT_RENDERING;
+        if (aDoDrawDirect) {
+            tFunctionTag = FUNCTION_DRAW_SCALED_CHART;
+        }
+        union {
+            float floatValue;
+            uint16_t shortArray[2];
+        } floatToShortArray;
+        floatToShortArray.floatValue = aYScaleFactor;
+        sendUSARTArgsAndByteBuffer(tFunctionTag, 9, aXOffset, aYOffset, aIntegerScaleFactor, floatToShortArray.shortArray[0],
+                floatToShortArray.shortArray[1], aLineSize, aChartMode, aColor, aClearBeforeColor, aByteBufferLength, aByteBuffer);
+    }
 }
 
-uint16_t BlueDisplay::getMaxDisplayWidth() {
-    return mMaxDisplaySize.XWidth;
-}
-
-uint16_t BlueDisplay::getMaxDisplayHeight() {
-    return mMaxDisplaySize.YHeight;
+uint32_t BlueDisplay::getHostUnixTimestamp() {
+    return mHostUnixTimestamp;
 }
 
 struct XYSize* BlueDisplay::getCurrentDisplaySize() {
@@ -1172,7 +1201,7 @@ void BlueDisplay::setSensor(uint8_t aSensorType, bool aDoActivate, uint8_t aSens
  * Utilities
  *
  **************************************************************************************************************************************************/
-#if defined(__AVR__)
+#if defined(F) && defined(ARDUINO)
 /*
  * Used internally
  */

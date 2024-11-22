@@ -3,7 +3,7 @@
  *
  * Implements the methods to receive events from the Android BlueDisplay app.
  *
- *  Copyright (C) 2014-2023  Armin Joachimsmeyer
+ *  Copyright (C) 2014-2024  Armin Joachimsmeyer
  *  armin.joachimsmeyer@gmail.com
  *
  *  This file is part of BlueDisplay https://github.com/ArminJo/android-blue-display.
@@ -50,6 +50,7 @@ bool sTouchIsStillDown = false; // To enable simple blocking touch down and touc
 bool sBDEventJustReceived = false;
 bool sDisableTouchUpOnce = false; // Disable next touch up detection. E.g. because we are already in a touch handler and don't want the end of this touch to be interpreted for a newly displayed button.
 bool sDisableMoveEventsUntilTouchUpIsDone = false; // To suppress move events after button press to avoid interpreting it for a slider. Useful, if page changed and a slider is presented on the position where the page switch button was.
+bool sButtonCalledWithFalse = false; // true if last button callback has the value false/zero. If Red/Green buttons are turning red, this is true. Used for stop detection.
 
 struct BluetoothEvent remoteEvent; // To hold the current received event
 #if defined(USE_SIMPLE_SERIAL)
@@ -64,7 +65,7 @@ uint32_t sLastMillisOfLastCallOfPeriodicTouchCallback;
 #  endif
 #endif // defined(SUPPORT_LOCAL_DISPLAY)
 
-bool sDisplayXYValuesEnabled = false;// displays touch values on screen
+bool sDisplayXYValuesEnabled = false; // displays touch values on screen
 
 /*
  * Event handler support
@@ -229,19 +230,8 @@ void registerSensorChangeCallback(uint8_t aSensorType, uint8_t aSensorRate, uint
  * AVR - Is not affected by overflow of millis()!
  */
 void delayMillisWithCheckAndHandleEvents(unsigned long aDelayMillis) {
-#if defined(ARDUINO)
     unsigned long tStartMillis = millis();
     while (millis() - tStartMillis < aDelayMillis) {
-#  if !defined(USE_SIMPLE_SERIAL) && defined(__AVR__)
-        // check for Arduino serial - copied code from arduino main.cpp / main()
-        if (serialEventRun) {
-            serialEventRun(); // this in turn calls serialEvent from BlueSerial.cpp
-        }
-#  endif
-#else // ARDUINO
-    unsigned long tStartMillis = millis();
-    while (millis() - tStartMillis < aDelayMillis) {
-#endif
         checkAndHandleEvents();
 #if defined(ESP8266)
         yield(); // required for ESP8266
@@ -256,21 +246,37 @@ void delayMillisWithCheckAndHandleEvents(unsigned long aDelayMillis) {
  */
 bool delayMillisAndCheckForEvent(unsigned long aDelayMillis) {
     sBDEventJustReceived = false;
-#if defined(ARDUINO)
+
     unsigned long tStartMillis = millis();
     while (millis() - tStartMillis < aDelayMillis) {
-#  if !defined(USE_SIMPLE_SERIAL) && defined(__AVR__)
-        // check for Arduino serial - copied code from arduino main.cpp / main()
-        if (serialEventRun) {
-            serialEventRun(); // this in turn calls serialEvent from BlueSerial.cpp
-        }
-#  endif
-#else // ARDUINO
-    unsigned long tStartMillis = millis();
-    while (millis() - tStartMillis < aDelayMillis) {
-#endif
         checkAndHandleEvents();
         if (sBDEventJustReceived) {
+            return true;
+        }
+#if defined(ESP8266)
+            yield(); // required for ESP8266
+#endif
+    }
+    return false;
+}
+
+/*
+ * Assume that stop is requested, if a button is called with value 0/false, i.e. a Red/Green button is set to red.
+ */
+bool isStopRequested() {
+    checkAndHandleEvents();
+    return sButtonCalledWithFalse;
+}
+
+/*
+ * Special delay function for the Red/Green buttons. Returns prematurely if a button turns to red.
+ * To be used in blocking functions as delay
+ * @return  true - as soon as a turn to red is received
+ */
+bool delayMillisAndCheckForStop(uint16_t aDelayMillis) {
+    unsigned long tStartMillis = millis();
+    while (millis() - tStartMillis < aDelayMillis) {
+        if (isStopRequested()) {
             return true;
         }
 #if defined(ESP8266)
@@ -414,7 +420,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             /*
              * We can not call performTouchAction() of the local button here.
              * It is because for autorepeat buttons, CallbackFunctionAddress is the mOriginalButtonOnTouchHandler and not the mOnTouchHandler
-             * and red green handling will loop between local and remote.
+             * and Red/Green button handling will loop between local and remote.
              */
             if ((tLocalButton->mFlags & FLAG_BUTTON_TYPE_TOGGLE_RED_GREEN) && !(tLocalButton->mFlags & FLAG_BUTTON_TYPE_MANUAL_REFRESH)) {
                 tLocalButton->drawButton(); // handle color change for local button too
@@ -426,6 +432,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             ((void (*)(BDButton*, int16_t)) tEvent.EventData.GuiCallbackInfo.CallbackFunctionAddress)(tLocalButton->mBDButtonPtr, tLocalButton->mValue);
         }
 #elif !defined(SUPPORT_LOCAL_DISPLAY)
+        sButtonCalledWithFalse = (tEvent.EventData.GuiCallbackInfo.ValueForGUICallback.uint16Values[0] == false);
         // BDButton * is the same as BDButtonHandle_t * because BDButton only has one BDButtonHandle_t element
         ((void (*)(BDButton*, int16_t)) tEvent.EventData.GuiCallbackInfo.CallbackFunctionAddress)(
                 (BDButton*) &tEvent.EventData.GuiCallbackInfo.ObjectIndex,
@@ -531,8 +538,7 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
             if (sReorientationCallback != NULL) {
                 sReorientationCallback();
             }
-            // Since with simpleSerial we have only buffer for 1 event, only one event is sent and we must also call redraw here
-            tEventType = EVENT_REDRAW;
+            tEventType = EVENT_REDRAW; // We also call redraw here, which in turn sets mCurrentDisplaySize and mHostUnixTimestamp
         }
 
         break;
@@ -551,14 +557,13 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
         copyDisplaySizeAndTimestamp(&tEvent); // must be done before call of sConnectCallback()
         BlueDisplay1.mBlueDisplayConnectionEstablished = true;
 
-        // first write a NOP command for synchronizing
+        // first write a 40 bytes NOP command for synchronizing
         BlueDisplay1.sendSync();
 
         if (sConnectCallback != NULL) {
             sConnectCallback();
         }
-        // Since with simpleSerial we have only buffer for 1 event, we must also call redraw here
-        tEventType = EVENT_REDRAW;
+        tEventType = EVENT_REDRAW; // We also call redraw here, which in turn sets mCurrentDisplaySize and mHostUnixTimestamp
 
 #if defined(SUPPORT_REMOTE_AND_LOCAL_DISPLAY)
         // do it after sConnectCallback() since the upper tends to send a reset all command
@@ -587,12 +592,17 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
     if (tEventType == EVENT_REDRAW) {
         /*
          * Got current display size since host display size has changed (manually)
+         * sets mCurrentDisplaySize and mHostUnixTimestamp
          */
         copyDisplaySizeAndTimestamp(&tEvent);
         if (sRedrawCallback != NULL) {
             sRedrawCallback();
         }
     }
+    /*
+     * End of individual event handling
+     */
+
     sBDEventJustReceived = true;
 #if defined(ARDUINO)
     sMillisOfLastReceivedBDEvent = millis(); // set time of (last) event
@@ -602,10 +612,8 @@ extern "C" void handleEvent(struct BluetoothEvent *aEvent) {
 }
 
 void copyDisplaySizeAndTimestamp(struct BluetoothEvent *aEvent) {
-    BlueDisplay1.mMaxDisplaySize.XWidth = aEvent->EventData.DisplaySize.XWidth;
-    BlueDisplay1.mCurrentDisplaySize.XWidth = aEvent->EventData.DisplaySize.XWidth;
-    BlueDisplay1.mMaxDisplaySize.YHeight = aEvent->EventData.DisplaySize.YHeight;
-    BlueDisplay1.mCurrentDisplaySize.YHeight = aEvent->EventData.DisplaySize.YHeight;
+    BlueDisplay1.mCurrentDisplaySize.XWidth = aEvent->EventData.DisplaySizeAndTimestamp.DisplaySize.XWidth;
+    BlueDisplay1.mCurrentDisplaySize.YHeight = aEvent->EventData.DisplaySizeAndTimestamp.DisplaySize.YHeight;
     BlueDisplay1.mHostUnixTimestamp = aEvent->EventData.DisplaySizeAndTimestamp.UnixTimestamp;
 }
 

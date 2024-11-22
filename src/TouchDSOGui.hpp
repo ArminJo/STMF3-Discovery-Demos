@@ -41,7 +41,7 @@ void computeMinMax(void) {
     uint16_t tMax, tMin;
 
     uint16_t *tDataBufferPointer = DataBufferControl.DataBufferDisplayStart
-            + adjustIntWithScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
+            + Chart::reduceIntWithIntegerScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
     if (DataBufferControl.DataBufferEndPointer <= tDataBufferPointer) {
         return;
     }
@@ -129,7 +129,7 @@ void computePeriodFrequency(void) {
      * For frequency use only max values!
      */
     uint16_t *tDataBufferPointer = DataBufferControl.DataBufferDisplayStart
-            + adjustIntWithScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
+            + Chart::reduceIntWithIntegerScaleFactor(DisplayControl.DatabufferPreTriggerDisplaySize, DisplayControl.XScale);
     if (DataBufferControl.DataBufferEndPointer <= tDataBufferPointer) {
         return;
     }

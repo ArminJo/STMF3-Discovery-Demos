@@ -42,15 +42,15 @@
 #define CHART_MODE_AREA                 2
 
 // Error codes
-#define CHART_ERROR_POS_X       -1
-#define CHART_ERROR_POS_Y       -2
-#define CHART_ERROR_WIDTH       -4
-#define CHART_ERROR_HEIGHT      -8
-#define CHART_ERROR_AXES_SIZE   -16
-#define CHART_ERROR_GRID_X_RESOLUTION -32
+#define CHART_ERROR_POS_X            -1
+#define CHART_ERROR_POS_Y            -2
+#define CHART_ERROR_WIDTH            -4
+#define CHART_ERROR_HEIGHT           -8
+#define CHART_ERROR_AXES_SIZE       -16
+#define CHART_ERROR_GRID_X_SPACING  -32
 
 // Masks for mFlags
-#define CHART_HAS_GRID      0x01
+#define CHART_HAS_GRID      0x01 // no marks for label are rendered
 #define CHART_X_LABEL_USED  0x02
 #define CHART_X_LABEL_INT   0x04 // else label is float
 #define CHART_Y_LABEL_USED  0x08
@@ -60,20 +60,38 @@ typedef union {
     float FloatValue;
 } int_float_union;
 
-int adjustIntWithScaleFactor(int aValue, int aScaleFactor);
-float adjustFloatWithScaleFactor(float aValue, int aScaleFactor);
-void getScaleFactorAsString(char * tStringBuffer, int aScaleFactor);
-void showChartDemo(void);
+#if !defined(__time_t_defined) // avoid conflict with newlib or other posix libc
+typedef unsigned long time_t;
+#endif
 
+struct drawXAxisTimeDateSettingsStruct {
+    int (*firstTokenFunction)(time_t t);
+    int (*secondTokenFunction)(time_t t);
+    char TokenSeparatorChar;
+    const char *IntermediateLabelString;
+};
+
+typedef union {
+    int IntValue;
+    long LongValue;
+    float FloatValue;
+    time_t UnixTimestamp;
+} int_long_float_time_union;
+
+/*
+ * sizeof(Chart) is 62 bytes
+ */
 class Chart {
 public:
     Chart();
     uint8_t initChart(const uint16_t aPositionX, const uint16_t aPositionY, const uint16_t aWidthX, const uint16_t aHeightY,
-            const uint8_t aAxesSize, const bool aHasGrid, const uint8_t aGridXResolution, const uint8_t aGridYResolution);
+            const uint8_t aAxesSize, const uint8_t aLabelTextSize, const bool aHasGrid, const uint16_t aGridOrLabelXSpacing,
+            const uint16_t aGridOrLabelYSpacing);
 
-    void initChartColors(const uint16_t aDataColor, const uint16_t aAxesColor, const uint16_t aGridColor,
-            const uint16_t aLabelColor, const uint16_t aBackgroundColor);
-    void setDataColor(uint16_t aDataColor);
+    void initChartColors(const color16_t aDataColor, const color16_t aAxesColor, const color16_t aGridColor,
+            const color16_t aLabelColor, const color16_t aBackgroundColor);
+    void setDataColor(color16_t aDataColor);
+    void setBackgroundColor(color16_t aBackgroundColor);
 
     void clear(void);
 
@@ -81,28 +99,29 @@ public:
     void setHeightY(const uint16_t heightY);
     void setPositionX(const uint16_t positionX);
     void setPositionY(const uint16_t positionY);
+    void setXYGridSpacing(uint8_t aXGridSpacing, uint8_t aYGridSpacing);
 
     uint16_t getWidthX(void) const;
     uint16_t getHeightY(void) const;
     uint16_t getPositionX(void) const;
     uint16_t getPositionY(void) const;
 
-    void drawAxes(const bool aClearLabelsBefore);
+    void drawAxesAndLabels();
     void drawAxesAndGrid(void);
-    bool drawChartDataDirect(const uint8_t *aDataPointer, const uint16_t aDataLength, const uint8_t aMode);
-    bool drawChartData(const int16_t *aDataPointer, const uint16_t aDataLength, const uint8_t aMode);
-    bool drawChartData(const int16_t *aDataPointer, const int16_t * aDataEndPointer, const uint8_t aMode);
-    bool drawChartDataFloat(const float * aDataPointer, const float * aDataEndPointer, const uint8_t aMode);
+    bool drawChartDataDirect(const uint8_t *aDataPointer, const uint16_t aLengthOfValidData, const uint8_t aMode);
+    void drawChartDataWithOffset(uint8_t *aDataPointer, const uint16_t aLengthOfValidData, const uint8_t aMode); // 8 Bit (compressed) data with factor and offset
+    void drawChartData(int16_t *aDataPointer, const uint16_t aLengthOfValidData, const uint8_t aMode);       // 16 bit data
+    void drawChartDataFloat(float *aDataPointer, const uint16_t aLengthOfValidData, const uint8_t aMode);
     void drawGrid(void);
 
     /*
      * X Axis
      */
-    void drawXAxis(const bool aClearLabelsBefore);
+    void drawXAxisAndLabels();
+    void drawXAxisDateLabel(time_t aStartTimestamp, drawXAxisTimeDateSettingsStruct *aDrawXAxisTimeDateSettings);
 
+    void setXLabelDistance(uint8_t aXLabelDistance);
     void setXGridSpacing(uint8_t aXGridSpacing);
-    void iniXAxisInt(const uint8_t aGridXSpacing, const int aXLabelStartValue, const int aXLabelIncrementValue,
-            const uint8_t aXMinStringWidth);
     uint8_t getXGridSpacing(void) const;
 
     /*
@@ -111,39 +130,56 @@ public:
     // Init
     void initXLabelInt(const int aXLabelStartValue, const int aXLabelIncrementValue, const uint8_t aXLabelScaleFactor,
             const uint8_t aXMinStringWidth);
-    void initXLabelFloat(const float aXLabelStartValue, const float aXLabelIncrementValue, const int8_t aXScaleFactor,
+    void initXLabelLong(const long aXLabelStartValue, const long aXLabelIncrementValue, const uint8_t aXLabelScaleFactor,
+            const uint8_t aXMinStringWidth);
+    void initXLabelFloat(const float aXLabelStartValue, const float aXLabelIncrementValue, const uint8_t aXLabelScaleFactor,
             uint8_t aXMinStringWidthIncDecimalPoint, uint8_t aXNumVarsAfterDecimal);
     void disableXLabel(void);
 
     // Start value
     void setXLabelStartValue(int xLabelStartValue);
     void setXLabelStartValueFloat(float xLabelStartValueFloat);
-    void setXLabelIntStartValueByIndex(const int aNewXStartIndex, const bool doDraw); // does not use XScaleFactor
-    int_float_union getXLabelStartValue(void) const;
-    bool stepXLabelStartValueInt(const bool aDoIncrement, const int aMinValue, const int aMaxValue); // does not use XScaleFactor
-    float stepXLabelStartValueFloat(const bool aDoIncrement); // does not use XScaleFactor
+    void setXLabelIntStartValueByIndex(const int aNewXStartIndex, const bool doRedrawXAxis); // does not use IntegerScaleFactor
+    int_long_float_time_union getXLabelStartValue(void) const;
+    bool stepXLabelStartValueInt(const bool aDoIncrement, const int aMinValue, const int aMaxValue); // does not use IntegerScaleFactor
+    float stepXLabelStartValueFloat(const bool aDoIncrement); // does not use IntegerScaleFactor
 
     // Increment value
     void setXLabelBaseIncrementValue(int xLabelIncrementValue);
     void setXLabelBaseIncrementValueFloat(float xLabelIncrementValueFloat);
-    // Increment factor
-    void setXScaleFactor(int aXScaleFactor, const bool doDraw);
-    int getXScaleFactor(void) const;
 
-    int adjustIntWithXScaleFactor(int Value);
-    float adjustFloatWithXScaleFactor(float Value);
+    // access factors
+    void setIntegerScaleFactor(int aIntegerScaleFactor);
+    int getIntegerScaleFactor(void) const;
+    void setXDataFactor(int aIntegerScaleFactor);
+    int getXDataFactor(void) const;
+
+    int reduceIntWithIntegerScaleFactor(int Value);
+    long reduceLongWithIntegerScaleFactor(long aValue);
+    float reduceFloatWithIntegerScaleFactor(float Value);
+    int enlargeIntWithIntegerScaleFactor(int Value);
+    float enlargeFloatWithIntegerScaleFactor(float Value);
+    static int reduceIntWithIntegerScaleFactor(int aValue, int aScaleFactor);
+    static long reduceLongWithIntegerScaleFactor(long aValue, int aScaleFactor);
+    static void getIntegerScaleFactorAsString(char *tStringBuffer, int aScaleFactor);
+    static float reduceFloatWithIntegerScaleFactor(float aValue, int aScaleFactor);
 
     // X Title
-    void setXTitleText(const char * aLabelText);
-    void drawXAxisTitle(void) const;
+    void setXTitleText(const char *aLabelText);
+    void drawXAxisTitle() const;
+    void setTitleTextSize(const uint8_t aTitleTextSize);
 
     /*
      *  Y Axis
      */
-    void drawYAxis(const bool aClearLabelsBefore);
+    void drawYAxisAndLabels();
 
     void setYGridSpacing(uint8_t aYGridSpacing);
     uint8_t getYGridSpacing(void) const;
+    void setXLabelAndGridOffset(float aXLabelAndGridOffset);
+    void setXAxisTimeDateSettings(drawXAxisTimeDateSettingsStruct *aDrawXAxisTimeDateSettingsStructToFill,
+            int (*aFirstTokenFunction)(time_t t), int (*aSecondTokenFunction)(time_t t), char aTokenSeparatorChar,
+            const char *aIntermediateLabelString);
 
     // Y Label
     void initYLabelInt(const int aYLabelStartValue, const int aYLabelIncrementValue, const float aYFactor,
@@ -169,63 +205,86 @@ public:
     //void setYScaleFactor(int aYScaleFactor, const bool doDraw);
 
     // Y Title
-    void setYTitleText(const char * aLabelText);
+    void setYTitleText(const char *aLabelText);
     void drawYAxisTitle(const int aYOffset) const;
 
     // layout
     uint16_t mPositionX;    // Position in display coordinates of x - origin is on x axis
     uint16_t mPositionY;    // Position in display coordinates of y - origin is on y axis
-    uint16_t mWidthX;       // length of x axes in pixel
-    uint16_t mHeightY;      // height of y axes in pixel
-    uint16_t mChartBackgroundColor;
-    uint8_t mAxesSize;      //thickness of x and y axes - origin is on innermost line of axes
+    uint16_t mWidthX;       // length of x axes
+    uint16_t mHeightY;      // height of y axes
+    uint8_t mAxesSize;      // thickness of x and y axes - origin is on innermost line of axes
+    uint8_t mLabelTextSize;
+    uint8_t mTitleTextSize;
     uint8_t mFlags;
-    // grid
-    uint16_t mDataColor;
-    uint16_t mAxesColor;
-    uint16_t mGridColor;
-    uint16_t mLabelColor;
+
+    // Colors
+    color16_t mDataColor;
+    color16_t mAxesColor;
+    color16_t mGridColor;
+    color16_t mLabelColor;
+    color16_t mBackgroundColor;
 
     /*
      *  X axis
      */
-    int_float_union mXLabelStartValue;
-    // Value difference between 2 grid labels - the effective IncrementValue is mXScaleFactor * mXLabelBaseIncrementValue
+    int_long_float_time_union mXLabelStartValue;
+    /*
+     * If mXLabelStartOffset == mXLabelBaseIncrementValue then label starts with 2. value
+     * Pixel offset is (mXLabelStartOffset / mXLabelBaseIncrementValue) * mGridXSpacing
+     * Offset positive -> grid is shifted left
+     */
+    float mXLabelStartOffset;
+
+    // Value difference between 2 grid labels - the effective IncrementValue is mXLabelScaleFactor * mXLabelBaseIncrementValue
     // This behavior is different to the Y axis because here we have only discrete (integer) scale factors.
-    int_float_union mXLabelBaseIncrementValue;
+    int_long_float_time_union mXLabelBaseIncrementValue; // The base increment value for one grid
     uint8_t mGridXSpacing; // difference in pixel between 2 X grid lines
 
+#define CHART_X_AXIS_SCALE_FACTOR_1                 0 // identity is code with 0
+#define CHART_X_AXIS_SCALE_FACTOR_EXPANSION_1_5     1 // expansion by 1.5
+#define CHART_X_AXIS_SCALE_FACTOR_EXPANSION_2       2 // expansion by factor 2
+#define CHART_X_AXIS_SCALE_FACTOR_EXPANSION_3       3 // expansion by factor 3
+#define CHART_X_AXIS_SCALE_FACTOR_EXPANSION_4       4 // expansion by factor 4
+#define CHART_X_AXIS_SCALE_FACTOR_COMPRESSION_1_5  -1 // compression by 1.5
+#define CHART_X_AXIS_SCALE_FACTOR_COMPRESSION_2    -2 // compression by factor 2
+#define CHART_X_AXIS_SCALE_FACTOR_COMPRESSION_3    -3 // compression by factor 3
+#define CHART_X_AXIS_SCALE_FACTOR_COMPRESSION_4    -4 // compression by factor 4
     /**
-     * aScaleFactor > 1 : expansion by factor aScaleFactor
-     * aScaleFactor == 1 : expansion by 1.5
-     * aScaleFactor == 0 : identity
-     * aScaleFactor == -1 : compression by 1.5
-     * aScaleFactor < -1 : compression by factor -aScaleFactor
+     * Factor > 1 : expansion by factor Factor
+     * Factor == 1 : expansion by 1.5
+     * Factor == 0 : identity
+     * Factor == -1 : compression by 1.5
+     * Factor < -1 : compression by factor Factor
      */
-    int8_t mXScaleFactor; // Factor for X Data expansion(>0) or compression(<0). 2->display 1 value 2 times -2->display average of 2 values etc.
+    int8_t mXDataFactor; // Factor for X Data expansion(>0) or compression(<0). 2->display 1 value 2 times -2->display average of 2 values etc.
+    int8_t mXLabelScaleFactor; // Factor for X scale expansion(>0) or compression(<0). 2-> use half the increment per label -2-> use double of increment per label
 
     // label formatting
     uint8_t mXNumVarsAfterDecimal;
     uint8_t mXMinStringWidth;
+    uint8_t mXLabelDistance; // 1 label at every grid position, 2 label at every 2. grid position etc.
 
-    const char* mXTitleText; // No title text if NULL
+    const char *mXTitleText; // No title text if NULL
 
     /*
      * Y axis
      */
     int_float_union mYLabelStartValue;
+    int_float_union mYLabelStartOffset;
     int_float_union mYLabelIncrementValue; // Value difference between 2 grid labels - serves as Y scale factor
-    float mYDataFactor; // Factor for input (raw (int16_t) or float) to chart (not display!!!) value - e.g. (3.0 / 4096) for adc reading of 4096 for 3 Volt or 0.2 for 1000 display at 5000 raw value
+    float mYDataFactor; // Factor for input (raw (int16_t) or float) to chart (not display!!!) value - e.g. (3.0 / 4096) for adc reading of 4096 for 3 (Volt) or 0.2 for 1000 display at 5000 input value
     uint8_t mGridYSpacing; // difference in pixel between 2 Y grid lines
 
     // label formatting
     uint8_t mYNumVarsAfterDecimal;
     uint8_t mYMinStringWidth;
 
-    const char* mYTitleText; // No title text if NULL
+    const char *mYTitleText; // No title text if NULL
 
     uint8_t checkParameterValues();
 
 };
+void showChartDemo(void);
 
 #endif // _CHART_H

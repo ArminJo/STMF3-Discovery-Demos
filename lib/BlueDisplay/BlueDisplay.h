@@ -30,10 +30,10 @@
 #ifndef _BLUEDISPLAY_H
 #define _BLUEDISPLAY_H
 
-#define VERSION_BLUE_DISPLAY "4.0.1"
+#define VERSION_BLUE_DISPLAY "4.1.0"
 #define VERSION_BLUE_DISPLAY_MAJOR 4
-#define VERSION_BLUE_DISPLAY_MINOR 0
-#define VERSION_BLUE_DISPLAY_PATCH 1
+#define VERSION_BLUE_DISPLAY_MINOR 1
+#define VERSION_BLUE_DISPLAY_PATCH 0
 // The change log is at the bottom of the file
 
 /*
@@ -164,6 +164,10 @@ static const int FLAG_SENSOR_DELAY_FASTEST = 0;
 static const int FLAG_SENSOR_NO_FILTER = 0;
 static const int FLAG_SENSOR_SIMPLE_FILTER = 1;
 
+#define BD_SCREEN_BRIGHTNESS_USER   0
+#define BD_SCREEN_BRIGHTNESS_MIN    1
+#define BD_SCREEN_BRIGHTNESS_MAX  255
+
 // No valid button number
 #define NO_BUTTON 0xFF
 #define NO_SLIDER 0xFF
@@ -204,6 +208,7 @@ public:
     void clearDisplayOptional(color16_t aColor = COLOR16_WHITE);
     void drawDisplayDirect();
     void setScreenOrientationLock(uint8_t aLockMode);
+    void setScreenBrightness(uint8_t aScreenBrightness);
 
     void drawPixel(uint16_t aXPos, uint16_t aYPos, color16_t aColor);
     void drawCircle(uint16_t aXCenter, uint16_t aYCenter, uint16_t aRadius, color16_t aColor, uint16_t aStrokeWidth = 1);
@@ -245,7 +250,7 @@ public:
 
     void debugMessage(const char *aStringPtr);
     void debug(const char *aStringPtr);
-#if defined(__AVR__)
+#if defined(F)
     void debug(const __FlashStringHelper *aPGMString);
 #endif
     void debug(uint8_t aByte);
@@ -280,10 +285,10 @@ public:
             uint8_t *aByteBuffer, size_t aByteBufferLength);
     void drawChartByteBuffer(uint16_t aXOffset, uint16_t aYOffset, color16_t aColor, color16_t aClearBeforeColor,
             uint8_t aChartIndex, bool aDoDrawDirect, uint8_t *aByteBuffer, size_t aByteBufferLength);
+    void drawChartByteBufferScaled(uint16_t aXOffset, uint16_t aYOffset, int16_t aIntegerScaleFactor, float aYScaleFactor,
+            uint8_t aLineSize, uint8_t aChartMode, color16_t aColor, color16_t aClearBeforeColor, uint8_t aChartIndex, bool aDoDrawDirect,
+            uint8_t *aByteBuffer, size_t aByteBufferLength);
 
-    struct XYSize* getMaxDisplaySize();
-    uint16_t getMaxDisplayWidth();
-    uint16_t getMaxDisplayHeight();
     struct XYSize* getCurrentDisplaySize();
     uint16_t getCurrentDisplayWidth();
     uint16_t getCurrentDisplayHeight();
@@ -293,6 +298,8 @@ public:
     uint16_t getDisplayHeight();
     // Implemented by event handler
     bool isDisplayOrientationLandscape();
+
+    uint32_t getHostUnixTimestamp();
 
     void refreshVector(struct ThickLine *aLine, int16_t aNewRelEndX, int16_t aNewRelEndY);
 
@@ -325,7 +332,6 @@ public:
 
     struct XYSize mRequestedDisplaySize; // contains requested display size
     struct XYSize mCurrentDisplaySize; // contains real host display size. Is initialized at connection build up and updated at reorientation and redraw event.
-    struct XYSize mMaxDisplaySize; // contains max display size.  Is initialized at connection build up and updated at reorientation event.
     uint32_t mHostUnixTimestamp;
 
     bool mBlueDisplayConnectionEstablished; // true if BlueDisplayApps responded to requestMaxCanvasSize()
@@ -381,6 +387,13 @@ float getCPUTemperature(void);
 //#endif
 
 /*
+ * Version 4.1.0
+ * - Removed mMaxDisplaySize, because it was just a copy of CurrentDisplaySize.
+ * - Added function setScreenBrightness();
+ *
+ * Version 4.0.1
+ * - Minor changes and updated 3. party libs.
+ *
  * Version 4.0.0
  * - Major refactoring, many bug fixes and seamless support of local display.
  * - All *Rel*() functions now have signed delta parameters.
